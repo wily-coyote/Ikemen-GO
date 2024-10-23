@@ -1717,7 +1717,6 @@ func (p *Projectile) clear() {
 		aimg:           *newAfterImage(),
 		platformFence:  true,
 	}
-	p.hitdef.clear(p.localscl)
 }
 
 func (p *Projectile) setPos(pos [3]float32) {
@@ -2076,7 +2075,6 @@ type CharGlobalInfo struct {
 	wakewakaLength   int32
 	pctype           ProjContact
 	pctime, pcid     int32
-	projidcount      int
 	quotes           [MaxQuotes]string
 	portraitscale    float32
 	constants        map[string]float32
@@ -4945,8 +4943,6 @@ func (c *Char) shadYOff(yv float32, isReflect bool) {
 	}
 }
 
-// --------------------
-
 func (c *Char) hitAdd(h int32) {
 	c.hitCount += h
 	c.uniqHitCount += h
@@ -4971,25 +4967,43 @@ func (c *Char) hitAdd(h int32) {
 		}
 	}
 }
+
 func (c *Char) newProj() *Projectile {
-	for i := c.gi().projidcount; i < len(sys.projs[c.playerNo]); i++ {
-		if sys.projs[c.playerNo][i].id < 0 {
-			sys.projs[c.playerNo][i].clear()
-			// Projectile defaults
-			sys.projs[c.playerNo][i].id = 0
-			sys.projs[c.playerNo][i].layerno = c.layerNo
-			sys.projs[c.playerNo][i].palfx = c.getPalfx()
-			c.gi().projidcount = i
-			return &sys.projs[c.playerNo][i]
-		}
-	}
-	if i := len(sys.projs[c.playerNo]); i < sys.playerProjectileMax {
-		sys.projs[c.playerNo] = append(sys.projs[c.playerNo], *newProjectile())
-		p := &sys.projs[c.playerNo][i]
-		p.id, p.palfx = 0, c.getPalfx()
-		return p
-	}
-	return nil
+    var p *Projectile
+
+    // Loop through the player's projectile slots to find an inactive one
+    for i, old := range sys.projs[c.playerNo] {
+        if old.id < 0 {
+            p = &sys.projs[c.playerNo][i]
+            p.clear()
+            break
+        }
+    }
+
+    // If no inactive projectile was found, append a new one within the max limit
+    if p == nil && len(sys.projs[c.playerNo]) < sys.playerProjectileMax {
+        sys.projs[c.playerNo] = append(sys.projs[c.playerNo], *newProjectile())
+        p = &sys.projs[c.playerNo][len(sys.projs[c.playerNo])-1]
+    }
+    
+    // Set up default values
+    if p != nil {
+        if c.minus == -2 || c.minus == -4 {
+            p.localscl = (320 / c.localcoord)
+        } else {
+            p.localscl = c.localscl
+        }
+        p.id = 0
+        p.layerno = c.layerNo
+        p.palfx = c.getPalfx()
+        // Initialize projectile Hitdef. Must be placed after localscl is defined
+        // https://github.com/ikemen-engine/Ikemen-GO/issues/2087
+        p.hitdef.clear(p.localscl)
+        p.hitdef.isprojectile = true
+        p.hitdef.playerNo = sys.workingState.playerNo
+    }
+
+    return p
 }
 
 func (c *Char) projInit(p *Projectile, pt PosType, x, y, z float32,
@@ -7412,7 +7426,6 @@ func (c *Char) actionRun() {
 		if c.helperIndex == 0 && c.gi().pctime >= 0 {
 			c.gi().pctime++
 		}
-		c.gi().projidcount = 0
 	}
 	c.xScreenBound()
 	c.zDepthBound()

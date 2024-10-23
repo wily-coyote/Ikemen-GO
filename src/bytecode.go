@@ -6549,8 +6549,6 @@ func (sc projectile) Run(c *Char, _ []int32) bool {
 			if p == nil {
 				return false
 			}
-			p.hitdef.playerNo = sys.workingState.playerNo
-			p.hitdef.isprojectile = true
 		}
 		switch id {
 		case projectile_postype:
@@ -6724,11 +6722,6 @@ func (sc projectile) Run(c *Char, _ []int32) bool {
 	}
 	if p.aimg.time != 0 {
 		p.aimg.setupPalFX()
-	}
-	if crun.minus == -2 || crun.minus == -4 {
-		p.localscl = (320 / crun.localcoord)
-	} else {
-		p.localscl = crun.localscl
 	}
 	crun.projInit(p, pt, x, y, z, op, rp[0], rp[1], clsnscale)
 	return false
