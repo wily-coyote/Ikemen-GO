@@ -11838,8 +11838,9 @@ func (sc transformClsn) Run(c *Char, _ []int32) bool {
 			if len(exp) > 1 {
 				crun.clsnScaleMul[1] *= exp[1].evalF(c)
 			}
+			crun.updateClsnScale()
 		case transformClsn_angle:
-			crun.clsnAngle = exp[0].evalF(c)
+			crun.clsnAngle += exp[0].evalF(c)
 		case transformClsn_redirectid:
 			if rid := sys.playerID(exp[0].evalI(c)); rid != nil {
 				crun = rid

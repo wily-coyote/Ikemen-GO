@@ -3273,7 +3273,7 @@ func (c *Char) changeAnimEx(animNo int32, playerNo int, ffx string, alt bool) {
 		// Update animation local scale
 		c.animlocalscl = 320 / sys.chars[c.animPN][0].localcoord
 		// Clsn scale depends on the animation owner's scale, so it must be updated
-		c.updateClsnBaseScale()
+		c.updateClsnScale()
 		if c.hitPause() {
 			c.curFrame = a.CurrentFrame()
 		}
@@ -5255,17 +5255,16 @@ func (c *Char) setBHeight(bh float32) {
 	c.setCSF(CSF_bottomheight)
 }
 
-func (c *Char) updateClsnBaseScale() {
-	// Helper parameter
+func (c *Char) updateClsnScale() {
+	// Update base scale
 	if c.ownclsnscale && c.animPN == c.playerNo {
+		// Helper parameter. Use own scale instead of animation owner's
 		c.clsnBaseScale = [...]float32{c.size.xscale, c.size.yscale}
 		return
-	}
-	// Index range checks. Prevents crashing if chars don't have animations
-	// https://github.com/ikemen-engine/Ikemen-GO/issues/1982
-	if c.animPN >= 0 && c.animPN < len(sys.chars) && len(sys.chars[c.animPN]) > 0 {
-		// The char's base Clsn scale
-		// Based on the animation owner's scale constants
+	} else if c.animPN >= 0 && c.animPN < len(sys.chars) && len(sys.chars[c.animPN]) > 0 {
+		// Index range checks. Prevents crashing if chars don't have animations
+		// https://github.com/ikemen-engine/Ikemen-GO/issues/1982
+		// The char's base Clsn scale is based on the animation owner's scale constants
 		c.clsnBaseScale = [...]float32{
 			sys.chars[c.animPN][0].size.xscale,
 			sys.chars[c.animPN][0].size.yscale,
@@ -5274,6 +5273,11 @@ func (c *Char) updateClsnBaseScale() {
 		// Normally not used. Just a safeguard
 		c.clsnBaseScale = [...]float32{1.0, 1.0}
 	}
+	// Calculate final scale
+	// Clsn and size box scale used to factor zScale here, but they shouldn't
+	// Game logic should stay the same regardless of Z scale. Only drawing scale should change
+	c.clsnScale = [2]float32{c.clsnBaseScale[0] * c.clsnScaleMul[0] * c.animlocalscl, // Facing is not used here
+		c.clsnBaseScale[1] * c.clsnScaleMul[1] * c.animlocalscl}
 }
 
 func (c *Char) widthToSizeBox() {
@@ -7429,14 +7433,6 @@ func (c *Char) actionRun() {
 	}
 	c.xScreenBound()
 	c.zDepthBound()
-
-	// Final scale calculations
-	// Clsn and size box scale used to factor zScale here, but they shouldn't
-	// Game logic should stay the same regardless of Z scale. Only drawing changes
-	c.zScale = sys.updateZScale(c.pos[2], c.localscl)                                 // Must be placed after posUpdate()
-	c.clsnScale = [2]float32{c.clsnBaseScale[0] * c.clsnScaleMul[0] * c.animlocalscl, // No facing here
-		c.clsnBaseScale[1] * c.clsnScaleMul[1] * c.animlocalscl}
-
 	if !c.pauseBool {
 		for _, tid := range c.targets {
 			if t := sys.playerID(tid); t != nil && t.bindToId == c.id {
@@ -7448,7 +7444,7 @@ func (c *Char) actionRun() {
 	c.acttmp += int8(Btoi(!c.pause() && !c.hitPause())) - int8(Btoi(c.hitPause()))
 }
 func (c *Char) actionFinish() {
-	if (c.minus < 1) || c.csf(CSF_destroy) || c.scf(SCF_disabled) {
+	if c.minus < 1 || c.csf(CSF_destroy) || c.scf(SCF_disabled) {
 		return
 	}
 	if !c.pauseBool {
@@ -7459,6 +7455,9 @@ func (c *Char) actionFinish() {
 		c.ghv.frame = false
 		c.mhv.frame = false
 	}
+	// Update Z scale
+	// Must be placed after posUpdate()
+	c.zScale = sys.updateZScale(c.pos[2], c.localscl)
 	c.minus = 1
 }
 func (c *Char) track() {
