@@ -606,7 +606,7 @@ function start.f_setMusic(num, data)
 end
 
 --remaps palette based on button press and character's keymap settings
-function start.f_reampPal(ref, num)
+function start.f_keyPalMap(ref, num)
 	return start.f_getCharData(ref).pal_keymap[num] or num
 end
 
