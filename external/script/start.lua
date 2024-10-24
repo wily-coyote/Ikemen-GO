@@ -606,7 +606,7 @@ function start.f_setMusic(num, data)
 end
 
 --remaps palette based on button press and character's keymap settings
-function start.f_reampPal(ref, num)
+function start.f_keyPalMap(ref, num)
 	return start.f_getCharData(ref).pal_keymap[num] or num
 end
 
@@ -622,14 +622,25 @@ function start.f_selectPal(ref, palno)
 		end
 	end
 	-- selected palette
+	local s = commandGetState(main.t_cmd[main.playerInput], '/s')
 	if palno ~= nil and palno > 0 then
-		if not t_assignedPals[start.f_reampPal(ref, palno)] then
-			return start.f_reampPal(ref, palno)
-		else
-			for _, v in ipairs(start.f_getCharData(ref).pal) do
-				if not t_assignedPals[start.f_reampPal(ref, v)] then
-					return start.f_reampPal(ref, v)
-				end
+    	local keyPalMap = start.f_keyPalMap(ref, palno)
+		if not t_assignedPals[keyPalMap] then
+			return keyPalMap
+		end
+		-- next palette
+		for i = palno, #start.f_getCharData(ref).pal do
+			keyPalMap = start.f_keyPalMap(ref, i)
+			if not t_assignedPals[keyPalMap] and (i <= 6 or s) then
+				return keyPalMap
+			end
+		end
+		-- If all palettes from palno are occupied, return the first available one
+		for i = 1, #start.f_getCharData(ref).pal do
+			keyPalMap = start.f_keyPalMap(ref, i)
+			if not t_assignedPals[keyPalMap] and (i <= 6 or s) then
+		-- When chars exceeds the limit of 6 palettes, it randomly selects a palette between Pal 7 and 12, if available
+				return keyPalMap
 			end
 		end
 	-- default palette
