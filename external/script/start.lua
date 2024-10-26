@@ -605,15 +605,8 @@ function start.f_setMusic(num, data)
 	end
 end
 
---remaps palette based on button press and character's keymap settings
-function start.f_keyPalMap(ref, num)
-	return start.f_getCharData(ref).pal_keymap[num] or num
-end
-
--- returns palette number
-function start.f_selectPal(ref, palno)
-	-- generate table with palette entries already used by this char ref
-	local t_assignedPals = {}
+-- generate table with palette entries already used by this char ref
+function start.f_setAssignedPal(ref, t_assignedPals)
 	for side = 1, 2 do
 		for k, v in pairs(start.p[side].t_selected) do
 			if v.ref == ref then
@@ -621,26 +614,40 @@ function start.f_selectPal(ref, palno)
 			end
 		end
 	end
+end
+
+--remaps palette based on button press and character's keymap settings
+function start.f_keyPalMap(ref, num, t_assignedPals)
+    local t_assignedPals = {}
+	start.f_setAssignedPal(ref, t_assignedPals)
+    local mappedPal = start.f_getCharData(ref).pal_keymap[num] or num
+    local totalPals = #start.f_getCharData(ref).pal
+	-- loop through the palette indices starting from mappedPal
+    for i = 0, totalPals - 1 do
+        -- calculate the current palette index, wrapping around if it exceeds totalPals
+        local currentPal = (mappedPal + i - 1) % totalPals + 1
+        -- check if the current palette is not already assigned
+        if not t_assignedPals[currentPal] then
+            return currentPal
+        end
+    end
+    -- if all palettes are assigned, return the mapped palette
+    return mappedPal
+end
+
+-- returns palette number
+function start.f_selectPal(ref, palno)
+    local t_assignedPals = {}
+    start.f_setAssignedPal(ref, t_assignedPals)
 	-- selected palette
-	local s = commandGetState(main.t_cmd[main.playerInput], '/s')
 	if palno ~= nil and palno > 0 then
-    	local keyPalMap = start.f_keyPalMap(ref, palno)
-		if not t_assignedPals[keyPalMap] then
-			return keyPalMap
-		end
-		-- next palette
-		for i = palno, #start.f_getCharData(ref).pal do
-			keyPalMap = start.f_keyPalMap(ref, i)
-			if not t_assignedPals[keyPalMap] and (i <= 6 or s) then
-				return keyPalMap
-			end
-		end
-		-- If all palettes from palno are occupied, return the first available one
-		for i = 1, #start.f_getCharData(ref).pal do
-			keyPalMap = start.f_keyPalMap(ref, i)
-			if not t_assignedPals[keyPalMap] and (i <= 6 or s) then
-		-- When chars exceeds the limit of 6 palettes, it randomly selects a palette between Pal 7 and 12, if available
-				return keyPalMap
+		if not t_assignedPals[start.f_keyPalMap(ref, palno)] then
+			return start.f_keyPalMap(ref, palno)
+		else
+			for _, v in ipairs(start.f_getCharData(ref).pal) do
+				if not t_assignedPals[start.f_keyPalMap(ref, v)] then
+					return start.f_keyPalMap(ref, v)
+				end
 			end
 		end
 	-- default palette
