@@ -2821,6 +2821,8 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		case "hitflag":
 			opc = OC_ex2_projvar_hitflag
 			isFlag = true
+		case "facing":
+			opc = OC_ex2_projvar_facing
 		default:
 			return bvNone(), Error(fmt.Sprint("Invalid argument: %s", vname))
 		}

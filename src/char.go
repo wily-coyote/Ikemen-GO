@@ -3957,6 +3957,8 @@ func (c *Char) projVar(pid BytecodeValue, idx BytecodeValue, flag BytecodeValue,
 				v = BytecodeBool(p.hitdef.guardflag&fl != 0)
 			case OC_ex2_projvar_hitflag:
 				v = BytecodeBool(p.hitdef.hitflag&fl != 0)
+			case OC_ex2_projvar_facing:
+				v = BytecodeFloat(p.facing)
 			}
 			break
 		}
@@ -6176,7 +6178,9 @@ func (c *Char) hitFallSet(f int32, xv, yv, zv float32) {
 		c.ghv.fall.zvelocity = zv
 	}
 }
+
 func (c *Char) remapPal(pfx *PalFX, src [2]int32, dst [2]int32) {
+
 	// Clear all remaps
 	if src[0] == -1 && dst[0] == -1 {
 		pfx.remap = nil
@@ -6193,38 +6197,43 @@ func (c *Char) remapPal(pfx *PalFX, src [2]int32, dst [2]int32) {
 	if src[0] < 0 || src[1] < 0 || dst[0] < 0 || dst[1] < 0 {
 		return
 	}
-	si, ok := c.gi().palettedata.palList.PalTable[[...]int16{int16(src[0]),
-		int16(src[1])}]
+
+	plist := c.gi().palettedata.palList
+
+	// Look up source and destination palettes
+	si, ok := plist.PalTable[[...]int16{int16(src[0]), int16(src[1])}]
 	if !ok || si < 0 {
 		sys.appendToConsole(c.warn() + fmt.Sprintf("has no source palette for RemapPal: %v,%v", src[0], src[1]))
 		return
 	}
-	var di int
-	di, ok = c.gi().palettedata.palList.PalTable[[...]int16{int16(dst[0]),
-		int16(dst[1])}]
+	di, ok := plist.PalTable[[...]int16{int16(dst[0]), int16(dst[1])}]
 	if !ok || di < 0 {
 		sys.appendToConsole(c.warn() + fmt.Sprintf("has no dest palette for RemapPal: %v,%v", dst[0], dst[1]))
 		return
 	}
+
+	// Perform palette remap if needed
 	if pfx.remap == nil {
-		pfx.remap = c.gi().palettedata.palList.GetPalMap()
+		pfx.remap = plist.GetPalMap()
 	}
-	if c.gi().palettedata.palList.SwapPalMap(&pfx.remap) {
-		c.gi().palettedata.palList.Remap(si, di)
+	if plist.SwapPalMap(&pfx.remap) {
+		plist.Remap(si, di)
+
+		// Remap palette 1, 1 in SFF v1
 		if src[0] == 1 && src[1] == 1 && c.gi().sff.header.Ver0 == 1 {
-			spr := c.gi().sff.GetSprite(0, 0)
-			if spr != nil {
-				c.gi().palettedata.palList.Remap(spr.palidx, di)
+			if spr := c.gi().sff.GetSprite(0, 0); spr != nil {
+				plist.Remap(spr.palidx, di)
 			}
-			spr = c.gi().sff.GetSprite(9000, 0)
-			if spr != nil {
-				c.gi().palettedata.palList.Remap(spr.palidx, di)
+			if spr := c.gi().sff.GetSprite(9000, 0); spr != nil {
+				plist.Remap(spr.palidx, di)
 			}
 		}
-		c.gi().palettedata.palList.SwapPalMap(&pfx.remap)
+		plist.SwapPalMap(&pfx.remap)
 	}
+
 	c.gi().remappedpal = [...]int32{dst[0], dst[1]}
 }
+
 func (c *Char) forceRemapPal(pfx *PalFX, dst [2]int32) {
 	if dst[0] < 0 || dst[1] < 0 {
 		return
