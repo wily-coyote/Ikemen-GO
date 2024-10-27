@@ -4399,6 +4399,8 @@ func triggerFunctions(l *lua.LState) {
 					lv = lua.LNumber(p.supermovetime)
 				case "pausemovetime":
 					lv = lua.LNumber(p.pausemovetime)
+				case "facing":
+					lv = lua.LNumber(p.facing)
 				default:
 					l.RaiseError("\nInvalid argument: %v\n", vname)
 				}

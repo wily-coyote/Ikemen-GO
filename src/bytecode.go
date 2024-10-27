@@ -758,7 +758,10 @@ const (
 	OC_ex2_projvar_accel_y
 	OC_ex2_projvar_accel_z
 	OC_ex2_projvar_animelem
+	OC_ex2_projvar_facing
+	OC_ex2_projvar_guardflag
 	OC_ex2_projvar_highbound
+	OC_ex2_projvar_hitflag
 	OC_ex2_projvar_lowbound
 	OC_ex2_projvar_pausemovetime
 	OC_ex2_projvar_pos_x
@@ -796,8 +799,6 @@ const (
 	OC_ex2_projvar_velmul_x
 	OC_ex2_projvar_velmul_y
 	OC_ex2_projvar_velmul_z
-	OC_ex2_projvar_guardflag
-	OC_ex2_projvar_hitflag
 	OC_ex2_hitdefvar_guardflag
 	OC_ex2_hitdefvar_hitflag
 	OC_ex2_hitdefvar_guarddamage
@@ -3276,6 +3277,8 @@ func (be BytecodeExp) run_ex2(c *Char, i *int, oc *Char) {
 	case OC_ex2_projvar_pos_x:
 		fallthrough
 	case OC_ex2_projvar_pos_y:
+		fallthrough
+	case OC_ex2_projvar_facing:
 		fallthrough
 	case OC_ex2_projvar_guardflag:
 		fallthrough
@@ -9189,7 +9192,8 @@ const (
 
 func (sc remapPal) Run(c *Char, _ []int32) bool {
 	crun := c
-	src := [...]int32{-1, -1}
+	src := [...]int32{-1, 0}
+	dst := [...]int32{-1, 0} // This is the default but technically the compiler crashes if dest is not specified
 	StateControllerBase(sc).run(c, func(id byte, exp []BytecodeExp) bool {
 		switch id {
 		case remapPal_source:
@@ -9198,11 +9202,10 @@ func (sc remapPal) Run(c *Char, _ []int32) bool {
 				src[1] = exp[1].evalI(c)
 			}
 		case remapPal_dest:
-			dst := [...]int32{exp[0].evalI(c), -1}
+			dst = [...]int32{exp[0].evalI(c), -1}
 			if len(exp) > 1 {
 				dst[1] = exp[1].evalI(c)
 			}
-			crun.remapPal(crun.getPalfx(), src, dst)
 		case remapPal_redirectid:
 			if rid := sys.playerID(exp[0].evalI(c)); rid != nil {
 				crun = rid
@@ -9212,6 +9215,7 @@ func (sc remapPal) Run(c *Char, _ []int32) bool {
 		}
 		return true
 	})
+	crun.remapPal(crun.getPalfx(), src, dst)
 	return false
 }
 
