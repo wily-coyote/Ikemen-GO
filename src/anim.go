@@ -8,45 +8,61 @@ import (
 type AnimFrame struct {
 	Time          int32
 	Group, Number int16
-	X, Y          int16
+	Xoffset       int16
+	Yoffset       int16
 	SrcAlpha      byte
 	DstAlpha      byte
-	H, V          int8
-	Ex            [][]float32
+	Hscale        int8
+	Vscale        int8
+	Xscale        float32
+	Yscale        float32
+	Angle         float32
+	Clsn          [][]float32
 }
 
 func newAnimFrame() *AnimFrame {
-	return &AnimFrame{Time: -1, Group: -1, SrcAlpha: 255, H: 1, V: 1}
+	return &AnimFrame{
+		Time: -1,
+		Group: -1,
+		SrcAlpha: 255,
+		DstAlpha: 0,
+		Hscale: 1, // These two are technically flags but are coded like scale for simplicity
+		Vscale: 1,
+		Xscale: 1,
+		Yscale: 1,
+		Angle: 0,
+	}
 }
 func ReadAnimFrame(line string) *AnimFrame {
 	if len(line) == 0 || (line[0] < '0' || '9' < line[0]) && line[0] != '-' {
 		return nil
 	}
 	ary := strings.SplitN(line, ",", 10)
+	// Read required parameters
 	if len(ary) < 5 {
 		return nil
 	}
 	af := newAnimFrame()
-	af.Group, af.Number = int16(Atoi(ary[0])), int16(Atoi(ary[1]))
-	af.X, af.Y = int16(Atoi(ary[2])), int16(Atoi(ary[3]))
+	af.Group = int16(Atoi(ary[0]))
+	af.Number = int16(Atoi(ary[1]))
+	af.Xoffset = int16(Atoi(ary[2]))
+	af.Yoffset = int16(Atoi(ary[3]))
 	af.Time = Atoi(ary[4])
+	// Read H and V flags
 	if len(ary) < 6 {
 		return af
 	}
 	for i := range ary[5] {
 		switch ary[5][i] {
 		case 'H', 'h':
-			af.H *= -1
+			af.Hscale = -1
+			af.Xoffset *= -1
 		case 'V', 'v':
-			af.V *= -1
+			af.Vscale = -1
+			af.Yoffset *= -1
 		}
 	}
-	if af.H < 0 {
-		af.X *= -1
-	}
-	if af.V < 0 {
-		af.Y *= -1
-	}
+	// Read alpha
 	if len(ary) < 7 {
 		return af
 	}
@@ -59,7 +75,7 @@ func ReadAnimFrame(line string) *AnimFrame {
 	case a == "a1":
 		af.SrcAlpha, af.DstAlpha = 255, 128
 	case len(a) > 0 && a[0] == 's':
-		af.SrcAlpha, af.DstAlpha = 1, 255
+		af.SrcAlpha, af.DstAlpha = 1, 255 // Ikemen uses AS1D255 in place of Sub. TODO: This ought to be refactored
 	case len(a) >= 2 && a[:2] == "as":
 		if len(a) > 2 && a[2] >= '0' && a[2] <= '9' {
 			i, alp := 2, 0
@@ -85,7 +101,7 @@ func ReadAnimFrame(line string) *AnimFrame {
 					} else {
 						af.DstAlpha = byte(alp)
 					}
-					if af.SrcAlpha == 1 && af.DstAlpha == 255 {
+					if af.SrcAlpha == 1 && af.DstAlpha == 255 { // See above. The code would be better off without these workarounds
 						af.SrcAlpha = 0
 					}
 				}
@@ -94,30 +110,40 @@ func ReadAnimFrame(line string) *AnimFrame {
 	case len(a) > 0 && a[0] == 'a':
 		af.SrcAlpha, af.DstAlpha = 255, 255
 	}
-	if len(ary) < 8 || (len(ary) == 8 && !IsNumeric(ary[7])) {
+	// Read X scale
+	// In Mugen 1.1 a blank parameter means 0
+	// In Ikemen it means no change like the other optional parameters
+	if len(ary) < 8 {
 		return af
 	}
-	af.Ex = make([][]float32, 3)
-	af.Ex[2] = append(af.Ex[2], float32(Atof(ary[7]))) // X-Scale
-	if len(ary) < 9 || (len(ary) == 9 && !IsNumeric(ary[8])) {
+	if IsNumeric(ary[7]) {
+		af.Xscale = float32(Atof(ary[7]))
+	}
+	// Read Y scale
+	if len(ary) < 9 {
 		return af
 	}
-	af.Ex[2] = append(af.Ex[2], float32(Atof(ary[8]))) // Y-Scale
-	if len(ary) < 10 || !IsNumeric(ary[9]) {
+	if IsNumeric(ary[8]) {
+		af.Yscale = float32(Atof(ary[8]))
+	}
+	// Read angle
+	if len(ary) < 10 {
 		return af
 	}
-	af.Ex[2] = append(af.Ex[2], float32(Atof(ary[9]))) // Angle
+	if IsNumeric(ary[9]) {
+		af.Angle = float32(Atof(ary[9]))
+	}
 	return af
 }
 func (af *AnimFrame) Clsn1() []float32 {
-	if len(af.Ex) > 0 {
-		return af.Ex[0]
+	if len(af.Clsn) > 0 {
+		return af.Clsn[0]
 	}
 	return nil
 }
 func (af *AnimFrame) Clsn2() []float32 {
-	if len(af.Ex) > 1 {
-		return af.Ex[1]
+	if len(af.Clsn) > 1 {
+		return af.Clsn[1]
 	}
 	return nil
 }
@@ -185,11 +211,11 @@ func ReadAnimation(sff *Sff, pal *PaletteList, lines []string, i *int) *Animatio
 				clsn2 = clsn2d
 			}
 			if len(clsn1) > 0 || len(clsn2) > 0 {
-				if len(af.Ex) < 2 {
-					af.Ex = make([][]float32, 2)
+				if len(af.Clsn) < 2 {
+					af.Clsn = make([][]float32, 2)
 				}
-				af.Ex[0] = clsn1
-				af.Ex[1] = clsn2
+				af.Clsn[0] = clsn1
+				af.Clsn[1] = clsn2
 			}
 			a.frames = append(a.frames, *af)
 			def1, def2 = true, true
@@ -470,55 +496,36 @@ func (a *Animation) UpdateSprite() {
 	}
 	a.newframe, a.drawidx = false, a.current
 
-	a.scale_x = 1
-	a.scale_y = 1
-	a.angle = 0
+	a.scale_x = a.frames[a.drawidx].Xscale
+	a.scale_y = a.frames[a.drawidx].Yscale
+	a.angle = a.frames[a.drawidx].Angle
+
 	a.interpolate_offset_x = 0
 	a.interpolate_offset_y = 0
 	a.interpolate_blend_srcalpha = float32(a.frames[a.drawidx].SrcAlpha)
 	a.interpolate_blend_dstalpha = float32(a.frames[a.drawidx].DstAlpha)
 
-	if len(a.frames[a.drawidx].Ex) > 2 {
-		if len(a.frames[a.drawidx].Ex[2]) > 0 {
-			a.scale_x *= a.frames[a.drawidx].Ex[2][0]
-			if len(a.frames[a.drawidx].Ex[2]) > 1 {
-				a.scale_y *= a.frames[a.drawidx].Ex[2][1]
-				if len(a.frames[a.drawidx].Ex[2]) > 2 {
-					a.angle = a.frames[a.drawidx].Ex[2][2]
-				}
-			}
-		}
-	}
 	nextDrawidx := a.drawidx + 1
 	if int(a.drawidx) >= len(a.frames)-1 {
 		nextDrawidx = a.loopstart
 	}
 	for _, i := range a.interpolate_offset {
 		if nextDrawidx == i && (a.frames[a.drawidx].Time >= 0) {
-			a.interpolate_offset_x = float32(a.frames[nextDrawidx].X-a.frames[a.drawidx].X) / float32(a.curFrame().Time) * float32(a.time)
-			a.interpolate_offset_y = float32(a.frames[nextDrawidx].Y-a.frames[a.drawidx].Y) / float32(a.curFrame().Time) * float32(a.time)
+			a.interpolate_offset_x = float32(a.frames[nextDrawidx].Xoffset-a.frames[a.drawidx].Xoffset) / float32(a.curFrame().Time) * float32(a.time)
+			a.interpolate_offset_y = float32(a.frames[nextDrawidx].Yoffset-a.frames[a.drawidx].Yoffset) / float32(a.curFrame().Time) * float32(a.time)
 			break
 		}
 	}
 	for _, i := range a.interpolate_scale {
 		if nextDrawidx == i && (a.frames[a.drawidx].Time >= 0) {
 			var drawframe_scale_x, nextframe_scale_x, drawframe_scale_y, nextframe_scale_y float32 = 1, 1, 1, 1
-			if len(a.frames[a.drawidx].Ex) > 2 {
-				if len(a.frames[a.drawidx].Ex[2]) > 0 {
-					drawframe_scale_x = a.frames[a.drawidx].Ex[2][0]
-				}
-				if len(a.frames[a.drawidx].Ex[2]) > 1 {
-					drawframe_scale_y = a.frames[a.drawidx].Ex[2][1]
-				}
-			}
-			if len(a.frames[nextDrawidx].Ex) > 2 {
-				if len(a.frames[nextDrawidx].Ex[2]) > 0 {
-					nextframe_scale_x = a.frames[nextDrawidx].Ex[2][0]
-				}
-				if len(a.frames[nextDrawidx].Ex[2]) > 1 {
-					nextframe_scale_y = a.frames[nextDrawidx].Ex[2][1]
-				}
-			}
+
+			drawframe_scale_x = a.frames[a.drawidx].Xscale
+			drawframe_scale_y = a.frames[a.drawidx].Yscale
+
+			nextframe_scale_x = a.frames[nextDrawidx].Xscale
+			nextframe_scale_y = a.frames[nextDrawidx].Yscale
+
 			a.scale_x += (nextframe_scale_x - drawframe_scale_x) / float32(a.curFrame().Time) * float32(a.time)
 			a.scale_y += (nextframe_scale_y - drawframe_scale_y) / float32(a.curFrame().Time) * float32(a.time)
 			break
@@ -529,16 +536,10 @@ func (a *Animation) UpdateSprite() {
 	for _, i := range a.interpolate_angle {
 		if nextDrawidx == i && (a.frames[a.drawidx].Time >= 0) {
 			var drawframe_angle, nextframe_angle float32 = 0, 0
-			if len(a.frames[a.drawidx].Ex) > 2 {
-				if len(a.frames[a.drawidx].Ex[2]) > 2 {
-					drawframe_angle = a.frames[a.drawidx].Ex[2][2]
-				}
-			}
-			if len(a.frames[nextDrawidx].Ex) > 2 {
-				if len(a.frames[nextDrawidx].Ex[2]) > 2 {
-					nextframe_angle = a.frames[nextDrawidx].Ex[2][2]
-				}
-			}
+
+			drawframe_angle = a.frames[a.drawidx].Angle
+			nextframe_angle = a.frames[nextDrawidx].Angle
+
 			a.angle += (nextframe_angle - drawframe_angle) / float32(a.curFrame().Time) * float32(a.time)
 			break
 		}
@@ -657,7 +658,7 @@ func (a *Animation) pal(pfx *PalFX, neg bool) (p []uint32, plt *Texture) {
 	return
 }
 func (a *Animation) drawSub1(angle, facing float32) (h, v, agl float32) {
-	h, v = float32(a.frames[a.drawidx].H), float32(a.frames[a.drawidx].V)
+	h, v = float32(a.frames[a.drawidx].Hscale), float32(a.frames[a.drawidx].Vscale)
 	agl = angle
 	h *= a.scale_x
 	v *= a.scale_y
@@ -677,8 +678,8 @@ func (a *Animation) Draw(window *[4]int32, x, y, xcs, ycs, xs, xbs, ys,
 	rot.angle = angle
 	xs *= xcs * h
 	ys *= ycs * v
-	x = xcs*x + xs*posLocalscl*(float32(a.frames[a.drawidx].X)+a.interpolate_offset_x)*a.start_scale[0]*(1/a.scale_x)
-	y = ycs*y + ys*posLocalscl*(float32(a.frames[a.drawidx].Y)+a.interpolate_offset_y)*a.start_scale[1]*(1/a.scale_y)
+	x = xcs*x + xs*posLocalscl*(float32(a.frames[a.drawidx].Xoffset)+a.interpolate_offset_x)*a.start_scale[0]*(1/a.scale_x)
+	y = ycs*y + ys*posLocalscl*(float32(a.frames[a.drawidx].Yoffset)+a.interpolate_offset_y)*a.start_scale[1]*(1/a.scale_y)
 	var rcy float32
 	if rot.IsZero() {
 		if xs < 0 {
@@ -734,8 +735,8 @@ func (a *Animation) Draw(window *[4]int32, x, y, xcs, ycs, xs, xbs, ys,
 		y * sys.heightScale, a.tile, xs * sys.widthScale, xcs * xbs * h * sys.widthScale,
 		ys * sys.heightScale, 1, xcs * rxadd * sys.widthScale / sys.heightScale, h, v, rot,
 		color, trans, mask, pfx, window, rcx, rcy, projectionMode, fLength * sys.heightScale,
-		xs * posLocalscl * (float32(a.frames[a.drawidx].X) + a.interpolate_offset_x) * a.start_scale[0] * (1 / a.scale_x) * sys.widthScale,
-		ys * posLocalscl * (float32(a.frames[a.drawidx].Y) + a.interpolate_offset_y) * a.start_scale[1] * (1 / a.scale_y) * sys.heightScale,
+		xs * posLocalscl * (float32(a.frames[a.drawidx].Xoffset) + a.interpolate_offset_x) * a.start_scale[0] * (1 / a.scale_x) * sys.widthScale,
+		ys * posLocalscl * (float32(a.frames[a.drawidx].Yoffset) + a.interpolate_offset_y) * a.start_scale[1] * (1 / a.scale_y) * sys.heightScale,
 	}
 	RenderSprite(rp)
 }
@@ -749,8 +750,8 @@ func (a *Animation) ShadowDraw(window *[4]int32, x, y, xscl, yscl, vscl, rxadd f
 	if yscl < 0 && rot.angle != 0 {
 		rxadd = -rxadd
 	}
-	x += xscl * posLocalscl * h * (float32(a.frames[a.drawidx].X) + a.interpolate_offset_x) * (1 / a.scale_x)
-	y += yscl * posLocalscl * vscl * v * (float32(a.frames[a.drawidx].Y) + a.interpolate_offset_y) * (1 / a.scale_x)
+	x += xscl * posLocalscl * h * (float32(a.frames[a.drawidx].Xoffset) + a.interpolate_offset_x) * (1 / a.scale_x)
+	y += yscl * posLocalscl * vscl * v * (float32(a.frames[a.drawidx].Yoffset) + a.interpolate_offset_y) * (1 / a.scale_x)
 
 	mask := int32(a.mask)
 	rp := RenderParams{
@@ -761,8 +762,8 @@ func (a *Animation) ShadowDraw(window *[4]int32, x, y, xscl, yscl, vscl, rxadd f
 		yscl * v * sys.heightScale, vscl, rxadd, h, v, rot, color | 0xff000000, 0, mask, nil, window,
 		(x + float32(sys.gameWidth)/2) * sys.widthScale, y * sys.heightScale,
 		projectionMode, fLength,
-		xscl * posLocalscl * h * (float32(a.frames[a.drawidx].X) + a.interpolate_offset_x) * (1 / a.scale_x),
-		yscl * posLocalscl * vscl * v * (float32(a.frames[a.drawidx].Y) + a.interpolate_offset_y) * (1 / a.scale_y),
+		xscl * posLocalscl * h * (float32(a.frames[a.drawidx].Xoffset) + a.interpolate_offset_x) * (1 / a.scale_x),
+		yscl * posLocalscl * vscl * v * (float32(a.frames[a.drawidx].Yoffset) + a.interpolate_offset_y) * (1 / a.scale_y),
 	}
 
 	// TODO: This is redundant now that rp.tint is used to colorise the shadow

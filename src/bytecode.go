@@ -2440,11 +2440,9 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		}
 	case OC_ex_animframe_angle:
 		if f := c.anim.CurrentFrame(); f != nil {
-			if len(f.Ex) > 2 && len(f.Ex[2]) > 2 { // Anim.go code could be refactored so these are easier to read
-				sys.bcStack.PushF(f.Ex[2][2])
-			} else {
-				sys.bcStack.PushF(0)
-			}
+			sys.bcStack.PushF(f.Angle)
+		} else {
+			sys.bcStack.PushI(0)
 		}
 	case OC_ex_animframe_alphasource:
 		if f := c.anim.CurrentFrame(); f != nil {
@@ -2460,7 +2458,7 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		}
 	case OC_ex_animframe_hflip:
 		if f := c.anim.CurrentFrame(); f != nil {
-			sys.bcStack.PushB(f.H < 0)
+			sys.bcStack.PushB(f.Hscale < 0)
 		} else {
 			sys.bcStack.PushI(0)
 		}
@@ -2478,37 +2476,33 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		}
 	case OC_ex_animframe_vflip:
 		if f := c.anim.CurrentFrame(); f != nil {
-			sys.bcStack.PushB(f.V < 0)
+			sys.bcStack.PushB(f.Vscale < 0)
 		} else {
 			sys.bcStack.PushI(0)
 		}
 	case OC_ex_animframe_xoffset:
 		if f := c.anim.CurrentFrame(); f != nil {
-			sys.bcStack.PushI(int32(f.X))
+			sys.bcStack.PushI(int32(f.Xoffset))
 		} else {
 			sys.bcStack.PushI(0)
 		}
 	case OC_ex_animframe_xscale:
 		if f := c.anim.CurrentFrame(); f != nil {
-			if len(f.Ex) > 2 {
-				sys.bcStack.PushF(f.Ex[2][0])
-			} else {
-				sys.bcStack.PushF(0)
-			}
+			sys.bcStack.PushF(f.Xscale)
+		} else {
+			sys.bcStack.PushI(0)
 		}
 	case OC_ex_animframe_yoffset:
 		if f := c.anim.CurrentFrame(); f != nil {
-			sys.bcStack.PushI(int32(f.Y))
+			sys.bcStack.PushI(int32(f.Yoffset))
 		} else {
 			sys.bcStack.PushI(0)
 		}
 	case OC_ex_animframe_yscale:
 		if f := c.anim.CurrentFrame(); f != nil {
-			if len(f.Ex) > 2 && len(f.Ex[2]) > 1 {
-				sys.bcStack.PushF(f.Ex[2][1])
-			} else {
-				sys.bcStack.PushF(0)
-			}
+			sys.bcStack.PushF(f.Yscale)
+		} else {
+			sys.bcStack.PushI(0)
 		}
 	case OC_ex_animframe_numclsn1:
 		if f := c.anim.CurrentFrame(); f != nil {
