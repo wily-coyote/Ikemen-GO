@@ -8269,7 +8269,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 	// hitTypeGet() function definition start
 	hitTypeGet := func(c *Char, hd *HitDef, pos [3]float32, projf float32, attackMul [4]float32) (hitType int32) {
 
-		// Early exits
+		// If attacking while statetype L
 		if !proj && c.ss.stateType == ST_L && hd.reversal_attr <= 0 {
 			c.hitdef.ltypehit = true
 			return 0
@@ -8285,10 +8285,12 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 			}
 		}
 
+		// If using p1stateno but the char was already hit or is already changing states
 		if hd.p1stateno >= 0 && (c.csf(CSF_gethit) || c.stchtmp && c.ss.sb.playerNo != hd.playerNo) {
 			return 0
 		}
 
+		// If getter already hit by a throw
 		if getter.csf(CSF_gethit) && getter.ghv.attr&int32(AT_AT) != 0 {
 			return 0
 		}
@@ -9533,30 +9535,28 @@ func (cl *CharList) pushDetection(getter *Char) {
 func (cl *CharList) collisionDetection() {
 
 	sortedOrder := []int{}
+	sortingDone := make([]bool, len(cl.runOrder))
+
 	// Check ReversalDefs first
 	for i, c := range cl.runOrder {
-		if c.hitdef.reversal_attr > 0 {
+		if c.hitdef.reversal_attr > 0 && !sortingDone[i] {
 			sortedOrder = append(sortedOrder, i)
+			sortingDone[i] = true
 		}
 	}
 	// Check Hitdefs second
 	for i, c := range cl.runOrder {
-		if c.hitdef.attr > 0 && c.hitdef.reversal_attr == 0 {
+		if c.hitdef.attr > 0 && !sortingDone[i] {
+			sortedOrder = append(sortedOrder, i)
+			sortingDone[i] = true
+		}
+	}
+	// Append remaining characters
+	for i := range cl.runOrder {
+		if !sortingDone[i] {
 			sortedOrder = append(sortedOrder, i)
 		}
 	}
-	soNum := []int{}
-	soCount := 0
-	for i := 0; i < len(cl.runOrder); i++ {
-		if soCount < len(sortedOrder) {
-			if sortedOrder[soCount] == i {
-				soCount++
-				continue
-			}
-		}
-		soNum = append(soNum, i)
-	}
-	sortedOrder = append(sortedOrder, soNum...)
 
 	// Push detection for players
 	// This must happen before hit detection
