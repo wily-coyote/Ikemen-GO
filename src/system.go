@@ -1057,7 +1057,9 @@ func (s *System) clearAllSound() {
 	s.soundChannels.StopAll()
 	s.stopAllSound()
 }
-func (s *System) playerClear(pn int, destroy bool) {
+
+// Remove the player's explods, projectiles and (optionally) helpers as well as stopping their sounds
+func (s *System) clearPlayerAssets(pn int, destroy bool) {
 	if len(s.chars[pn]) > 0 {
 		p := s.chars[pn][0]
 		for _, h := range s.chars[pn][1:] {
@@ -1086,6 +1088,7 @@ func (s *System) playerClear(pn int, destroy bool) {
 	s.explodsLayer0[pn] = s.explodsLayer0[pn][:0]
 	s.explodsLayer1[pn] = s.explodsLayer1[pn][:0]
 }
+
 func (s *System) nextRound() {
 	s.resetGblEffect()
 	s.lifebar.reset()
@@ -1158,7 +1161,7 @@ func (s *System) nextRound() {
 	for i, p := range s.chars {
 		if len(p) > 0 {
 			s.nextCharId = Max(s.nextCharId, p[0].id+1) // nextCharId can't be this char's ID
-			s.playerClear(i, false)
+			s.clearPlayerAssets(i, false)
 			p[0].posReset()
 			p[0].setCtrl(false)
 			p[0].clearState()
@@ -1721,38 +1724,28 @@ func (s *System) action() {
 	// Run camera
 	x, y, scl = s.cam.action(x, y, scl, s.super > 0 || s.pause > 0)
 
-	// Run "tick next frame"
-	//introSkip := false
+	// Skip character intros on button press and play the shutter effect
 	if s.tickNextFrame() {
 		if s.lifebar.ro.current < 1 && !s.introSkipped {
 			if s.shuttertime > 0 ||
-				s.anyButton() && !s.gsf(GSF_roundnotskip) && s.intro > s.lifebar.ro.ctrl_time {
+				// Checking the intro flag prevents skipping intros when they don't exist
+				s.anyButton() && s.gsf(GSF_intro) && !s.gsf(GSF_roundnotskip) && s.intro > s.lifebar.ro.ctrl_time {
 				s.shuttertime++
+				// Do the actual skipping in the frame when the "shutter" effect is closed
 				if s.shuttertime == s.lifebar.ro.shutter_time {
-					s.fadeintime = 0
-					// NoFightDisplay flag must be preserved during intro skip frame
-					skipfight := s.specialFlag & GSF_nofightdisplay
+					// NoRoundDisplay and NoFightDisplay flags must be preserved during intro skip frame
+					skipround := (s.specialFlag&GSF_norounddisplay | s.specialFlag&GSF_nofightdisplay)
 					s.resetGblEffect()
-					s.specialFlag = skipfight
+					s.specialFlag = skipround
+					s.fadeintime = 0
 					s.intro = s.lifebar.ro.ctrl_time
 					for i, p := range s.chars {
 						if len(p) > 0 {
-							s.playerClear(i, false)
+							s.clearPlayerAssets(i, false)
 							p[0].posReset()
 							p[0].selfState(0, -1, -1, 0, "")
 						}
 					}
-					/*
-						ox := newx
-						newx = 0
-						leftest = MaxF(float32(Min(s.stage.p[0].startx,
-							s.stage.p[1].startx))*s.stage.localscl,
-							-(float32(s.gameWidth)/2)/s.cam.BaseScale()+s.screenleft) - ox
-						rightest = MinF(float32(Max(s.stage.p[0].startx,
-							s.stage.p[1].startx))*s.stage.localscl,
-							(float32(s.gameWidth)/2)/s.cam.BaseScale()-s.screenright) - ox
-						//introSkip = true
-					*/
 					s.introSkipped = true
 				}
 			}
@@ -2141,7 +2134,7 @@ func (s *System) fight() (reload bool) {
 		s.allPalFX.enable = false
 		for i, p := range s.chars {
 			if len(p) > 0 {
-				s.playerClear(i, s.matchOver() || (s.tmode[i&1] == TM_Turns && p[0].life <= 0))
+				s.clearPlayerAssets(i, s.matchOver() || (s.tmode[i&1] == TM_Turns && p[0].life <= 0))
 			}
 		}
 		s.wincnt.update()

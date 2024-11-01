@@ -1969,7 +1969,7 @@ func systemScriptInit(l *lua.LState) {
 		sys.resetGblEffect()
 		for i, p := range sys.chars {
 			if len(p) > 0 {
-				sys.playerClear(i, boolArg(l, 1))
+				sys.clearPlayerAssets(i, boolArg(l, 1))
 			}
 		}
 		return 0
