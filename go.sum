@@ -42,6 +42,11 @@ github.com/lukegb/dds v0.0.0-20190402175749-8b7170e64003 h1:6g1XsQmpC332a2qx+qkr
 github.com/lukegb/dds v0.0.0-20190402175749-8b7170e64003/go.mod h1:hOrxKmZfUO2QXaqXIlrVqNdeBIFpNBb6uBzWsP9VwDw=
 github.com/orcaman/writerseeker v0.0.0-20200621085525-1d3f536ff85e h1:s2RNOM/IGdY0Y6qfTeUKhDawdHDpK9RGBdx80qN4Ttw=
 github.com/orcaman/writerseeker v0.0.0-20200621085525-1d3f536ff85e/go.mod h1:nBdnFKj15wFbf94Rwfq4m30eAcyY9V/IyKAGQFtqkW0=
+github.com/lucasb-eyer/go-colorful v1.0.2/go.mod h1:0MS4r+7BZKSJ5mw4/S5MPN+qHFF1fYclkSPilDOKW0s=
+github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69Aj6K7nkY=
+github.com/lucasb-eyer/go-colorful v1.2.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
+github.com/mdouchement/hdr v0.2.4 h1:k0ojx7smWvWw8En2BjUnb144j48gAExu5mv+ogNrkTc=
+github.com/mdouchement/hdr v0.2.4/go.mod h1:uezK2oUhYtoRLkTD0J4ryiOsu/oWLjRXx0I/92mIRmQ=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
