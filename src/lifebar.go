@@ -2087,17 +2087,6 @@ func readLifeBarRound(is IniSection,
 	return ro
 }
 
-func (ro *LifeBarRound) callFight() {
-	ro.fight.Reset()
-	ro.fight_top.Reset()
-	ro.current = 1
-	ro.waitTimer[1] = ro.fight_time
-	ro.waitSoundTimer[1] = ro.fight_sndtime
-	ro.drawTimer[1] = 0
-	sys.timerCount = append(sys.timerCount, sys.gameTime)
-	ro.timerActive = true
-}
-
 func (ro *LifeBarRound) isSingleRound() bool {
 	return !sys.consecutiveRounds && sys.round == 1 && sys.roundType[0] == RT_Final
 }
@@ -2116,7 +2105,8 @@ func (ro *LifeBarRound) act() bool {
 		ro.current = 0
 		ro.waitTimer[0], ro.waitSoundTimer[0], ro.drawTimer[0] = ro.round_time, ro.round_sndtime, 0
 		ro.waitTimer[1] = ro.callfight_time
-	} else if (sys.intro >= 0 && !sys.tickNextFrame()) || sys.dialogueFlg {
+	} else if (sys.intro >= 0 && !sys.tickNextFrame()) || sys.shuttertime > 0 || sys.dialogueFlg {
+		// Mugen ignores the "shuttertime" here, but that makes the round/fight announcement too abrupt
 		return false
 	} else {
 		// Check if current round animation can be skipped
@@ -2139,11 +2129,13 @@ func (ro *LifeBarRound) act() bool {
 					}
 				}
 			}
-			if sys.introSkipped && !sys.dialogueFlg {
-				ro.introState[0] = true
-				ro.callFight()
-				sys.introSkipped = false
-			}
+			// Previously skipping the char intros took us to the fight call, like Mugen
+			// Most games go to the round call instead so this was changed
+			//if sys.introSkipped && !sys.dialogueFlg {
+			//	ro.introState[0] = true
+			//	ro.callFight()
+			//	sys.introSkipped = false
+			//}
 			// Round call
 			if sys.gsf(GSF_norounddisplay) && canSkip(0) { // Skip
 				ro.introState[0] = true
@@ -2243,7 +2235,15 @@ func (ro *LifeBarRound) act() bool {
 			if !ro.introState[1] {
 				if ro.current == 0 {
 					if ro.waitTimer[1] == 0 {
-						ro.callFight()
+						// This used to be callFight()
+						ro.fight.Reset()
+						ro.fight_top.Reset()
+						ro.current = 1
+						ro.waitTimer[1] = ro.fight_time
+						ro.waitSoundTimer[1] = ro.fight_sndtime
+						ro.drawTimer[1] = 0
+						sys.timerCount = append(sys.timerCount, sys.gameTime)
+						ro.timerActive = true
 					}
 					ro.waitTimer[1]--
 				} else if !ro.introState[1] {

@@ -1969,7 +1969,7 @@ func systemScriptInit(l *lua.LState) {
 		sys.resetGblEffect()
 		for i, p := range sys.chars {
 			if len(p) > 0 {
-				sys.playerClear(i, boolArg(l, 1))
+				sys.clearPlayerAssets(i, boolArg(l, 1))
 			}
 		}
 		return 0
@@ -4782,11 +4782,9 @@ func triggerFunctions(l *lua.LState) {
 			return 1
 		case "angle":
 			if f := c.anim.CurrentFrame(); f != nil {
-				if len(f.Ex) > 2 && len(f.Ex[2]) > 2 {
-					l.Push(lua.LNumber(f.Ex[2][2]))
-				} else {
-					l.Push(lua.LNumber(0))
-				}
+				l.Push(lua.LNumber(f.Angle))
+			} else {
+				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "group":
@@ -4798,7 +4796,7 @@ func triggerFunctions(l *lua.LState) {
 			return 1
 		case "hflip":
 			if f := c.anim.CurrentFrame(); f != nil {
-				l.Push(lua.LBool(f.H < 0))
+				l.Push(lua.LBool(f.Hscale < 0))
 			} else {
 				l.Push(lua.LBool(false))
 			}
@@ -4833,41 +4831,37 @@ func triggerFunctions(l *lua.LState) {
 			return 1
 		case "vflip":
 			if f := c.anim.CurrentFrame(); f != nil {
-				l.Push(lua.LBool(f.V < 0))
+				l.Push(lua.LBool(f.Vscale < 0))
 			} else {
 				l.Push(lua.LBool(false))
 			}
 			return 1
 		case "xoffset":
 			if f := c.anim.CurrentFrame(); f != nil {
-				l.Push(lua.LNumber(f.X))
+				l.Push(lua.LNumber(f.Xoffset))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "xscale":
 			if f := c.anim.CurrentFrame(); f != nil {
-				if len(f.Ex) > 2 {
-					l.Push(lua.LNumber(f.Ex[2][0]))
-				} else {
-					l.Push(lua.LNumber(0))
-				}
+				l.Push(lua.LNumber(f.Xscale))
+			} else {
+				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "yoffset":
 			if f := c.anim.CurrentFrame(); f != nil {
-				l.Push(lua.LNumber(f.Y))
+				l.Push(lua.LNumber(f.Yoffset))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "yscale":
 			if f := c.anim.CurrentFrame(); f != nil {
-				if len(f.Ex) > 2 && len(f.Ex[2]) > 1 {
-					l.Push(lua.LNumber(f.Ex[2][0]))
-				} else {
-					l.Push(lua.LNumber(0))
-				}
+				l.Push(lua.LNumber(f.Yscale))
+			} else {
+				l.Push(lua.LNumber(0))
 			}
 			return 1
 		default:
