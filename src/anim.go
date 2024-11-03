@@ -22,15 +22,15 @@ type AnimFrame struct {
 
 func newAnimFrame() *AnimFrame {
 	return &AnimFrame{
-		Time: -1,
-		Group: -1,
+		Time:     -1,
+		Group:    -1,
 		SrcAlpha: 255,
 		DstAlpha: 0,
-		Hscale: 1, // These two are technically flags but are coded like scale for simplicity
-		Vscale: 1,
-		Xscale: 1,
-		Yscale: 1,
-		Angle: 0,
+		Hscale:   1, // These two are technically flags but are coded like scale for simplicity
+		Vscale:   1,
+		Xscale:   1,
+		Yscale:   1,
+		Angle:    0,
 	}
 }
 func ReadAnimFrame(line string) *AnimFrame {
