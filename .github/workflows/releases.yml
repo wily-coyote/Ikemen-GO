@@ -84,7 +84,7 @@ jobs:
             glibc: '2.13'
             target: ''
           - runner_os: macos
-            os: macos-12
+            os: macos-13
             goos: darwin
             goarch: amd64
             bin: Ikemen_GO_MacOS
