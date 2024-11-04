@@ -323,7 +323,7 @@ type Renderer struct {
 	// Shader and index data for 3D model rendering
 	shadowMapShader         *ShaderProgram
 	modelShader             *ShaderProgram
-	panoramaToCubemapShader *ShaderProgram
+	panoramaToCubeMapShader *ShaderProgram
 	cubemapFilteringShader  *ShaderProgram
 	stageVertexBuffer       uint32
 	stageIndexBuffer        uint32
@@ -357,8 +357,8 @@ var identVertShader string
 //go:embed shaders/ident.frag.glsl
 var identFragShader string
 
-//go:embed shaders/panoramaToCubemap.frag.glsl
-var panoramaToCubemapFragShader string
+//go:embed shaders/panoramaToCubeMap.frag.glsl
+var panoramaToCubeMapFragShader string
 
 //go:embed shaders/cubemapFiltering.frag.glsl
 var cubemapFilteringFragShader string
@@ -419,10 +419,10 @@ func (r *Renderer) Init() {
 	r.shadowMapShader.RegisterUniforms("model", "lightMatrices[0]", "lightMatrices[1]", "lightMatrices[2]", "lightMatrices[3]", "lightMatrices[4]", "lightMatrices[5]", "lightType", "lightPos", "farPlane", "numJoints", "morphTargetWeight", "morphTargetOffset", "numTargets", "numVertices", "enableAlpha", "alphaThreshold", "baseColorFactor", "useTexture")
 	r.shadowMapShader.RegisterTextures("morphTargetValues", "jointMatrices", "tex")
 
-	r.panoramaToCubemapShader = newShaderProgram(identVertShader, panoramaToCubemapFragShader, "", "Panorama To Cubemap Shader")
-	r.panoramaToCubemapShader.RegisterAttributes("VertCoord")
-	r.panoramaToCubemapShader.RegisterUniforms("currentFace")
-	r.panoramaToCubemapShader.RegisterTextures("panorama")
+	r.panoramaToCubeMapShader = newShaderProgram(identVertShader, panoramaToCubeMapFragShader, "", "Panorama To Cubemap Shader")
+	r.panoramaToCubeMapShader.RegisterAttributes("VertCoord")
+	r.panoramaToCubeMapShader.RegisterUniforms("currentFace")
+	r.panoramaToCubeMapShader.RegisterTextures("panorama")
 
 	r.cubemapFilteringShader = newShaderProgram(identVertShader, cubemapFilteringFragShader, "", "Cubemap Filtering Shader")
 	r.cubemapFilteringShader.RegisterAttributes("VertCoord")
@@ -1144,14 +1144,14 @@ func (r *Renderer) RenderElements(mode PrimitiveMode, count, offset int) {
 func (r *Renderer) RenderCubeMap(envTexture *Texture, cubeTexture *Texture, textureSize int32) {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_env)
 	gl.Viewport(0, 0, textureSize, textureSize)
-	gl.UseProgram(r.panoramaToCubemapShader.program)
-	loc := r.panoramaToCubemapShader.a["VertCoord"]
+	gl.UseProgram(r.panoramaToCubeMapShader.program)
+	loc := r.panoramaToCubeMapShader.a["VertCoord"]
 	gl.EnableVertexAttribArray(uint32(loc))
 	gl.VertexAttribPointerWithOffset(uint32(loc), 2, gl.FLOAT, false, 0, 0)
 	data := f32.Bytes(binary.LittleEndian, -1, -1, 1, -1, -1, 1, 1, 1)
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.vertexBuffer)
 	gl.BufferData(gl.ARRAY_BUFFER, len(data), unsafe.Pointer(&data[0]), gl.STATIC_DRAW)
-	loc, unit := r.panoramaToCubemapShader.u["panorama"], r.panoramaToCubemapShader.t["panorama"]
+	loc, unit := r.panoramaToCubeMapShader.u["panorama"], r.panoramaToCubeMapShader.t["panorama"]
 	gl.ActiveTexture((uint32(gl.TEXTURE0 + unit)))
 	gl.BindTexture(gl.TEXTURE_2D, envTexture.handle)
 	gl.Uniform1i(loc, int32(unit))
@@ -1159,7 +1159,7 @@ func (r *Renderer) RenderCubeMap(envTexture *Texture, cubeTexture *Texture, text
 		gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, uint32(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i), cubeTexture.handle, 0)
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
-		loc := r.panoramaToCubemapShader.u["currentFace"]
+		loc := r.panoramaToCubeMapShader.u["currentFace"]
 		gl.Uniform1i(loc, int32(i))
 
 		gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
