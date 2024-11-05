@@ -315,10 +315,10 @@ func (cs *CharSize) init() {
 	cs.height.air = [...]float32{60, 0}
 	cs.height.down = 60
 	cs.attack.dist.width = [...]float32{160, 0}
-	cs.attack.dist.height = [...]float32{160, 160}
+	cs.attack.dist.height = [...]float32{1000, 1000}
 	cs.attack.dist.depth = [...]float32{4, 4}
 	cs.proj.attack.dist.width = [...]float32{90, 0}
-	cs.proj.attack.dist.height = [...]float32{160, 160}
+	cs.proj.attack.dist.height = [...]float32{1000, 1000}
 	cs.proj.attack.dist.depth = [...]float32{10, 10}
 	cs.proj.doscale = 0
 	cs.head.pos = [...]float32{-5, -90}
@@ -9105,7 +9105,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				distZ := (getter.pos[2]*getter.localscl - (p.pos[2])*p.localscl)
 				// Projectile guard distance
 				if !p.platform && p.hitdef.attr > 0 { // https://github.com/ikemen-engine/Ikemen-GO/issues/1445
-					if p.hitdef.guard_dist[0] > -1 {
+					if p.hitdef.guard_dist[0] >= 0 {
 						if distX <= float32(p.hitdef.guard_dist[0]) &&
 							distX >= -float32(p.hitdef.guard_dist[1]) {
 							getter.inguarddist = true
@@ -9116,7 +9116,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 							getter.inguarddist = true
 						}
 					}
-					if p.hitdef.guard_dist_y[0] > -1 {
+					if p.hitdef.guard_dist_y[0] >= 0 {
 						if distY != 0 && (distY > float32(p.hitdef.guard_dist_y[0]) || distY < -float32(p.hitdef.guard_dist_y[1])) {
 							getter.inguarddist = false
 						}
@@ -9126,7 +9126,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 							getter.inguarddist = false
 						}
 					}
-					if p.hitdef.guard_dist_z[0] > -1 {
+					if p.hitdef.guard_dist_z[0] >= 0 {
 						if distZ != 0 && (distZ > float32(p.hitdef.guard_dist_z[0]) || distZ < -float32(p.hitdef.guard_dist_z[1])) {
 							getter.inguarddist = false
 						}
@@ -9296,12 +9296,12 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 
 					// Guard distance
 					if c.ss.moveType == MT_A {
-						if c.hitdef.guard_dist[0] > -1 {
+						if c.hitdef.guard_dist[0] >= 0 {
 							if distX <= float32(c.hitdef.guard_dist[0]) && distX >= -float32(c.hitdef.guard_dist[1]) {
 								getter.inguarddist = true
 							}
 						}
-						if c.hitdef.guard_dist_y[0] > -1 {
+						if c.hitdef.guard_dist_y[0] >= 0 {
 							if distY != 0 && (distY > float32(c.hitdef.guard_dist_y[0]) || distY < -float32(c.hitdef.guard_dist_y[1])) {
 								getter.inguarddist = false
 							}
@@ -9310,7 +9310,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 								getter.inguarddist = false
 							}
 						}
-						if c.hitdef.guard_dist_z[0] > -1 {
+						if c.hitdef.guard_dist_z[0] >= 0 {
 							if distZ != 0 && (distZ > float32(c.hitdef.guard_dist_z[0]) || distZ < -float32(c.hitdef.guard_dist_z[1])) {
 								getter.inguarddist = false
 							}
