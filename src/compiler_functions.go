@@ -1731,6 +1731,18 @@ func (c *Compiler) hitDefSub(is IniSection, sc *StateControllerBase) error {
 		hitDef_guard_dist, VT_Int, 2, false); err != nil {
 		return err
 	}
+	if err := c.paramValue(is, sc, "guard.dist.width",
+		hitDef_guard_dist, VT_Int, 2, false); err != nil {
+		return err
+	}
+	if err := c.paramValue(is, sc, "guard.dist.height",
+		hitDef_guard_dist_y, VT_Int, 2, false); err != nil {
+		return err
+	}
+	if err := c.paramValue(is, sc, "guard.dist.depth",
+		hitDef_guard_dist_z, VT_Int, 2, false); err != nil {
+		return err
+	}
 	if err := c.paramValue(is, sc, "pausetime",
 		hitDef_pausetime, VT_Int, 2, false); err != nil {
 		return err
@@ -3363,7 +3375,19 @@ func (c *Compiler) attackDist(is IniSection, sc *StateControllerBase, _ int8) (S
 			return err
 		}
 		if err := c.paramValue(is, sc, "value",
-			attackDist_value, VT_Float, 2, true); err != nil {
+			attackDist_x, VT_Float, 2, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "width",
+			attackDist_x, VT_Float, 2, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "height",
+			attackDist_y, VT_Float, 2, false); err != nil {
+			return err
+		}
+		if err := c.paramValue(is, sc, "depth",
+			attackDist_z, VT_Float, 2, false); err != nil {
 			return err
 		}
 		return nil

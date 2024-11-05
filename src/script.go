@@ -3249,18 +3249,34 @@ func triggerFunctions(l *lua.LState) {
 			ln = lua.LNumber(c.size.height.air[1])
 		case "size.height.down":
 			ln = lua.LNumber(c.size.height.down)
-		case "size.attack.dist", "size.attack.dist.front":
-			ln = lua.LNumber(c.size.attack.dist.front)
-		case "size.attack.dist.back":
-			ln = lua.LNumber(c.size.attack.dist.back)
-		case "size.attack.depth.back":
-			ln = lua.LNumber(c.size.attack.depth.back)
+		case "size.attack.dist", "size.attack.dist.width.front":
+			ln = lua.LNumber(c.size.attack.dist.width[0])
+		case "size.attack.dist.width.back":
+			ln = lua.LNumber(c.size.attack.dist.width[1])
+		case "size.attack.dist.height.top":
+			ln = lua.LNumber(c.size.attack.dist.height[0])
+		case "size.attack.dist.height.bottom":
+			ln = lua.LNumber(c.size.attack.dist.height[1])
+		case "size.attack.dist.depth.front":
+			ln = lua.LNumber(c.size.attack.dist.depth[0])
+		case "size.attack.dist.depth.back":
+			ln = lua.LNumber(c.size.attack.dist.depth[1])
 		case "size.attack.depth.front":
 			ln = lua.LNumber(c.size.attack.depth.front)
-		case "size.proj.attack.dist", "size.proj.attack.dist.front":
-			ln = lua.LNumber(c.size.proj.attack.dist.front)
-		case "size.proj.attack.dist.back":
-			ln = lua.LNumber(c.size.proj.attack.dist.back)
+		case "size.attack.depth.back":
+			ln = lua.LNumber(c.size.attack.depth.back)
+		case "size.proj.attack.dist", "size.proj.attack.dist.width.front":
+			ln = lua.LNumber(c.size.proj.attack.dist.width[0])
+		case "size.proj.attack.dist.width.back":
+			ln = lua.LNumber(c.size.proj.attack.dist.width[1])
+		case "size.proj.attack.dist.height.top":
+			ln = lua.LNumber(c.size.proj.attack.dist.height[0])
+		case "size.proj.attack.dist.height.bottom":
+			ln = lua.LNumber(c.size.proj.attack.dist.height[1])
+		case "size.proj.attack.dist.depth.front":
+			ln = lua.LNumber(c.size.proj.attack.dist.depth[0])
+		case "size.proj.attack.dist.depth.back":
+			ln = lua.LNumber(c.size.proj.attack.dist.depth[1])
 		case "size.proj.doscale":
 			ln = lua.LNumber(c.size.proj.doscale)
 		case "size.head.pos.x":

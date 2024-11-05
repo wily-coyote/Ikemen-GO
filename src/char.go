@@ -268,8 +268,9 @@ type CharSize struct {
 	}
 	attack struct {
 		dist struct {
-			front float32
-			back  float32
+			width  [2]float32
+			height [2]float32
+			depth  [2]float32
 		}
 		depth struct {
 			front float32
@@ -279,8 +280,9 @@ type CharSize struct {
 	proj struct {
 		attack struct {
 			dist struct {
-				front float32
-				back  float32
+				width  [2]float32
+				height [2]float32
+				depth  [2]float32
 			}
 		}
 		doscale int32
@@ -312,10 +314,12 @@ func (cs *CharSize) init() {
 	cs.height.crouch = 60
 	cs.height.air = [...]float32{60, 0}
 	cs.height.down = 60
-	cs.attack.dist.front = 160
-	cs.attack.dist.back = 0
-	cs.proj.attack.dist.front = 90
-	cs.proj.attack.dist.back = 0
+	cs.attack.dist.width = [...]float32{160, 0}
+	cs.attack.dist.height = [...]float32{160, 160}
+	cs.attack.dist.depth = [...]float32{4, 4}
+	cs.proj.attack.dist.width = [...]float32{90, 0}
+	cs.proj.attack.dist.height = [...]float32{160, 160}
+	cs.proj.attack.dist.depth = [...]float32{10, 10}
 	cs.proj.doscale = 0
 	cs.head.pos = [...]float32{-5, -90}
 	cs.mid.pos = [...]float32{-5, -60}
@@ -558,6 +562,8 @@ type HitDef struct {
 	guard_ctrltime             int32
 	airguard_ctrltime          int32
 	guard_dist                 [2]int32
+	guard_dist_y               [2]int32
+	guard_dist_z               [2]int32
 	xaccel                     float32
 	yaccel                     float32
 	zaccel                     float32
@@ -678,6 +684,8 @@ func (hd *HitDef) clear(localscl float32) {
 		forcestand:       IErr,
 		forcecrouch:      IErr,
 		guard_dist:       [...]int32{-1, -1},
+		guard_dist_y:     [...]int32{-1, -1},
+		guard_dist_z:     [...]int32{-1, -1},
 		chainid:          -1,
 		nochainid:        [8]int32{-1, -1, -1, -1, -1, -1, -1, -1},
 		numhits:          1,
@@ -2260,7 +2268,9 @@ type Char struct {
 	soundChannels   SoundChannels
 	p1facing        float32
 	cpucmd          int32
-	attackDist      [2]float32
+	attackDistX     [2]float32
+	attackDistY     [2]float32
+	attackDistZ     [2]float32
 	offset          [2]float32
 	stchtmp         bool
 	inguarddist     bool
@@ -2721,10 +2731,18 @@ func (c *Char) load(def string) error {
 		c.size.height.air[0] *= coordRatio
 		c.size.height.air[1] *= coordRatio
 		c.size.height.down *= coordRatio
-		c.size.attack.dist.front *= coordRatio
-		c.size.attack.dist.back *= coordRatio
-		c.size.proj.attack.dist.front *= coordRatio
-		c.size.proj.attack.dist.back *= coordRatio
+		c.size.attack.dist.width[0] *= coordRatio
+		c.size.attack.dist.width[1] *= coordRatio
+		c.size.attack.dist.height[0] *= coordRatio
+		c.size.attack.dist.height[1] *= coordRatio
+		c.size.attack.dist.depth[0] *= coordRatio
+		c.size.attack.dist.depth[1] *= coordRatio
+		c.size.proj.attack.dist.width[0] *= coordRatio
+		c.size.proj.attack.dist.width[1] *= coordRatio
+		c.size.proj.attack.dist.height[0] *= coordRatio
+		c.size.proj.attack.dist.height[1] *= coordRatio
+		c.size.proj.attack.dist.depth[0] *= coordRatio
+		c.size.proj.attack.dist.depth[1] *= coordRatio
 		c.size.head.pos[0] *= coordRatio
 		c.size.head.pos[1] *= coordRatio
 		c.size.mid.pos[0] *= coordRatio
@@ -2858,10 +2876,14 @@ func (c *Char) load(def string) error {
 						is.ReadF32("height.crouch", &c.size.height.crouch)
 						is.ReadF32("height.air", &c.size.height.air[0], &c.size.height.air[1])
 						is.ReadF32("height.down", &c.size.height.down)
-						is.ReadF32("attack.dist", &c.size.attack.dist.front)
-						is.ReadF32("attack.dist.back", &c.size.attack.dist.back)
-						is.ReadF32("proj.attack.dist", &c.size.proj.attack.dist.front)
-						is.ReadF32("proj.attack.dist.back", &c.size.proj.attack.dist.back)
+						is.ReadF32("attack.dist", &c.size.attack.dist.width[0])
+						is.ReadF32("attack.dist.width", &c.size.attack.dist.width[0], &c.size.attack.dist.width[1])
+						is.ReadF32("attack.dist.height", &c.size.attack.dist.height[0], &c.size.attack.dist.height[1])
+						is.ReadF32("attack.dist.depth", &c.size.attack.dist.depth[0], &c.size.attack.dist.depth[1])
+						is.ReadF32("proj.attack.dist", &c.size.proj.attack.dist.width[0])
+						is.ReadF32("proj.attack.dist.width", &c.size.proj.attack.dist.width[0], &c.size.proj.attack.dist.width[1])
+						is.ReadF32("proj.attack.dist.height", &c.size.proj.attack.dist.height[0], &c.size.proj.attack.dist.height[1])
+						is.ReadF32("proj.attack.dist.depth", &c.size.proj.attack.dist.depth[0], &c.size.proj.attack.dist.depth[1])
 						is.ReadI32("proj.doscale", &c.size.proj.doscale)
 						is.ReadF32("head.pos", &c.size.head.pos[0], &c.size.head.pos[1])
 						is.ReadF32("mid.pos", &c.size.mid.pos[0], &c.size.mid.pos[1])
@@ -7143,7 +7165,9 @@ func (c *Char) actionPrepare() {
 				}
 			}
 			c.pushPriority = 0 // Reset player pushing priority
-			c.attackDist = [2]float32{c.size.attack.dist.front, c.size.attack.dist.back}
+			c.attackDistX = [2]float32{c.size.attack.dist.width[0], c.size.attack.dist.width[1]}
+			c.attackDistY = [2]float32{c.size.attack.dist.height[0], c.size.attack.dist.height[1]}
+			c.attackDistZ = [2]float32{c.size.attack.dist.depth[0], c.size.attack.dist.depth[1]}
 			// HitBy timers
 			// In Mugen this seems to happen at the end of each frame instead
 			for i, hb := range c.hitby {
@@ -9076,19 +9100,40 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 					continue
 				}
 
-				dist := (getter.pos[0]*getter.localscl - (p.pos[0])*p.localscl) * p.facing
-
+				distX := (getter.pos[0]*getter.localscl - (p.pos[0])*p.localscl) * p.facing
+				distY := (getter.pos[1]*getter.localscl - (p.pos[1])*p.localscl)
+				distZ := (getter.pos[2]*getter.localscl - (p.pos[2])*p.localscl)
 				// Projectile guard distance
 				if !p.platform && p.hitdef.attr > 0 { // https://github.com/ikemen-engine/Ikemen-GO/issues/1445
-					if p.hitdef.guard_dist[0] < 0 {
-						if dist <= float32(c.size.proj.attack.dist.front)*c.localscl &&
-							dist >= -float32(c.size.proj.attack.dist.back)*c.localscl {
+					if p.hitdef.guard_dist[0] > -1 {
+						if distX <= float32(p.hitdef.guard_dist[0]) &&
+							distX >= -float32(p.hitdef.guard_dist[1]) {
 							getter.inguarddist = true
 						}
-					} else {
-						if dist <= float32(p.hitdef.guard_dist[0]) &&
-							dist >= -float32(p.hitdef.guard_dist[1]) {
+					} else { // Default Width
+						if distX <= float32(c.size.proj.attack.dist.width[0])*c.localscl &&
+							distX >= -float32(c.size.proj.attack.dist.width[1])*c.localscl {
 							getter.inguarddist = true
+						}
+					}
+					if p.hitdef.guard_dist_y[0] > -1 {
+						if distY != 0 && (distY > float32(p.hitdef.guard_dist_y[0]) || distY < -float32(p.hitdef.guard_dist_y[1])) {
+							getter.inguarddist = false
+						}
+					} else { // Default Height
+						if distY != 0 && (distY > float32(c.size.proj.attack.dist.height[0])*c.localscl || 
+							distY < -float32(c.size.proj.attack.dist.height[1])*c.localscl) {
+							getter.inguarddist = false
+						}
+					}
+					if p.hitdef.guard_dist_z[0] > -1 {
+						if distZ != 0 && (distZ > float32(p.hitdef.guard_dist_z[0]) || distZ < -float32(p.hitdef.guard_dist_z[1])) {
+							getter.inguarddist = false
+						}
+					} else { // Default Depth
+						if distZ != 0 && (distZ > float32(c.size.proj.attack.dist.depth[0])*c.localscl || 
+							distZ < -float32(c.size.proj.attack.dist.depth[1])*c.localscl) {
+							getter.inguarddist = false
 						}
 					}
 				}
@@ -9099,9 +9144,9 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 						getter.platformPosY*getter.localscl >= (p.pos[1]+p.platformHeight[0])*p.localscl {
 						angleSinValue := float32(math.Sin(float64(p.platformAngle) / 180 * math.Pi))
 						angleCosValue := float32(math.Cos(float64(p.platformAngle) / 180 * math.Pi))
-						oldDist := (getter.oldPos[0]*getter.localscl - (p.pos[0])*p.localscl) * p.facing
+						oldDistX := (getter.oldPos[0]*getter.localscl - (p.pos[0])*p.localscl) * p.facing
 						onPlatform := func(protrude bool) {
-							getter.platformPosY = ((p.pos[1]+p.platformHeight[0]+p.velocity[1])*p.localscl - angleSinValue*(oldDist/angleCosValue)) / getter.localscl
+							getter.platformPosY = ((p.pos[1]+p.platformHeight[0]+p.velocity[1])*p.localscl - angleSinValue*(oldDistX/angleCosValue)) / getter.localscl
 							getter.groundAngle = p.platformAngle
 							// Condition when the character is on the platform
 							if getter.ss.stateType != ST_A {
@@ -9116,10 +9161,10 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 								}
 							}
 						}
-						if dist >= (p.platformWidth[0]*angleCosValue)*p.localscl && dist <= (p.platformWidth[1]*angleCosValue)*p.localscl {
+						if distX >= (p.platformWidth[0]*angleCosValue)*p.localscl && distX <= (p.platformWidth[1]*angleCosValue)*p.localscl {
 							onPlatform(false)
-						} else if p.platformFence && oldDist >= (p.platformWidth[0]*angleCosValue)*p.localscl &&
-							oldDist <= (p.platformWidth[1]*angleCosValue)*p.localscl {
+						} else if p.platformFence && oldDistX >= (p.platformWidth[0]*angleCosValue)*p.localscl &&
+							oldDistX <= (p.platformWidth[1]*angleCosValue)*p.localscl {
 							onPlatform(true)
 						}
 					}
@@ -9203,13 +9248,26 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				((getter.teamside != c.hitdef.teamside-1) == (c.hitdef.affectteam > 0) && c.hitdef.teamside >= 0) ||
 				((getter.teamside != c.teamside) == (c.hitdef.affectteam > 0) && c.hitdef.teamside < 0)) {
 
-				dist := -getter.distX(c, getter) * c.facing
-
+				distX := -getter.distX(c, getter) * c.facing
+				distY := -getter.distY(c, getter)
+				distZ := -getter.distZ(c, getter)
 				// Default guard distance
-				if c.ss.moveType == MT_A && c.hitdef.guard_dist[0] < 0 &&
-					dist <= c.attackDist[0]*(c.localscl/getter.localscl) &&
-					dist >= -c.attackDist[1]*(c.localscl/getter.localscl) {
-					getter.inguarddist = true
+				if c.ss.moveType == MT_A {
+					if c.hitdef.guard_dist[0] < 0 {
+						if distX <= c.attackDistX[0]*(c.localscl/getter.localscl) && distX >= -c.attackDistX[1]*(c.localscl/getter.localscl) {
+							getter.inguarddist = true
+						}
+					}
+					if c.hitdef.guard_dist_y[0] < 0 {
+						if distY != 0 && (distY > c.attackDistY[0]*(c.localscl/getter.localscl) || distY < -c.attackDistY[1]*(c.localscl/getter.localscl)) {
+							getter.inguarddist = false
+						}
+					}
+					if c.hitdef.guard_dist_z[0] < 0 {
+						if distZ != 0 && (distZ > c.attackDistZ[0]*(c.localscl/getter.localscl) || distZ < -c.attackDistZ[1]*(c.localscl/getter.localscl)) {
+							getter.inguarddist = false
+						}
+					}
 				}
 
 				if c.helperIndex != 0 {
@@ -9237,10 +9295,30 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 					getter.hittableByChar(&c.hitdef, c, c.ss.stateType, false) {
 
 					// Guard distance
-					if c.ss.moveType == MT_A &&
-						dist <= float32(c.hitdef.guard_dist[0]) &&
-						dist >= -float32(c.hitdef.guard_dist[1]) {
-						getter.inguarddist = true
+					if c.ss.moveType == MT_A {
+						if c.hitdef.guard_dist[0] > -1 {
+							if distX <= float32(c.hitdef.guard_dist[0]) && distX >= -float32(c.hitdef.guard_dist[1]) {
+								getter.inguarddist = true
+							}
+						}
+						if c.hitdef.guard_dist_y[0] > -1 {
+							if distY != 0 && (distY > float32(c.hitdef.guard_dist_y[0]) || distY < -float32(c.hitdef.guard_dist_y[1])) {
+								getter.inguarddist = false
+							}
+						} else { // Height Fallback
+							if distY != 0 && (distY > c.attackDistY[0]*(c.localscl/getter.localscl) || distY < -c.attackDistY[1]*(c.localscl/getter.localscl)) {
+								getter.inguarddist = false
+							}
+						}
+						if c.hitdef.guard_dist_z[0] > -1 {
+							if distZ != 0 && (distZ > float32(c.hitdef.guard_dist_z[0]) || distZ < -float32(c.hitdef.guard_dist_z[1])) {
+								getter.inguarddist = false
+							}
+						} else { // Depth Fallback
+							if distZ != 0 && (distZ > c.attackDistZ[0]*(c.localscl/getter.localscl) || distZ < -c.attackDistZ[1]*(c.localscl/getter.localscl)) {
+								getter.inguarddist = false
+							}
+						}
 					}
 
 					// Z axis check
