@@ -1756,18 +1756,34 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 			out.append(OC_const_size_height_air_bottom)
 		case "size.height.down":
 			out.append(OC_const_size_height_down)
-		case "size.attack.dist", "size.attack.dist.front":
-			out.append(OC_const_size_attack_dist_front)
-		case "size.attack.dist.back":
-			out.append(OC_const_size_attack_dist_back)
-		case "size.attack.depth.back":
-			out.append(OC_const_size_attack_depth_back)
+		case "size.attack.dist", "size.attack.dist.width.front":
+			out.append(OC_const_size_attack_dist_width_front)
+		case "size.attack.dist.width.back":
+			out.append(OC_const_size_attack_dist_width_back)
+		case "size.attack.dist.height.top":
+			out.append(OC_const_size_attack_dist_height_top)
+		case "size.attack.dist.height.bottom":
+			out.append(OC_const_size_attack_dist_height_bottom)
+		case "size.attack.dist.depth.front":
+			out.append(OC_const_size_attack_dist_depth_front)
+		case "size.attack.dist.depth.back":
+			out.append(OC_const_size_attack_dist_depth_back)
 		case "size.attack.depth.front":
 			out.append(OC_const_size_attack_depth_front)
-		case "size.proj.attack.dist", "size.proj.attack.dist.front":
-			out.append(OC_const_size_proj_attack_dist_front)
-		case "size.proj.attack.dist.back":
-			out.append(OC_const_size_proj_attack_dist_back)
+		case "size.attack.depth.back":
+			out.append(OC_const_size_attack_depth_back)
+		case "size.proj.attack.dist", "size.proj.attack.dist.width.front":
+			out.append(OC_const_size_proj_attack_dist_width_front)
+		case "size.proj.attack.dist.width.back":
+			out.append(OC_const_size_proj_attack_dist_width_back)
+		case "size.proj.attack.dist.height.top":
+			out.append(OC_const_size_proj_attack_dist_height_top)
+		case "size.proj.attack.dist.height.bottom":
+			out.append(OC_const_size_proj_attack_dist_height_bottom)
+		case "size.proj.attack.dist.depth.front":
+			out.append(OC_const_size_proj_attack_dist_depth_front)
+		case "size.proj.attack.dist.depth.back":
+			out.append(OC_const_size_proj_attack_dist_depth_back)
 		case "size.proj.doscale":
 			out.append(OC_const_size_proj_doscale)
 		case "size.head.pos.x":

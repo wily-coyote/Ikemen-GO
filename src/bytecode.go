@@ -257,12 +257,20 @@ const (
 	OC_const_size_height_air_top
 	OC_const_size_height_air_bottom
 	OC_const_size_height_down
-	OC_const_size_attack_dist_front
-	OC_const_size_attack_dist_back
-	OC_const_size_attack_depth_back
+	OC_const_size_attack_dist_width_front
+	OC_const_size_attack_dist_width_back
+	OC_const_size_attack_dist_height_top
+	OC_const_size_attack_dist_height_bottom
+	OC_const_size_attack_dist_depth_front
+	OC_const_size_attack_dist_depth_back
 	OC_const_size_attack_depth_front
-	OC_const_size_proj_attack_dist_front
-	OC_const_size_proj_attack_dist_back
+	OC_const_size_attack_depth_back
+	OC_const_size_proj_attack_dist_width_front
+	OC_const_size_proj_attack_dist_width_back
+	OC_const_size_proj_attack_dist_height_top
+	OC_const_size_proj_attack_dist_height_bottom
+	OC_const_size_proj_attack_dist_depth_front
+	OC_const_size_proj_attack_dist_depth_back
 	OC_const_size_proj_doscale
 	OC_const_size_head_pos_x
 	OC_const_size_head_pos_y
@@ -1842,18 +1850,34 @@ func (be BytecodeExp) run_const(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushF(c.size.height.air[1] * ((320 / c.localcoord) / oc.localscl))
 	case OC_const_size_height_down:
 		sys.bcStack.PushF(c.size.height.down * ((320 / c.localcoord) / oc.localscl))
-	case OC_const_size_attack_dist_front:
-		sys.bcStack.PushF(c.size.attack.dist.front * ((320 / c.localcoord) / oc.localscl))
-	case OC_const_size_attack_dist_back:
-		sys.bcStack.PushF(c.size.attack.dist.back * ((320 / c.localcoord) / oc.localscl))
-	case OC_const_size_attack_depth_back:
-		sys.bcStack.PushF(c.size.attack.depth.back * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_attack_dist_width_front:
+		sys.bcStack.PushF(c.size.attack.dist.width[0] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_attack_dist_width_back:
+		sys.bcStack.PushF(c.size.attack.dist.width[1] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_attack_dist_height_top:
+		sys.bcStack.PushF(c.size.attack.dist.height[0] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_attack_dist_height_bottom:
+		sys.bcStack.PushF(c.size.attack.dist.height[1] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_attack_dist_depth_front:
+		sys.bcStack.PushF(c.size.attack.dist.depth[0] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_attack_dist_depth_back:
+		sys.bcStack.PushF(c.size.attack.dist.depth[1] * ((320 / c.localcoord) / oc.localscl))
 	case OC_const_size_attack_depth_front:
 		sys.bcStack.PushF(c.size.attack.depth.front * ((320 / c.localcoord) / oc.localscl))
-	case OC_const_size_proj_attack_dist_front:
-		sys.bcStack.PushF(c.size.proj.attack.dist.front * ((320 / c.localcoord) / oc.localscl))
-	case OC_const_size_proj_attack_dist_back:
-		sys.bcStack.PushF(c.size.proj.attack.dist.back * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_attack_depth_back:
+		sys.bcStack.PushF(c.size.attack.depth.back * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_proj_attack_dist_width_front:
+		sys.bcStack.PushF(c.size.proj.attack.dist.width[0] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_proj_attack_dist_width_back:
+		sys.bcStack.PushF(c.size.proj.attack.dist.width[1] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_proj_attack_dist_height_top:
+		sys.bcStack.PushF(c.size.proj.attack.dist.height[0] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_proj_attack_dist_height_bottom:
+		sys.bcStack.PushF(c.size.proj.attack.dist.height[1] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_proj_attack_dist_depth_front:
+		sys.bcStack.PushF(c.size.proj.attack.dist.depth[0] * ((320 / c.localcoord) / oc.localscl))
+	case OC_const_size_proj_attack_dist_depth_back:
+		sys.bcStack.PushF(c.size.proj.attack.dist.depth[1] * ((320 / c.localcoord) / oc.localscl))
 	case OC_const_size_proj_doscale:
 		sys.bcStack.PushI(c.size.proj.doscale)
 	case OC_const_size_head_pos_x:
@@ -6041,6 +6065,8 @@ const (
 	hitDef_ground_hittime
 	hitDef_guard_hittime
 	hitDef_guard_dist
+	hitDef_guard_dist_y
+	hitDef_guard_dist_z
 	hitDef_pausetime
 	hitDef_guard_pausetime
 	hitDef_air_velocity
@@ -6275,6 +6301,16 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 		hd.guard_dist[0] = exp[0].evalI(c)
 		if len(exp) > 1 {
 			hd.guard_dist[1] = exp[1].evalI(c)
+		}
+	case hitDef_guard_dist_y:
+		hd.guard_dist_y[0] = exp[0].evalI(c)
+		if len(exp) > 1 {
+			hd.guard_dist_y[1] = exp[1].evalI(c)
+		}
+	case hitDef_guard_dist_z:
+		hd.guard_dist_z[0] = exp[0].evalI(c)
+		if len(exp) > 1 {
+			hd.guard_dist_z[1] = exp[1].evalI(c)
 		}
 	case hitDef_pausetime:
 		hd.pausetime = exp[0].evalI(c)
@@ -7294,6 +7330,20 @@ func (sc modifyProjectile) Run(c *Char, _ []int32) bool {
 					p.hitdef.guard_dist[0] = exp[0].evalI(c)
 					if len(exp) > 1 {
 						p.hitdef.guard_dist[1] = exp[1].evalI(c)
+					}
+				})
+			case hitDef_guard_dist_y:
+				eachProj(func(p *Projectile) {
+					p.hitdef.guard_dist_y[0] = exp[0].evalI(c)
+					if len(exp) > 1 {
+						p.hitdef.guard_dist_y[1] = exp[1].evalI(c)
+					}
+				})
+			case hitDef_guard_dist_z:
+				eachProj(func(p *Projectile) {
+					p.hitdef.guard_dist_z[0] = exp[0].evalI(c)
+					if len(exp) > 1 {
+						p.hitdef.guard_dist_z[1] = exp[1].evalI(c)
 					}
 				})
 			case hitDef_pausetime:
@@ -8888,7 +8938,9 @@ func (sc makeDust) Run(c *Char, _ []int32) bool {
 type attackDist StateControllerBase
 
 const (
-	attackDist_value byte = iota
+	attackDist_x byte = iota
+	attackDist_y
+	attackDist_z
 	attackDist_redirectid
 )
 
@@ -8897,10 +8949,20 @@ func (sc attackDist) Run(c *Char, _ []int32) bool {
 	var redirscale float32 = 1.0
 	StateControllerBase(sc).run(c, func(id byte, exp []BytecodeExp) bool {
 		switch id {
-		case attackDist_value:
-			crun.attackDist[0] = exp[0].evalF(c) * redirscale
+		case attackDist_x:
+			crun.attackDistX[0] = exp[0].evalF(c) * redirscale
 			if len(exp) > 1 {
-				crun.attackDist[1] = exp[1].evalF(c) * redirscale
+				crun.attackDistX[1] = exp[1].evalF(c) * redirscale
+			}
+		case attackDist_y:
+			crun.attackDistY[0] = exp[0].evalF(c) * redirscale
+			if len(exp) > 1 {
+				crun.attackDistY[1] = exp[1].evalF(c) * redirscale
+			}
+		case attackDist_z:
+			crun.attackDistZ[0] = exp[0].evalF(c) * redirscale
+			if len(exp) > 1 {
+				crun.attackDistZ[1] = exp[1].evalF(c) * redirscale
 			}
 		case attackDist_redirectid:
 			if rid := sys.playerID(exp[0].evalI(c)); rid != nil {
