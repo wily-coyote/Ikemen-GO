@@ -2106,9 +2106,9 @@ func systemScriptInit(l *lua.LState) {
 		sys.com[sys.debugWC.playerNo] = level
 		for _, c := range sys.chars[sys.debugWC.playerNo] {
 			if level == 0 {
-				c.key = sys.debugWC.playerNo
+				c.controller = sys.debugWC.playerNo
 			} else {
-				c.key = ^sys.debugWC.playerNo
+				c.controller = ^sys.debugWC.playerNo
 			}
 		}
 		return 0

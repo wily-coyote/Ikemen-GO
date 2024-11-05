@@ -2210,7 +2210,7 @@ type Char struct {
 	curFrame            *AnimFrame
 	cmd                 []CommandList
 	ss                  StateState
-	key                 int
+	controller          int
 	id                  int32
 	index               int32
 	runorder            int32
@@ -2313,8 +2313,9 @@ type Char struct {
 	pushPriority    int32
 }
 
+// Add a new char to the game
 func newChar(n int, idx int32) (c *Char) {
-	c = &Char{aimg: *newAfterImage(), zScale: 1}
+	c = &Char{}
 	c.init(n, idx)
 	return c
 }
@@ -2330,85 +2331,73 @@ func (c *Char) panic() {
 	sys.errLog.Panicf("%v\n%v\n%v\n%+v\n", c.gi().def, c.name,
 		sys.cgi[c.ss.sb.playerNo].def, c.ss)
 }
+
 func (c *Char) init(n int, idx int32) {
-	c.clearInit()
-	c.playerNo = n
-	c.helperIndex = idx
-	c.animPN = c.playerNo
-	if c.helperIndex == 0 {
+	// Reset struct with defaults
+	*c = Char{
+		playerNo:         n,
+		helperIndex:      idx,
+		controller:       n,
+		animPN:           n,
+		id:               -1,
+		index:            -1,
+		runorder:         -1,
+		parentIndex:      IErr,
+		hoIdx:            -1,
+		mctype:           MC_Hit,
+		ownpal:           true,
+		facing:           1,
+		minus:            2,
+		winquote:         -1,
+		clsnBaseScale:    [2]float32{1, 1},
+		clsnScaleMul:     [2]float32{1, 1},
+		clsnScale:        [2]float32{1, 1},
+		zScale:           1,
+		aimg:             *newAfterImage(),
+		CharSystemVar: CharSystemVar{
+			superDefenseMul:  1.0,
+			fallDefenseMul:   1.0,
+			customDefense:    1.0,
+			finalDefense:     1.0,
+		},
+	}
+
+	// Set player or helper defaults
+	if idx == 0 {
 		c.player = true
 		c.kovelocity = true
-		c.keyctrl = [...]bool{true, true, true, true}
+		c.keyctrl = [4]bool{true, true, true, true}
 	} else {
+		c.player = false
+		c.kovelocity = false
+		c.keyctrl = [4]bool{false, false, false, true}
 		c.mapArray = make(map[string]float32)
 		c.remapSpr = make(RemapPreset)
 	}
-	c.key = n
+
+	// Set controller to CPU if applicable
 	if n >= 0 && n < len(sys.com) && sys.com[n] != 0 {
-		c.key ^= -1
+		c.controller ^= -1
 	}
+
+	c.clearState()
 }
+
 func (c *Char) clearState() {
 	c.ss.clear()
 	c.hitdef.clear(c.localscl)
 	c.ghv.clear(c)
 	c.ghv.clearOff()
-	c.hitby = [8]HitBy{}
 	c.mhv.clear()
+	c.hitby = [8]HitBy{}
 	for i := range c.ho {
 		c.ho[i].clear()
 	}
 	c.mctype = MC_Hit
 	c.mctime = 0
 	c.counterHit = false
-	c.fallTime = 0
 	c.hitdefContact = false
-}
-
-func (c *Char) clearInit() {
-	c.anim = nil
-	c.cmd = nil
-	c.curFrame = nil
-	c.clearState()
-	c.hoIdx = -1
-	c.mctype, c.mctime = MC_Hit, 0
-	c.counterHit = false
 	c.fallTime = 0
-	c.superDefenseMul = 1
-	c.fallDefenseMul = 1
-	c.customDefense = 1
-	c.defenseMulDelay = false
-	c.key = -1
-	c.id = -1
-	c.index = -1
-	c.runorder = -1
-	c.helperId = 0
-	c.helperIndex = -1
-	c.parentIndex = IErr
-	c.playerNo = -1
-	c.ownpal = true
-	c.facing = 1
-	c.keyctrl = [4]bool{false, false, false, true}
-	c.player = false
-	c.animPN = -1
-	c.animNo = 0
-	c.stchtmp = false
-	c.inguarddist = false
-	c.p1facing = 0
-	c.pushed = false
-	c.atktmp, c.hittmp, c.acttmp, c.minus = 0, 0, 0, 2
-	c.winquote = -1
-	c.inheritJuggle = 0
-	c.immortal = false
-	c.kovelocity = false
-	c.preserve = 0
-	c.clsnBaseScale = [2]float32{1.0, 1.0}
-	c.clsnScaleMul = [2]float32{1.0, 1.0}
-	c.clsnScale = [2]float32{1.0, 1.0}
-	c.zScale = 1
-	// Clear variables
-	c.varRangeSet(0, int32(NumVar)-1, 0)
-	c.fvarRangeSet(0, int32(NumFvar)-1, 0)
 }
 
 func (c *Char) clsnOverlapTrigger(box1, pid, box2 int32) bool {
@@ -2421,9 +2410,13 @@ func (c *Char) clsnOverlapTrigger(box1, pid, box2 int32) bool {
 }
 
 func (c *Char) copyParent(p *Char) {
+	c.name = p.name+"'s helper"
 	c.parentIndex = p.helperIndex
-	c.name, c.key, c.size, c.teamside = p.name+"'s helper", p.key, p.size, p.teamside
-	c.life, c.lifeMax, c.powerMax = p.lifeMax, p.lifeMax, p.powerMax
+	c.controller = p.controller
+	c.teamside = p.teamside
+	c.size = p.size
+	c.life, c.lifeMax = p.lifeMax, p.lifeMax
+	c.powerMax = p.powerMax
 	if sys.maxPowerMode {
 		c.power = c.powerMax
 	} else {
@@ -2432,8 +2425,9 @@ func (c *Char) copyParent(p *Char) {
 	c.dizzyPoints, c.dizzyPointsMax = p.dizzyPointsMax, p.dizzyPointsMax
 	c.guardPoints, c.guardPointsMax = p.guardPointsMax, p.guardPointsMax
 	c.redLife = c.lifeMax
-	c.clear2()
+	c.clearNextRound()
 }
+
 func (c *Char) addChild(ch *Char) {
 	for i, chi := range c.children {
 		if chi == nil {
@@ -2447,16 +2441,18 @@ func (c *Char) enemyNearClear() {
 	c.enemynear[0] = c.enemynear[0][:0]
 	c.enemynear[1] = c.enemynear[1][:0]
 }
-func (c *Char) clear2() {
+
+// Clear character variables upon a new round or creation of a new helper
+func (c *Char) clearNextRound() {
 	c.sysVarRangeSet(0, int32(NumSysVar)-1, 0)
 	c.sysFvarRangeSet(0, int32(NumSysFvar)-1, 0)
 	atk := float32(c.gi().data.attack) * c.ocd().attackRatio / 100
 	c.CharSystemVar = CharSystemVar{
 		bindToId:        -1,
-		angleScale:      [...]float32{1, 1},
-		alpha:           [...]int32{255, 0},
-		width:           [...]float32{c.baseWidthFront(), c.baseWidthBack()},
-		height:          [...]float32{c.baseHeightTop(), c.baseHeightBottom()},
+		angleScale:      [2]float32{1, 1},
+		alpha:           [2]int32{255, 0},
+		width:           [2]float32{c.baseWidthFront(), c.baseWidthBack()},
+		height:          [2]float32{c.baseHeightTop(), c.baseHeightBottom()},
 		attackMul:       [4]float32{atk, atk, atk, atk},
 		fallDefenseMul:  1,
 		superDefenseMul: 1,
@@ -2483,6 +2479,8 @@ func (c *Char) clear2() {
 	c.targets = c.targets[:0]
 	c.cpucmd = -1
 }
+
+// Clear data when loading a new instance of the same character
 func (c *Char) clearCachedData() {
 	c.anim = nil
 	c.curFrame = nil
@@ -3600,7 +3598,7 @@ func (c *Char) command(pn, i int) bool {
 		}
 	}
 	// AI cheating for commands longer than 1 button
-	if c.key < 0 && len(cl) > 0 {
+	if c.controller < 0 && len(cl) > 0 {
 		if c.helperIndex != 0 || len(cl[0].cmd) > 1 || len(cl[0].cmd[0].key) > 1 ||
 			int(Btoi(cl[0].cmd[0].slash)) != len(cl[0].hold) {
 			if i == int(c.cpucmd) {
@@ -7095,7 +7093,7 @@ func (c *Char) actionPrepare() {
 		// Perform basic actions
 		if c.keyctrl[0] && c.cmd != nil {
 			// In Mugen, characters can perform basic actions even if they are KO
-			if c.ctrl() && !c.inputOver() && (c.key >= 0 || c.helperIndex == 0) {
+			if c.ctrl() && !c.inputOver() && (c.controller >= 0 || c.helperIndex == 0) {
 				if !c.asf(ASF_nohardcodedkeys) {
 					if !c.asf(ASF_nojump) && c.ss.stateType == ST_S && c.cmd[0].Buffer.U > 0 &&
 						(!(sys.intro < 0 && sys.intro > -sys.lifebar.ro.over_waittime) || c.asf(ASF_postroundinput)) {
@@ -7289,7 +7287,7 @@ func (c *Char) actionRun() {
 	}
 	if !c.pauseBool {
 		if c.keyctrl[0] && c.cmd != nil {
-			if c.ctrl() && !c.inputOver() && (c.key >= 0 || c.helperIndex == 0) {
+			if c.ctrl() && !c.inputOver() && (c.controller >= 0 || c.helperIndex == 0) {
 				if !c.asf(ASF_nohardcodedkeys) {
 					if c.inguarddist && c.scf(SCF_guard) && c.cmd[0].Buffer.B > 0 &&
 						!c.inGuardState() {
