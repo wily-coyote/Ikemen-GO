@@ -2331,8 +2331,9 @@ func (c *Char) panic() {
 		sys.cgi[c.ss.sb.playerNo].def, c.ss)
 }
 func (c *Char) init(n int, idx int32) {
-	c.clear1()
-	c.playerNo, c.helperIndex = n, idx
+	c.clearInit()
+	c.playerNo = n
+	c.helperIndex = idx
 	c.animPN = c.playerNo
 	if c.helperIndex == 0 {
 		c.player = true
@@ -2363,7 +2364,8 @@ func (c *Char) clearState() {
 	c.fallTime = 0
 	c.hitdefContact = false
 }
-func (c *Char) clear1() {
+
+func (c *Char) clearInit() {
 	c.anim = nil
 	c.cmd = nil
 	c.curFrame = nil
@@ -2372,8 +2374,6 @@ func (c *Char) clear1() {
 	c.mctype, c.mctime = MC_Hit, 0
 	c.counterHit = false
 	c.fallTime = 0
-	c.varRangeSet(0, int32(NumVar)-1, 0)
-	c.fvarRangeSet(0, int32(NumFvar)-1, 0)
 	c.superDefenseMul = 1
 	c.fallDefenseMul = 1
 	c.customDefense = 1
@@ -2388,7 +2388,7 @@ func (c *Char) clear1() {
 	c.playerNo = -1
 	c.ownpal = true
 	c.facing = 1
-	c.keyctrl = [...]bool{false, false, false, true}
+	c.keyctrl = [4]bool{false, false, false, true}
 	c.player = false
 	c.animPN = -1
 	c.animNo = 0
@@ -2402,6 +2402,13 @@ func (c *Char) clear1() {
 	c.immortal = false
 	c.kovelocity = false
 	c.preserve = 0
+	c.clsnBaseScale = [2]float32{1.0, 1.0}
+	c.clsnScaleMul = [2]float32{1.0, 1.0}
+	c.clsnScale = [2]float32{1.0, 1.0}
+	c.zScale = 1
+	// Clear variables
+	c.varRangeSet(0, int32(NumVar)-1, 0)
+	c.fvarRangeSet(0, int32(NumFvar)-1, 0)
 }
 
 func (c *Char) clsnOverlapTrigger(box1, pid, box2 int32) bool {
@@ -7835,143 +7842,145 @@ func (c *Char) cueDraw() {
 	angle := c.clsnAngle * c.facing
 	nhbtxt := ""
 	// Debug Clsn display
-	if sys.clsnDraw && c.curFrame != nil {
-		// Add Clsn1
-		if clsn := c.curFrame.Clsn1(); len(clsn) > 0 {
-			if c.scf(SCF_standby) {
-				// Add nothing
-			} else if c.atktmp != 0 && c.hitdef.reversal_attr > 0 {
-				sys.debugc1rev.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if c.atktmp != 0 && c.hitdef.attr > 0 {
-				sys.debugc1hit.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else {
-				sys.debugc1not.Add(clsn, xoff, yoff, xs, ys, angle)
+	if sys.clsnDraw {
+		if c.curFrame != nil {
+			// Add Clsn1
+			if clsn := c.curFrame.Clsn1(); len(clsn) > 0 {
+				if c.scf(SCF_standby) {
+					// Add nothing
+				} else if c.atktmp != 0 && c.hitdef.reversal_attr > 0 {
+					sys.debugc1rev.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else if c.atktmp != 0 && c.hitdef.attr > 0 {
+					sys.debugc1hit.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else {
+					sys.debugc1not.Add(clsn, xoff, yoff, xs, ys, angle)
+				}
 			}
-		}
-		// Check invincibility to decide box colors
-		flags := int32(ST_SCA) | int32(AT_ALL)
-		if clsn := c.curFrame.Clsn2(); len(clsn) > 0 {
-			hb, mtk := false, false
-			if c.unhittableTime > 0 {
-				mtk = true
-			} else {
-				for _, h := range c.hitby {
-					if h.time != 0 {
-						// If carrying invincibility from previous iterations
-						if h.stack && flags != int32(ST_SCA)|int32(AT_ALL) {
-							nhbtxt = "Stacked"
-							hb = true
-							mtk = false
-							break
+			// Check invincibility to decide box colors
+			flags := int32(ST_SCA) | int32(AT_ALL)
+			if clsn := c.curFrame.Clsn2(); len(clsn) > 0 {
+				hb, mtk := false, false
+				if c.unhittableTime > 0 {
+					mtk = true
+				} else {
+					for _, h := range c.hitby {
+						if h.time != 0 {
+							// If carrying invincibility from previous iterations
+							if h.stack && flags != int32(ST_SCA)|int32(AT_ALL) {
+								nhbtxt = "Stacked"
+								hb = true
+								mtk = false
+								break
+							}
+							// If player-specific invincibility
+							if h.playerno >= 0 || h.playerid >= 0 {
+								nhbtxt = "Player-specific"
+								hb = true
+								mtk = false
+								break
+							}
+							// Combine all NotHitBy flags
+							if h.flag != 0 {
+								flags &= h.flag
+							}
 						}
-						// If player-specific invincibility
-						if h.playerno >= 0 || h.playerid >= 0 {
-							nhbtxt = "Player-specific"
+					}
+					// If not stacked and not player-specific
+					if nhbtxt == "" {
+						if flags != int32(ST_SCA)|int32(AT_ALL) {
 							hb = true
-							mtk = false
-							break
-						}
-						// Combine all NotHitBy flags
-						if h.flag != 0 {
-							flags &= h.flag
+							mtk = flags&int32(ST_SCA) == 0 || flags&int32(AT_ALL) == 0
 						}
 					}
 				}
-				// If not stacked and not player-specific
-				if nhbtxt == "" {
-					if flags != int32(ST_SCA)|int32(AT_ALL) {
-						hb = true
-						mtk = flags&int32(ST_SCA) == 0 || flags&int32(AT_ALL) == 0
-					}
-				}
-			}
-			if c.scf(SCF_standby) {
-				sys.debugc2stb.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if mtk {
-				// Add fully invincible Clsn2
-				sys.debugc2mtk.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if hb {
-				// Add partially invincible Clsn2
-				sys.debugc2hb.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if c.inguarddist && c.scf(SCF_guard) {
-				// Add guarding Clsn2
-				sys.debugc2grd.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else {
-				// Add regular Clsn2
-				sys.debugc2.Add(clsn, xoff, yoff, xs, ys, angle)
-			}
-			// Add invulnerability text
-			if nhbtxt == "" {
-				if mtk {
-					nhbtxt = "Invincible"
+				if c.scf(SCF_standby) {
+					sys.debugc2stb.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else if mtk {
+					// Add fully invincible Clsn2
+					sys.debugc2mtk.Add(clsn, xoff, yoff, xs, ys, angle)
 				} else if hb {
-					// Statetype
-					if flags&int32(ST_S) == 0 || flags&int32(ST_C) == 0 || flags&int32(ST_A) == 0 {
-						if flags&int32(ST_S) == 0 {
-							nhbtxt += "S"
+					// Add partially invincible Clsn2
+					sys.debugc2hb.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else if c.inguarddist && c.scf(SCF_guard) {
+					// Add guarding Clsn2
+					sys.debugc2grd.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else {
+					// Add regular Clsn2
+					sys.debugc2.Add(clsn, xoff, yoff, xs, ys, angle)
+				}
+				// Add invulnerability text
+				if nhbtxt == "" {
+					if mtk {
+						nhbtxt = "Invincible"
+					} else if hb {
+						// Statetype
+						if flags&int32(ST_S) == 0 || flags&int32(ST_C) == 0 || flags&int32(ST_A) == 0 {
+							if flags&int32(ST_S) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(ST_C) == 0 {
+								nhbtxt += "C"
+							}
+							if flags&int32(ST_A) == 0 {
+								nhbtxt += "A"
+							}
+							nhbtxt += " Any"
 						}
-						if flags&int32(ST_C) == 0 {
-							nhbtxt += "C"
+						// Attack
+						if flags&int32(AT_NA) == 0 || flags&int32(AT_SA) == 0 || flags&int32(AT_HA) == 0 {
+							if nhbtxt != "" {
+								nhbtxt += ", "
+							}
+							if flags&int32(AT_NA) == 0 {
+								nhbtxt += "N"
+							}
+							if flags&int32(AT_SA) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(AT_HA) == 0 {
+								nhbtxt += "H"
+							}
+							nhbtxt += " Atk"
 						}
-						if flags&int32(ST_A) == 0 {
-							nhbtxt += "A"
+						// Throw
+						if flags&int32(AT_NT) == 0 || flags&int32(AT_ST) == 0 || flags&int32(AT_HT) == 0 {
+							if nhbtxt != "" {
+								nhbtxt += ", "
+							}
+							if flags&int32(AT_NT) == 0 {
+								nhbtxt += "N"
+							}
+							if flags&int32(AT_ST) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(AT_HT) == 0 {
+								nhbtxt += "H"
+							}
+							nhbtxt += " Thr"
 						}
-						nhbtxt += " Any"
-					}
-					// Attack
-					if flags&int32(AT_NA) == 0 || flags&int32(AT_SA) == 0 || flags&int32(AT_HA) == 0 {
-						if nhbtxt != "" {
-							nhbtxt += ", "
+						// Projectile
+						if flags&int32(AT_NP) == 0 || flags&int32(AT_SP) == 0 || flags&int32(AT_HP) == 0 {
+							if nhbtxt != "" {
+								nhbtxt += ", "
+							}
+							if flags&int32(AT_NP) == 0 {
+								nhbtxt += "N"
+							}
+							if flags&int32(AT_SP) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(AT_HP) == 0 {
+								nhbtxt += "H"
+							}
+							nhbtxt += " Prj"
 						}
-						if flags&int32(AT_NA) == 0 {
-							nhbtxt += "N"
-						}
-						if flags&int32(AT_SA) == 0 {
-							nhbtxt += "S"
-						}
-						if flags&int32(AT_HA) == 0 {
-							nhbtxt += "H"
-						}
-						nhbtxt += " Atk"
-					}
-					// Throw
-					if flags&int32(AT_NT) == 0 || flags&int32(AT_ST) == 0 || flags&int32(AT_HT) == 0 {
-						if nhbtxt != "" {
-							nhbtxt += ", "
-						}
-						if flags&int32(AT_NT) == 0 {
-							nhbtxt += "N"
-						}
-						if flags&int32(AT_ST) == 0 {
-							nhbtxt += "S"
-						}
-						if flags&int32(AT_HT) == 0 {
-							nhbtxt += "H"
-						}
-						nhbtxt += " Thr"
-					}
-					// Projectile
-					if flags&int32(AT_NP) == 0 || flags&int32(AT_SP) == 0 || flags&int32(AT_HP) == 0 {
-						if nhbtxt != "" {
-							nhbtxt += ", "
-						}
-						if flags&int32(AT_NP) == 0 {
-							nhbtxt += "N"
-						}
-						if flags&int32(AT_SP) == 0 {
-							nhbtxt += "S"
-						}
-						if flags&int32(AT_HP) == 0 {
-							nhbtxt += "H"
-						}
-						nhbtxt += " Prj"
 					}
 				}
 			}
-		}
-		// Add size box (width * height)
-		if c.csf(CSF_playerpush) {
-			sys.debugcsize.Add(c.sizeBox, x, y, c.facing*c.localscl, c.localscl, 0)
+			// Add size box (width * height)
+			if c.csf(CSF_playerpush) {
+				sys.debugcsize.Add(c.sizeBox, x, y, c.facing*c.localscl, c.localscl, 0)
+			}
 		}
 		// Add crosshair
 		sys.debugch.Add([]float32{-1, -1, 1, 1}, x, y, 1, 1, 0)
