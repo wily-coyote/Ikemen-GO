@@ -1113,7 +1113,7 @@ func (ai *AfterImage) recAndCue(sd *SprData, rec bool, hitpause bool, layer int3
 			sprs.add(&SprData{&img.anim, &ai.palfx[step], img.pos,
 				img.scl, ai.alpha, img.priority - step, // Afterimages decrease in sprpriority over time
 				img.rot, img.ascl, false, sd.bright, sd.oldVer, sd.facing,
-				sd.posLocalscl, img.projection, img.fLength, sd.window})
+				sd.airOffsetFix, img.projection, img.fLength, sd.window})
 			// Afterimages don't cast shadows or reflections
 		}
 	}
@@ -1461,12 +1461,17 @@ func (e *Explod) update(oldVer bool, playerNo int) {
 		drawscale[1] *= zscale
 	}
 
-	var ewin = [4]float32{e.window[0] * e.localscl * facing, e.window[1] * e.localscl * e.vfacing, e.window[2] * e.localscl * facing, e.window[3] * e.localscl * e.vfacing}
+	var ewin = [4]float32{
+		e.window[0] * e.localscl * facing,
+		e.window[1] * e.localscl * e.vfacing,
+		e.window[2] * e.localscl * facing,
+		e.window[3] * e.localscl * e.vfacing,
+	}
 
 	// Add sprite to draw list
 	sd := &SprData{e.anim, pfx, drawpos, drawscale,
 		alp, e.sprpriority + int32(e.pos[2]*e.localscl), rot, [...]float32{1, 1},
-		e.space == Space_screen, playerNo == sys.superplayer, oldVer, facing, 1, int32(e.projection), fLength, ewin}
+		e.space == Space_screen, playerNo == sys.superplayer, oldVer, facing, [2]float32{1, 1}, int32(e.projection), fLength, ewin}
 	sprs.add(sd)
 
 	// Add shadow if color is not 0
@@ -2029,7 +2034,7 @@ func (p *Projectile) cueDraw(oldVer bool, playerNo int) {
 		// Add sprite to draw list
 		sd := &SprData{p.ani, p.palfx, pos, scl, [2]int32{-1},
 			p.sprpriority + int32(p.pos[2]*p.localscl), Rotation{p.facing * p.angle, 0, 0}, [...]float32{1, 1}, false, playerNo == sys.superplayer,
-			sys.cgi[playerNo].mugenver[0] != 1, p.facing, 1, 0, 0, [4]float32{0, 0, 0, 0}}
+			sys.cgi[playerNo].mugenver[0] != 1, p.facing, [2]float32{1, 1}, 0, 0, [4]float32{0, 0, 0, 0}}
 		p.aimg.recAndCue(sd, sys.tickNextFrame() && notpause, false, p.layerno)
 		sprs.add(sd)
 		// Add a shadow if color is not 0
@@ -8034,10 +8039,21 @@ func (c *Char) cueDraw() {
 		//	c.alpha = [...]int32{255, 0}
 		//}
 
+		// Determine AIR offset multiplier
+		// This must take into account both the coordinate spaces and the scale constants
+		// This seems more complicated than it ought to be. Probably because our drawing functions are different from Mugen
+		// https://github.com/ikemen-engine/Ikemen-GO/issues/1459, 1778 and 2089
+		airOffsetFix := [2]float32{1, 1}
+		if c.playerNo != c.animPN {
+			airOffsetFix = [2]float32{
+				(sys.chars[c.playerNo][0].localcoord / sys.chars[c.animPN][0].localcoord) / (sys.chars[c.playerNo][0].size.xscale / sys.chars[c.animPN][0].size.xscale),
+				(sys.chars[c.playerNo][0].localcoord / sys.chars[c.animPN][0].localcoord) / (sys.chars[c.playerNo][0].size.yscale / sys.chars[c.animPN][0].size.yscale),
+			}
+		}
+		// Define sprite data
 		sd := &SprData{c.anim, c.getPalfx(), pos,
 			scl, c.alpha, c.sprPriority + int32(c.pos[2]*c.localscl), Rotation{agl, 0, 0}, c.angleScale, false,
-			c.playerNo == sys.superplayer, c.gi().mugenver[0] != 1, c.facing,
-			c.localcoord / sys.chars[c.animPN][0].localcoord, // https://github.com/ikemen-engine/Ikemen-GO/issues/1459 and 1778
+			c.playerNo == sys.superplayer, c.gi().mugenver[0] != 1, c.facing, airOffsetFix,
 			0, 0, [4]float32{0, 0, 0, 0}}
 		if !c.csf(CSF_trans) {
 			sd.alpha[0] = -1

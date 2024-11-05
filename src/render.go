@@ -37,7 +37,8 @@ func (r *Rotation) IsZero() bool {
 
 // Tiling holds tiling parameters
 type Tiling struct {
-	x, y, sx, sy int32
+	xflag, yflag       int32
+	xspacing, yspacing int32
 }
 
 var notiling = Tiling{}
@@ -97,8 +98,8 @@ func rmTileHSub(modelview mgl.Mat4, x1, y1, x2, y2, x3, y3, x4, y4, dy, width fl
 	//     /       |       \       `.
 	//    o--------o--------o- - - - o
 	//   p1         p2
-	topdist := (x3 - x4) * (((float32(rp.tile.sx) + width) / rp.xas) / width)
-	botdist := (x2 - x1) * (((float32(rp.tile.sx) + width) / rp.xas) / width)
+	topdist := (x3 - x4) * (((float32(rp.tile.xspacing) + width) / rp.xas) / width)
+	botdist := (x2 - x1) * (((float32(rp.tile.xspacing) + width) / rp.xas) / width)
 	if AbsF(topdist) >= 0.01 {
 		db := (x4 - rp.rcx) * (botdist - topdist) / AbsF(topdist)
 		x1 += db
@@ -108,7 +109,7 @@ func rmTileHSub(modelview mgl.Mat4, x1, y1, x2, y2, x3, y3, x4, y4, dy, width fl
 	// Compute left/right tiling bounds (or right/left when topdist < 0)
 	xmax := float32(sys.scrrect[2])
 	left, right := int32(0), int32(1)
-	if rp.tile.x != 0 {
+	if rp.tile.xflag != 0 {
 		if topdist >= 0.01 {
 			left = 1 - int32(math.Ceil(float64(MaxF(x3/topdist, x2/botdist))))
 			right = int32(math.Ceil(float64(MaxF((xmax-x4)/topdist, (xmax-x1)/botdist))))
@@ -116,9 +117,9 @@ func rmTileHSub(modelview mgl.Mat4, x1, y1, x2, y2, x3, y3, x4, y4, dy, width fl
 			left = 1 - int32(math.Ceil(float64(MaxF((xmax-x3)/-topdist, (xmax-x2)/-botdist))))
 			right = int32(math.Ceil(float64(MaxF(x4/-topdist, x1/-botdist))))
 		}
-		if rp.tile.x != 1 {
+		if rp.tile.xflag != 1 {
 			left = 0
-			right = Min(right, Max(rp.tile.x, 1))
+			right = Min(right, Max(rp.tile.xflag, 1))
 		}
 	}
 
@@ -149,7 +150,7 @@ func rmTileSub(modelview mgl.Mat4, rp RenderParams) {
 	//} else {
 	//	pers = AbsF(rp.xbs) / AbsF(rp.xts)
 	//}
-	if !rp.rot.IsZero() && rp.tile.x == 0 && rp.tile.y == 0 {
+	if !rp.rot.IsZero() && rp.tile.xflag == 0 && rp.tile.yflag == 0 {
 
 		if rp.vs != 1 {
 			y1 = rp.rcy + ((rp.y - rp.ys*float32(rp.size[1])) - rp.rcy)
@@ -195,14 +196,14 @@ func rmTileSub(modelview mgl.Mat4, rp RenderParams) {
 		drawQuads(modelview, x1, y1, x2, y2, x3, y3, x4, y4)
 		return
 	}
-	if rp.tile.y == 1 && rp.xbs != 0 {
+	if rp.tile.yflag == 1 && rp.xbs != 0 {
 		x1 += rp.rxadd * rp.ys * float32(rp.size[1])
 		x2 = x1 + rp.xbs*float32(rp.size[0])
 		x1d, y1d, x2d, y2d, x3d, y3d, x4d, y4d := x1, y1, x2, y2, x3, y3, x4, y4
 		n := 0
 		var xy []float32
 		for {
-			x1d, y1d = x4d, y4d+rp.ys*rp.vs*((float32(rp.tile.sy)+float32(rp.size[1]))/rp.yas-float32(rp.size[1]))
+			x1d, y1d = x4d, y4d+rp.ys*rp.vs*((float32(rp.tile.yspacing)+float32(rp.size[1]))/rp.yas-float32(rp.size[1]))
 			x2d, y2d = x3d, y1d
 			x3d = x4d - rp.rxadd*rp.ys*float32(rp.size[1]) + (rp.xts/rp.xbs)*(x3d-x4d)
 			y3d = y2d + rp.ys*rp.vs*float32(rp.size[1])
@@ -211,7 +212,7 @@ func rmTileSub(modelview mgl.Mat4, rp RenderParams) {
 				break
 			}
 			y4d = y3d
-			if rp.ys*((float32(rp.tile.sy)+float32(rp.size[1]))/rp.yas) < 0 {
+			if rp.ys*((float32(rp.tile.yspacing)+float32(rp.size[1]))/rp.yas) < 0 {
 				if y1d <= float32(-sys.scrrect[3]) && y4d <= float32(-sys.scrrect[3]) {
 					break
 				}
@@ -232,13 +233,13 @@ func rmTileSub(modelview mgl.Mat4, rp RenderParams) {
 			}
 		}
 	}
-	if rp.tile.y == 0 || rp.xts != 0 {
+	if rp.tile.yflag == 0 || rp.xts != 0 {
 		x1 += rp.rxadd * rp.ys * float32(rp.size[1])
 		x2 = x1 + rp.xbs*float32(rp.size[0])
-		n := rp.tile.y
+		n := rp.tile.yflag
 		oy := y1
 		for {
-			if rp.ys*((float32(rp.tile.sy)+float32(rp.size[1]))/rp.yas) > 0 {
+			if rp.ys*((float32(rp.tile.yspacing)+float32(rp.size[1]))/rp.yas) > 0 {
 				if y1 <= float32(-sys.scrrect[3]) && y4 <= float32(-sys.scrrect[3]) {
 					break
 				}
@@ -250,13 +251,13 @@ func rmTileSub(modelview mgl.Mat4, rp RenderParams) {
 				rmTileHSub(modelview, x1, y1, x2, y2, x3, y3, x4, y4, y1-oy,
 					float32(rp.size[0]), rp)
 			}
-			if rp.tile.y != 1 && n != 0 {
+			if rp.tile.yflag != 1 && n != 0 {
 				n--
 			}
 			if n == 0 {
 				break
 			}
-			x4, y4 = x1, y1-rp.ys*rp.vs*((float32(rp.tile.sy)+float32(rp.size[1]))/rp.yas-float32(rp.size[1]))
+			x4, y4 = x1, y1-rp.ys*rp.vs*((float32(rp.tile.yspacing)+float32(rp.size[1]))/rp.yas-float32(rp.size[1]))
 			x3, y3 = x2, y4
 			x2 = x1 + rp.rxadd*rp.ys*float32(rp.size[1]) + (rp.xbs/rp.xts)*(x2-x1)
 			y2 = y3 - rp.ys*rp.vs*float32(rp.size[1])
@@ -276,15 +277,15 @@ func rmInitSub(rp *RenderParams) {
 		rp.rot.angle *= -1
 		rp.rot.xangle *= -1
 	}
-	if rp.tile.x == 0 {
-		rp.tile.sx = 0
-	} else if rp.tile.sx > 0 {
-		rp.tile.sx -= int32(rp.size[0])
+	if rp.tile.xflag == 0 {
+		rp.tile.xspacing = 0
+	} else if rp.tile.xspacing > 0 {
+		rp.tile.xspacing -= int32(rp.size[0])
 	}
-	if rp.tile.y == 0 {
-		rp.tile.sy = 0
-	} else if rp.tile.sy > 0 {
-		rp.tile.sy -= int32(rp.size[1])
+	if rp.tile.yflag == 0 {
+		rp.tile.yspacing = 0
+	} else if rp.tile.yspacing > 0 {
+		rp.tile.yspacing -= int32(rp.size[1])
 	}
 	if rp.xts >= 0 {
 		rp.x *= -1

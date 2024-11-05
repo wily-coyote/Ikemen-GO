@@ -234,12 +234,12 @@ func readBackGround(is IniSection, link *backGround,
 		bg.anim.srcAlpha = -1
 		bg.anim.dstAlpha = 0
 	}
-	if is.readI32ForStage("tile", &bg.anim.tile.x, &bg.anim.tile.y) {
+	if is.readI32ForStage("tile", &bg.anim.tile.xflag, &bg.anim.tile.yflag) {
 		if bg.typ == 2 {
-			bg.anim.tile.y = 0
+			bg.anim.tile.yflag = 0
 		}
-		if bg.anim.tile.x < 0 {
-			bg.anim.tile.x = math.MaxInt32
+		if bg.anim.tile.xflag < 0 {
+			bg.anim.tile.xflag = math.MaxInt32
 		}
 	}
 	if bg.typ == 2 {
@@ -249,20 +249,20 @@ func readBackGround(is IniSection, link *backGround,
 		is.ReadF32("yscalestart", &bg.yscalestart)
 		is.ReadF32("yscaledelta", &bg.yscaledelta)
 	} else {
-		is.ReadI32("tilespacing", &bg.anim.tile.sx, &bg.anim.tile.sy)
-		//bg.anim.tile.sy = bg.anim.tile.sx
+		is.ReadI32("tilespacing", &bg.anim.tile.xspacing, &bg.anim.tile.yspacing)
+		//bg.anim.tile.yspacing = bg.anim.tile.xspacing
 		if bg.actionno < 0 && len(bg.anim.frames) > 0 {
 			if spr := sff.GetSprite(
 				bg.anim.frames[0].Group, bg.anim.frames[0].Number); spr != nil {
-				bg.anim.tile.sx += int32(spr.Size[0])
-				bg.anim.tile.sy += int32(spr.Size[1])
+				bg.anim.tile.xspacing += int32(spr.Size[0])
+				bg.anim.tile.yspacing += int32(spr.Size[1])
 			}
 		} else {
-			if bg.anim.tile.sx == 0 {
-				bg.anim.tile.x = 0
+			if bg.anim.tile.xspacing == 0 {
+				bg.anim.tile.xflag = 0
 			}
-			if bg.anim.tile.sy == 0 {
-				bg.anim.tile.y = 0
+			if bg.anim.tile.yspacing == 0 {
+				bg.anim.tile.yflag = 0
 			}
 		}
 	}
@@ -451,7 +451,7 @@ func (bg backGround) draw(pos [2]float32, drawscl, bgscl, stglscl float32,
 			bg.xscale[0]*bgscl*(bg.scalestart[0]+xs)*xs3,
 			xbs*bgscl*(bg.scalestart[0]+xs)*xs3,
 			ys*ys3, xras*x/(AbsF(ys*ys3)*lscl[1]*float32(bg.anim.spr.Size[1])*bg.scalestart[1])*sclx_recip*bg.scalestart[1],
-			Rotation{}, float32(sys.gameWidth)/2, bg.palfx, true, 1, false, 1, 0, 0, 0)
+			Rotation{}, float32(sys.gameWidth)/2, bg.palfx, true, 1, false, [2]float32{1, 1}, 0, 0, 0)
 	}
 }
 
