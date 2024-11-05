@@ -9121,7 +9121,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 							getter.inguarddist = false
 						}
 					} else { // Default Height
-						if distY != 0 && (distY > float32(c.size.proj.attack.dist.height[0])*c.localscl || 
+						if distY != 0 && (distY > float32(c.size.proj.attack.dist.height[0])*c.localscl ||
 							distY < -float32(c.size.proj.attack.dist.height[1])*c.localscl) {
 							getter.inguarddist = false
 						}
@@ -9131,7 +9131,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 							getter.inguarddist = false
 						}
 					} else { // Default Depth
-						if distZ != 0 && (distZ > float32(c.size.proj.attack.dist.depth[0])*c.localscl || 
+						if distZ != 0 && (distZ > float32(c.size.proj.attack.dist.depth[0])*c.localscl ||
 							distZ < -float32(c.size.proj.attack.dist.depth[1])*c.localscl) {
 							getter.inguarddist = false
 						}
