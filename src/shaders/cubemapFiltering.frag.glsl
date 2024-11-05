@@ -386,13 +386,13 @@ void main()
 
         color = filterColor(direction);
 
-        gl_FragColor.a = 1.0;
+        FragColor.a = 1.0;
         
-        gl_FragColor.rgb = color;
+        FragColor.rgb = color;
     }else{
         color = LUT(texcoord.x, texcoord.y);
-        gl_FragColor.rgb = color;
-        gl_FragColor.a = 1.0;
+        FragColor.rgb = color;
+        FragColor.a = 1.0;
         return;
     }
 
