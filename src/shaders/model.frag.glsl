@@ -91,7 +91,7 @@ float DirectionalLightShadowCalculation(int index, vec4 lightSpacePos,float Ndot
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
     float bias = shadowBias*tan(acos(NdotL));
-    float shadow = closestDepth-currentDepth > -bias  ? 1.0 : 0;
+    float shadow = closestDepth-currentDepth > -bias  ? 1.0 : 0.0;
 
     return shadow;
 }
@@ -104,7 +104,7 @@ float SpotLightShadowCalculation(int index, vec3 pointToLight, vec4 lightSpacePo
     // get depth of current fragment from light's perspective
     float currentDepth = length(pointToLight);
     float bias = shadowBias*tan(acos(NdotL));
-    float shadow = currentDepth-closestDepth < bias  ? 1.0 : 0;
+    float shadow = currentDepth-closestDepth < bias  ? 1.0 : 0.0;
 
     return shadow;
 }
@@ -119,7 +119,7 @@ float PointLightShadowCalculation(int index, vec3 pointToLight,float NdotL,float
 
     float bias = shadowBias*tan(acos(NdotL));
 
-    float shadow = currentDepth-closestDepth < bias  ? 1.0 : 0;
+    float shadow = currentDepth-closestDepth < bias  ? 1.0 : 0.0;
 
     return shadow;
 }
