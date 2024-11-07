@@ -5,6 +5,7 @@
 #define COMPAT_TEXTURE_CUBE_LOD textureLod
 out vec4 FragColor;
 #else
+#extension GL_ARB_shader_texture_lod : enable
 #define COMPAT_VARYING varying
 #define FragColor gl_FragColor
 #define COMPAT_TEXTURE texture2D
