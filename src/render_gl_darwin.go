@@ -122,6 +122,8 @@ func compileShader(shaderType uint32, src string) (shader uint32) {
 			str := make([]byte, size+1)
 			gl.GetShaderInfoLog(shader, size, &l, &str[0])
 			err = Error(str[:l])
+		} else {
+			err = Error("Unknown shader compile error")
 		}
 		chk(err)
 		gl.DeleteShader(shader)
@@ -150,6 +152,8 @@ func linkProgram(params ...uint32) (program uint32) {
 			str := make([]byte, size+1)
 			gl.GetProgramInfoLog(program, size, &l, &str[0])
 			err = Error(str[:l])
+		} else {
+			err = Error("Unknown link error")
 		}
 		chk(err)
 		gl.DeleteProgram(program)
