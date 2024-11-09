@@ -1114,7 +1114,7 @@ func (sl ShadowList) draw(x, y, scl float32) {
 		}
 
 		s.anim.ShadowDraw(drawwindow,
-			sys.cam.Offset[0]-((x-s.pos[0]-xshearoff)*scl),
+			sys.cam.Offset[0]-((x-s.pos[0]-s.shadowOffset[0]-xshearoff)*scl),
 			sys.cam.GroundLevel()+sys.cam.Offset[1]-sys.envShake.getOffset()-y-
 				(s.pos[1]*sys.stage.sdw.yscale-s.shadowOffset[1]-sys.stage.sdw.offset[1])*scl,
 			scl*s.scl[0], scl*-s.scl[1],

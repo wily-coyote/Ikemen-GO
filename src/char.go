@@ -4300,6 +4300,10 @@ func (c *Char) playSound(ffx string, lowpriority bool, loopCount int32, g, n, ch
 	if g < 0 {
 		return
 	}
+	// Don't do anything if we have the nosound command line flag
+	if _, ok := sys.cmdFlags["-nosound"]; ok {
+		return
+	}
 	var s *Sound
 	if ffx == "" || ffx == "s" {
 		if c.gi().snd != nil {
