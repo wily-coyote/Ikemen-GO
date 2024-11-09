@@ -1113,7 +1113,7 @@ func (ai *AfterImage) recAndCue(sd *SprData, rec bool, hitpause bool, layer int3
 			sprs.add(&SprData{&img.anim, &ai.palfx[step], img.pos,
 				img.scl, ai.alpha, img.priority - step, // Afterimages decrease in sprpriority over time
 				img.rot, img.ascl, false, sd.bright, sd.oldVer, sd.facing,
-				sd.posLocalscl, img.projection, img.fLength, sd.window})
+				sd.airOffsetFix, img.projection, img.fLength, sd.window})
 			// Afterimages don't cast shadows or reflections
 		}
 	}
@@ -1461,12 +1461,17 @@ func (e *Explod) update(oldVer bool, playerNo int) {
 		drawscale[1] *= zscale
 	}
 
-	var ewin = [4]float32{e.window[0] * e.localscl * facing, e.window[1] * e.localscl * e.vfacing, e.window[2] * e.localscl * facing, e.window[3] * e.localscl * e.vfacing}
+	var ewin = [4]float32{
+		e.window[0] * e.localscl * facing,
+		e.window[1] * e.localscl * e.vfacing,
+		e.window[2] * e.localscl * facing,
+		e.window[3] * e.localscl * e.vfacing,
+	}
 
 	// Add sprite to draw list
 	sd := &SprData{e.anim, pfx, drawpos, drawscale,
 		alp, e.sprpriority + int32(e.pos[2]*e.localscl), rot, [...]float32{1, 1},
-		e.space == Space_screen, playerNo == sys.superplayer, oldVer, facing, 1, int32(e.projection), fLength, ewin}
+		e.space == Space_screen, playerNo == sys.superplayer, oldVer, facing, [2]float32{1, 1}, int32(e.projection), fLength, ewin}
 	sprs.add(sd)
 
 	// Add shadow if color is not 0
@@ -2029,7 +2034,7 @@ func (p *Projectile) cueDraw(oldVer bool, playerNo int) {
 		// Add sprite to draw list
 		sd := &SprData{p.ani, p.palfx, pos, scl, [2]int32{-1},
 			p.sprpriority + int32(p.pos[2]*p.localscl), Rotation{p.facing * p.angle, 0, 0}, [...]float32{1, 1}, false, playerNo == sys.superplayer,
-			sys.cgi[playerNo].mugenver[0] != 1, p.facing, 1, 0, 0, [4]float32{0, 0, 0, 0}}
+			sys.cgi[playerNo].mugenver[0] != 1, p.facing, [2]float32{1, 1}, 0, 0, [4]float32{0, 0, 0, 0}}
 		p.aimg.recAndCue(sd, sys.tickNextFrame() && notpause, false, p.layerno)
 		sprs.add(sd)
 		// Add a shadow if color is not 0
@@ -2205,7 +2210,7 @@ type Char struct {
 	curFrame            *AnimFrame
 	cmd                 []CommandList
 	ss                  StateState
-	key                 int
+	controller          int
 	id                  int32
 	index               int32
 	runorder            int32
@@ -2308,8 +2313,9 @@ type Char struct {
 	pushPriority    int32
 }
 
+// Add a new char to the game
 func newChar(n int, idx int32) (c *Char) {
-	c = &Char{aimg: *newAfterImage(), zScale: 1}
+	c = &Char{}
 	c.init(n, idx)
 	return c
 }
@@ -2325,78 +2331,73 @@ func (c *Char) panic() {
 	sys.errLog.Panicf("%v\n%v\n%v\n%+v\n", c.gi().def, c.name,
 		sys.cgi[c.ss.sb.playerNo].def, c.ss)
 }
+
 func (c *Char) init(n int, idx int32) {
-	c.clear1()
-	c.playerNo, c.helperIndex = n, idx
-	c.animPN = c.playerNo
-	if c.helperIndex == 0 {
+	// Reset struct with defaults
+	*c = Char{
+		playerNo:         n,
+		helperIndex:      idx,
+		controller:       n,
+		animPN:           n,
+		id:               -1,
+		index:            -1,
+		runorder:         -1,
+		parentIndex:      IErr,
+		hoIdx:            -1,
+		mctype:           MC_Hit,
+		ownpal:           true,
+		facing:           1,
+		minus:            2,
+		winquote:         -1,
+		clsnBaseScale:    [2]float32{1, 1},
+		clsnScaleMul:     [2]float32{1, 1},
+		clsnScale:        [2]float32{1, 1},
+		zScale:           1,
+		aimg:             *newAfterImage(),
+		CharSystemVar: CharSystemVar{
+			superDefenseMul:  1.0,
+			fallDefenseMul:   1.0,
+			customDefense:    1.0,
+			finalDefense:     1.0,
+		},
+	}
+
+	// Set player or helper defaults
+	if idx == 0 {
 		c.player = true
 		c.kovelocity = true
-		c.keyctrl = [...]bool{true, true, true, true}
+		c.keyctrl = [4]bool{true, true, true, true}
 	} else {
+		c.player = false
+		c.kovelocity = false
+		c.keyctrl = [4]bool{false, false, false, true}
 		c.mapArray = make(map[string]float32)
 		c.remapSpr = make(RemapPreset)
 	}
-	c.key = n
+
+	// Set controller to CPU if applicable
 	if n >= 0 && n < len(sys.com) && sys.com[n] != 0 {
-		c.key ^= -1
+		c.controller ^= -1
 	}
+
+	c.clearState()
 }
+
 func (c *Char) clearState() {
 	c.ss.clear()
 	c.hitdef.clear(c.localscl)
 	c.ghv.clear(c)
 	c.ghv.clearOff()
-	c.hitby = [8]HitBy{}
 	c.mhv.clear()
+	c.hitby = [8]HitBy{}
 	for i := range c.ho {
 		c.ho[i].clear()
 	}
 	c.mctype = MC_Hit
 	c.mctime = 0
 	c.counterHit = false
-	c.fallTime = 0
 	c.hitdefContact = false
-}
-func (c *Char) clear1() {
-	c.anim = nil
-	c.cmd = nil
-	c.curFrame = nil
-	c.clearState()
-	c.hoIdx = -1
-	c.mctype, c.mctime = MC_Hit, 0
-	c.counterHit = false
 	c.fallTime = 0
-	c.varRangeSet(0, int32(NumVar)-1, 0)
-	c.fvarRangeSet(0, int32(NumFvar)-1, 0)
-	c.superDefenseMul = 1
-	c.fallDefenseMul = 1
-	c.customDefense = 1
-	c.defenseMulDelay = false
-	c.key = -1
-	c.id = -1
-	c.index = -1
-	c.runorder = -1
-	c.helperId = 0
-	c.helperIndex = -1
-	c.parentIndex = IErr
-	c.playerNo = -1
-	c.ownpal = true
-	c.facing = 1
-	c.keyctrl = [...]bool{false, false, false, true}
-	c.player = false
-	c.animPN = -1
-	c.animNo = 0
-	c.stchtmp = false
-	c.inguarddist = false
-	c.p1facing = 0
-	c.pushed = false
-	c.atktmp, c.hittmp, c.acttmp, c.minus = 0, 0, 0, 2
-	c.winquote = -1
-	c.inheritJuggle = 0
-	c.immortal = false
-	c.kovelocity = false
-	c.preserve = 0
 }
 
 func (c *Char) clsnOverlapTrigger(box1, pid, box2 int32) bool {
@@ -2409,9 +2410,13 @@ func (c *Char) clsnOverlapTrigger(box1, pid, box2 int32) bool {
 }
 
 func (c *Char) copyParent(p *Char) {
+	c.name = p.name+"'s helper"
 	c.parentIndex = p.helperIndex
-	c.name, c.key, c.size, c.teamside = p.name+"'s helper", p.key, p.size, p.teamside
-	c.life, c.lifeMax, c.powerMax = p.lifeMax, p.lifeMax, p.powerMax
+	c.controller = p.controller
+	c.teamside = p.teamside
+	c.size = p.size
+	c.life, c.lifeMax = p.lifeMax, p.lifeMax
+	c.powerMax = p.powerMax
 	if sys.maxPowerMode {
 		c.power = c.powerMax
 	} else {
@@ -2420,8 +2425,9 @@ func (c *Char) copyParent(p *Char) {
 	c.dizzyPoints, c.dizzyPointsMax = p.dizzyPointsMax, p.dizzyPointsMax
 	c.guardPoints, c.guardPointsMax = p.guardPointsMax, p.guardPointsMax
 	c.redLife = c.lifeMax
-	c.clear2()
+	c.clearNextRound()
 }
+
 func (c *Char) addChild(ch *Char) {
 	for i, chi := range c.children {
 		if chi == nil {
@@ -2435,16 +2441,18 @@ func (c *Char) enemyNearClear() {
 	c.enemynear[0] = c.enemynear[0][:0]
 	c.enemynear[1] = c.enemynear[1][:0]
 }
-func (c *Char) clear2() {
+
+// Clear character variables upon a new round or creation of a new helper
+func (c *Char) clearNextRound() {
 	c.sysVarRangeSet(0, int32(NumSysVar)-1, 0)
 	c.sysFvarRangeSet(0, int32(NumSysFvar)-1, 0)
 	atk := float32(c.gi().data.attack) * c.ocd().attackRatio / 100
 	c.CharSystemVar = CharSystemVar{
 		bindToId:        -1,
-		angleScale:      [...]float32{1, 1},
-		alpha:           [...]int32{255, 0},
-		width:           [...]float32{c.baseWidthFront(), c.baseWidthBack()},
-		height:          [...]float32{c.baseHeightTop(), c.baseHeightBottom()},
+		angleScale:      [2]float32{1, 1},
+		alpha:           [2]int32{255, 0},
+		width:           [2]float32{c.baseWidthFront(), c.baseWidthBack()},
+		height:          [2]float32{c.baseHeightTop(), c.baseHeightBottom()},
 		attackMul:       [4]float32{atk, atk, atk, atk},
 		fallDefenseMul:  1,
 		superDefenseMul: 1,
@@ -2471,6 +2479,8 @@ func (c *Char) clear2() {
 	c.targets = c.targets[:0]
 	c.cpucmd = -1
 }
+
+// Clear data when loading a new instance of the same character
 func (c *Char) clearCachedData() {
 	c.anim = nil
 	c.curFrame = nil
@@ -3588,7 +3598,7 @@ func (c *Char) command(pn, i int) bool {
 		}
 	}
 	// AI cheating for commands longer than 1 button
-	if c.key < 0 && len(cl) > 0 {
+	if c.controller < 0 && len(cl) > 0 {
 		if c.helperIndex != 0 || len(cl[0].cmd) > 1 || len(cl[0].cmd[0].key) > 1 ||
 			int(Btoi(cl[0].cmd[0].slash)) != len(cl[0].hold) {
 			if i == int(c.cpucmd) {
@@ -7083,7 +7093,7 @@ func (c *Char) actionPrepare() {
 		// Perform basic actions
 		if c.keyctrl[0] && c.cmd != nil {
 			// In Mugen, characters can perform basic actions even if they are KO
-			if c.ctrl() && !c.inputOver() && (c.key >= 0 || c.helperIndex == 0) {
+			if c.ctrl() && !c.inputOver() && (c.controller >= 0 || c.helperIndex == 0) {
 				if !c.asf(ASF_nohardcodedkeys) {
 					if !c.asf(ASF_nojump) && c.ss.stateType == ST_S && c.cmd[0].Buffer.U > 0 &&
 						(!(sys.intro < 0 && sys.intro > -sys.lifebar.ro.over_waittime) || c.asf(ASF_postroundinput)) {
@@ -7277,7 +7287,7 @@ func (c *Char) actionRun() {
 	}
 	if !c.pauseBool {
 		if c.keyctrl[0] && c.cmd != nil {
-			if c.ctrl() && !c.inputOver() && (c.key >= 0 || c.helperIndex == 0) {
+			if c.ctrl() && !c.inputOver() && (c.controller >= 0 || c.helperIndex == 0) {
 				if !c.asf(ASF_nohardcodedkeys) {
 					if c.inguarddist && c.scf(SCF_guard) && c.cmd[0].Buffer.B > 0 &&
 						!c.inGuardState() {
@@ -7830,143 +7840,145 @@ func (c *Char) cueDraw() {
 	angle := c.clsnAngle * c.facing
 	nhbtxt := ""
 	// Debug Clsn display
-	if sys.clsnDraw && c.curFrame != nil {
-		// Add Clsn1
-		if clsn := c.curFrame.Clsn1(); len(clsn) > 0 {
-			if c.scf(SCF_standby) {
-				// Add nothing
-			} else if c.atktmp != 0 && c.hitdef.reversal_attr > 0 {
-				sys.debugc1rev.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if c.atktmp != 0 && c.hitdef.attr > 0 {
-				sys.debugc1hit.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else {
-				sys.debugc1not.Add(clsn, xoff, yoff, xs, ys, angle)
+	if sys.clsnDraw {
+		if c.curFrame != nil {
+			// Add Clsn1
+			if clsn := c.curFrame.Clsn1(); len(clsn) > 0 {
+				if c.scf(SCF_standby) {
+					// Add nothing
+				} else if c.atktmp != 0 && c.hitdef.reversal_attr > 0 {
+					sys.debugc1rev.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else if c.atktmp != 0 && c.hitdef.attr > 0 {
+					sys.debugc1hit.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else {
+					sys.debugc1not.Add(clsn, xoff, yoff, xs, ys, angle)
+				}
 			}
-		}
-		// Check invincibility to decide box colors
-		flags := int32(ST_SCA) | int32(AT_ALL)
-		if clsn := c.curFrame.Clsn2(); len(clsn) > 0 {
-			hb, mtk := false, false
-			if c.unhittableTime > 0 {
-				mtk = true
-			} else {
-				for _, h := range c.hitby {
-					if h.time != 0 {
-						// If carrying invincibility from previous iterations
-						if h.stack && flags != int32(ST_SCA)|int32(AT_ALL) {
-							nhbtxt = "Stacked"
-							hb = true
-							mtk = false
-							break
+			// Check invincibility to decide box colors
+			flags := int32(ST_SCA) | int32(AT_ALL)
+			if clsn := c.curFrame.Clsn2(); len(clsn) > 0 {
+				hb, mtk := false, false
+				if c.unhittableTime > 0 {
+					mtk = true
+				} else {
+					for _, h := range c.hitby {
+						if h.time != 0 {
+							// If carrying invincibility from previous iterations
+							if h.stack && flags != int32(ST_SCA)|int32(AT_ALL) {
+								nhbtxt = "Stacked"
+								hb = true
+								mtk = false
+								break
+							}
+							// If player-specific invincibility
+							if h.playerno >= 0 || h.playerid >= 0 {
+								nhbtxt = "Player-specific"
+								hb = true
+								mtk = false
+								break
+							}
+							// Combine all NotHitBy flags
+							if h.flag != 0 {
+								flags &= h.flag
+							}
 						}
-						// If player-specific invincibility
-						if h.playerno >= 0 || h.playerid >= 0 {
-							nhbtxt = "Player-specific"
+					}
+					// If not stacked and not player-specific
+					if nhbtxt == "" {
+						if flags != int32(ST_SCA)|int32(AT_ALL) {
 							hb = true
-							mtk = false
-							break
-						}
-						// Combine all NotHitBy flags
-						if h.flag != 0 {
-							flags &= h.flag
+							mtk = flags&int32(ST_SCA) == 0 || flags&int32(AT_ALL) == 0
 						}
 					}
 				}
-				// If not stacked and not player-specific
-				if nhbtxt == "" {
-					if flags != int32(ST_SCA)|int32(AT_ALL) {
-						hb = true
-						mtk = flags&int32(ST_SCA) == 0 || flags&int32(AT_ALL) == 0
-					}
-				}
-			}
-			if c.scf(SCF_standby) {
-				sys.debugc2stb.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if mtk {
-				// Add fully invincible Clsn2
-				sys.debugc2mtk.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if hb {
-				// Add partially invincible Clsn2
-				sys.debugc2hb.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else if c.inguarddist && c.scf(SCF_guard) {
-				// Add guarding Clsn2
-				sys.debugc2grd.Add(clsn, xoff, yoff, xs, ys, angle)
-			} else {
-				// Add regular Clsn2
-				sys.debugc2.Add(clsn, xoff, yoff, xs, ys, angle)
-			}
-			// Add invulnerability text
-			if nhbtxt == "" {
-				if mtk {
-					nhbtxt = "Invincible"
+				if c.scf(SCF_standby) {
+					sys.debugc2stb.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else if mtk {
+					// Add fully invincible Clsn2
+					sys.debugc2mtk.Add(clsn, xoff, yoff, xs, ys, angle)
 				} else if hb {
-					// Statetype
-					if flags&int32(ST_S) == 0 || flags&int32(ST_C) == 0 || flags&int32(ST_A) == 0 {
-						if flags&int32(ST_S) == 0 {
-							nhbtxt += "S"
+					// Add partially invincible Clsn2
+					sys.debugc2hb.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else if c.inguarddist && c.scf(SCF_guard) {
+					// Add guarding Clsn2
+					sys.debugc2grd.Add(clsn, xoff, yoff, xs, ys, angle)
+				} else {
+					// Add regular Clsn2
+					sys.debugc2.Add(clsn, xoff, yoff, xs, ys, angle)
+				}
+				// Add invulnerability text
+				if nhbtxt == "" {
+					if mtk {
+						nhbtxt = "Invincible"
+					} else if hb {
+						// Statetype
+						if flags&int32(ST_S) == 0 || flags&int32(ST_C) == 0 || flags&int32(ST_A) == 0 {
+							if flags&int32(ST_S) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(ST_C) == 0 {
+								nhbtxt += "C"
+							}
+							if flags&int32(ST_A) == 0 {
+								nhbtxt += "A"
+							}
+							nhbtxt += " Any"
 						}
-						if flags&int32(ST_C) == 0 {
-							nhbtxt += "C"
+						// Attack
+						if flags&int32(AT_NA) == 0 || flags&int32(AT_SA) == 0 || flags&int32(AT_HA) == 0 {
+							if nhbtxt != "" {
+								nhbtxt += ", "
+							}
+							if flags&int32(AT_NA) == 0 {
+								nhbtxt += "N"
+							}
+							if flags&int32(AT_SA) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(AT_HA) == 0 {
+								nhbtxt += "H"
+							}
+							nhbtxt += " Atk"
 						}
-						if flags&int32(ST_A) == 0 {
-							nhbtxt += "A"
+						// Throw
+						if flags&int32(AT_NT) == 0 || flags&int32(AT_ST) == 0 || flags&int32(AT_HT) == 0 {
+							if nhbtxt != "" {
+								nhbtxt += ", "
+							}
+							if flags&int32(AT_NT) == 0 {
+								nhbtxt += "N"
+							}
+							if flags&int32(AT_ST) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(AT_HT) == 0 {
+								nhbtxt += "H"
+							}
+							nhbtxt += " Thr"
 						}
-						nhbtxt += " Any"
-					}
-					// Attack
-					if flags&int32(AT_NA) == 0 || flags&int32(AT_SA) == 0 || flags&int32(AT_HA) == 0 {
-						if nhbtxt != "" {
-							nhbtxt += ", "
+						// Projectile
+						if flags&int32(AT_NP) == 0 || flags&int32(AT_SP) == 0 || flags&int32(AT_HP) == 0 {
+							if nhbtxt != "" {
+								nhbtxt += ", "
+							}
+							if flags&int32(AT_NP) == 0 {
+								nhbtxt += "N"
+							}
+							if flags&int32(AT_SP) == 0 {
+								nhbtxt += "S"
+							}
+							if flags&int32(AT_HP) == 0 {
+								nhbtxt += "H"
+							}
+							nhbtxt += " Prj"
 						}
-						if flags&int32(AT_NA) == 0 {
-							nhbtxt += "N"
-						}
-						if flags&int32(AT_SA) == 0 {
-							nhbtxt += "S"
-						}
-						if flags&int32(AT_HA) == 0 {
-							nhbtxt += "H"
-						}
-						nhbtxt += " Atk"
-					}
-					// Throw
-					if flags&int32(AT_NT) == 0 || flags&int32(AT_ST) == 0 || flags&int32(AT_HT) == 0 {
-						if nhbtxt != "" {
-							nhbtxt += ", "
-						}
-						if flags&int32(AT_NT) == 0 {
-							nhbtxt += "N"
-						}
-						if flags&int32(AT_ST) == 0 {
-							nhbtxt += "S"
-						}
-						if flags&int32(AT_HT) == 0 {
-							nhbtxt += "H"
-						}
-						nhbtxt += " Thr"
-					}
-					// Projectile
-					if flags&int32(AT_NP) == 0 || flags&int32(AT_SP) == 0 || flags&int32(AT_HP) == 0 {
-						if nhbtxt != "" {
-							nhbtxt += ", "
-						}
-						if flags&int32(AT_NP) == 0 {
-							nhbtxt += "N"
-						}
-						if flags&int32(AT_SP) == 0 {
-							nhbtxt += "S"
-						}
-						if flags&int32(AT_HP) == 0 {
-							nhbtxt += "H"
-						}
-						nhbtxt += " Prj"
 					}
 				}
 			}
-		}
-		// Add size box (width * height)
-		if c.csf(CSF_playerpush) {
-			sys.debugcsize.Add(c.sizeBox, x, y, c.facing*c.localscl, c.localscl, 0)
+			// Add size box (width * height)
+			if c.csf(CSF_playerpush) {
+				sys.debugcsize.Add(c.sizeBox, x, y, c.facing*c.localscl, c.localscl, 0)
+			}
 		}
 		// Add crosshair
 		sys.debugch.Add([]float32{-1, -1, 1, 1}, x, y, 1, 1, 0)
@@ -8034,10 +8046,21 @@ func (c *Char) cueDraw() {
 		//	c.alpha = [...]int32{255, 0}
 		//}
 
+		// Determine AIR offset multiplier
+		// This must take into account both the coordinate spaces and the scale constants
+		// This seems more complicated than it ought to be. Probably because our drawing functions are different from Mugen
+		// https://github.com/ikemen-engine/Ikemen-GO/issues/1459, 1778 and 2089
+		airOffsetFix := [2]float32{1, 1}
+		if c.playerNo != c.animPN {
+			airOffsetFix = [2]float32{
+				(sys.chars[c.playerNo][0].localcoord / sys.chars[c.animPN][0].localcoord) / (sys.chars[c.playerNo][0].size.xscale / sys.chars[c.animPN][0].size.xscale),
+				(sys.chars[c.playerNo][0].localcoord / sys.chars[c.animPN][0].localcoord) / (sys.chars[c.playerNo][0].size.yscale / sys.chars[c.animPN][0].size.yscale),
+			}
+		}
+		// Define sprite data
 		sd := &SprData{c.anim, c.getPalfx(), pos,
 			scl, c.alpha, c.sprPriority + int32(c.pos[2]*c.localscl), Rotation{agl, 0, 0}, c.angleScale, false,
-			c.playerNo == sys.superplayer, c.gi().mugenver[0] != 1, c.facing,
-			c.localcoord / sys.chars[c.animPN][0].localcoord, // https://github.com/ikemen-engine/Ikemen-GO/issues/1459 and 1778
+			c.playerNo == sys.superplayer, c.gi().mugenver[0] != 1, c.facing, airOffsetFix,
 			0, 0, [4]float32{0, 0, 0, 0}}
 		if !c.csf(CSF_trans) {
 			sd.alpha[0] = -1

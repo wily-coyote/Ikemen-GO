@@ -1165,7 +1165,7 @@ func (s *System) nextRound() {
 			p[0].posReset()
 			p[0].setCtrl(false)
 			p[0].clearState()
-			p[0].clear2()
+			p[0].clearNextRound()
 			p[0].varRangeSet(0, s.cgi[i].data.intpersistindex-1, 0)
 			p[0].fvarRangeSet(0, s.cgi[i].data.floatpersistindex-1, 0)
 			for j := range p[0].cmd {
@@ -1271,7 +1271,7 @@ func (s *System) commandUpdate() {
 			for _, c := range p {
 				if (c.helperIndex == 0 ||
 					c.helperIndex > 0 && &c.cmd[0] != &r.cmd[0]) &&
-					c.cmd[0].Input(c.key, int32(c.facing), sys.com[i], c.inputFlag) {
+					c.cmd[0].Input(c.controller, int32(c.facing), sys.com[i], c.inputFlag) {
 					hp := c.hitPause() && c.gi().constants["input.pauseonhitpause"] != 0
 					buftime := Btoi(hp && c.gi().mugenver[0] != 1)
 					if s.super > 0 {
@@ -1284,11 +1284,11 @@ func (s *System) commandUpdate() {
 						}
 					}
 					for j := range c.cmd {
-						c.cmd[j].Step(int32(c.facing), c.key < 0, hp, buftime+Btoi(hp))
+						c.cmd[j].Step(int32(c.facing), c.controller < 0, hp, buftime+Btoi(hp))
 					}
 				}
 			}
-			if r.key < 0 {
+			if r.controller < 0 {
 				cc := int32(-1)
 				// AI Scaling
 				// TODO: Balance AI Scaling
@@ -1779,7 +1779,7 @@ func (s *System) action() {
 	if s.superanim != nil {
 		s.spritesLayer1.add(&SprData{s.superanim, &s.superpmap, s.superpos,
 			[...]float32{s.superfacing, 1}, [2]int32{-1}, 5, Rotation{}, [2]float32{},
-			false, true, s.cgi[s.superplayer].mugenver[0] != 1, 1, 1, 0, 0, [4]float32{0, 0, 0, 0}})
+			false, true, s.cgi[s.superplayer].mugenver[0] != 1, 1, [2]float32{1, 1}, 0, 0, [4]float32{0, 0, 0, 0}})
 		if s.superanim.loopend {
 			s.superanim = nil
 		}
@@ -2206,7 +2206,7 @@ func (s *System) fight() (reload bool) {
 	var level [len(s.chars)]int32
 	for i, p := range s.chars {
 		if len(p) > 0 {
-			p[0].clear2()
+			p[0].clearNextRound()
 			level[i] = s.wincnt.getLevel(i)
 			if s.powerShare[i&1] && p[0].teamside != -1 {
 				pmax := Max(s.cgi[i&1].data.power, s.cgi[i].data.power)
@@ -3326,9 +3326,9 @@ func (l *Loader) loadChar(pn int) int {
 	var p *Char
 	if len(sys.chars[pn]) > 0 && cdef == sys.cgi[pn].def {
 		p = sys.chars[pn][0]
-		p.key = pn
+		p.controller = pn
 		if sys.com[pn] != 0 {
-			p.key ^= -1
+			p.controller ^= -1
 		}
 		p.clearCachedData()
 	} else {
@@ -3400,7 +3400,7 @@ func (l *Loader) loadAttachedChar(pn int) int {
 	var p *Char
 	if len(sys.chars[pn]) > 0 && cdef == sys.cgi[pn].def {
 		p = sys.chars[pn][0]
-		//p.key = -pn
+		//p.controller = -pn
 		p.clearCachedData()
 	} else {
 		p = newChar(pn, 0)
