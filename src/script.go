@@ -3148,6 +3148,34 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LBool(sys.debugWC.canRecover()))
 		return 1
 	})
+	luaRegister(l, "clsnoverlap", func(l *lua.LState) int {
+		id := int32(numArg(l, 2))
+		var c1, c2 int32
+		// Get box 1 type
+		switch strArg(l, 1) {
+		case "clsn1":
+			c1 = 1
+		case "clsn2":
+			c1 = 2
+		case "size":
+			c1 = 3
+		default:
+			l.RaiseError("Invalid collision box type")
+		}
+		// Get box 2 type
+		switch strArg(l, 3) {
+		case "clsn1":
+			c2 = 1
+		case "clsn2":
+			c2 = 2
+		case "size":
+			c2 = 3
+		default:
+			l.RaiseError("Invalid collision box type")
+		}
+		l.Push(lua.LBool(sys.debugWC.clsnOverlapTrigger(c1, id, c2)))
+		return 1
+	})
 	luaRegister(l, "clsnvar", func(l *lua.LState) int {
 		c := strArg(l, 1)
 		idx := int(numArg(l, 2))
