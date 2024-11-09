@@ -242,6 +242,14 @@ func (bgm *Bgm) Open(filename string, loop, bgmVolume, bgmLoopStart, bgmLoopEnd,
 			lc = -1
 		}
 	}
+	// Don't do anything if we have the nomusic command line flag
+	if _, ok := sys.cmdFlags["-nomusic"]; ok {
+		return
+	}
+	// Don't do anything if we have the nosound command line flag
+	if _, ok := sys.cmdFlags["-nosound"]; ok {
+		return
+	}
 	bgm.startPos = startPosition
 	// we're going to continue to use our own modified streamLooper because beep doesn't allow
 	// direct access to loop2 for dynamic modifications to loopstart, loopend, etc.
