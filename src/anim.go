@@ -912,22 +912,22 @@ func (at AnimationTable) get(no int32) *Animation {
 }
 
 type SprData struct {
-	anim        *Animation
-	fx          *PalFX
-	pos         [2]float32
-	scl         [2]float32
-	alpha       [2]int32
-	priority    int32
-	rot         Rotation
-	ascl        [2]float32
-	screen      bool
-	bright      bool
-	oldVer      bool
-	facing      float32
+	anim         *Animation
+	fx           *PalFX
+	pos          [2]float32
+	scl          [2]float32
+	alpha        [2]int32
+	priority     int32
+	rot          Rotation
+	ascl         [2]float32
+	screen       bool
+	bright       bool
+	oldVer       bool
+	facing       float32
 	airOffsetFix [2]float32 // posLocalscl replacement
-	projection  int32
-	fLength     float32
-	window      [4]float32
+	projection   int32
+	fLength      float32
+	window       [4]float32
 }
 
 type DrawList []*SprData

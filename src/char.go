@@ -2335,30 +2335,30 @@ func (c *Char) panic() {
 func (c *Char) init(n int, idx int32) {
 	// Reset struct with defaults
 	*c = Char{
-		playerNo:         n,
-		helperIndex:      idx,
-		controller:       n,
-		animPN:           n,
-		id:               -1,
-		index:            -1,
-		runorder:         -1,
-		parentIndex:      IErr,
-		hoIdx:            -1,
-		mctype:           MC_Hit,
-		ownpal:           true,
-		facing:           1,
-		minus:            2,
-		winquote:         -1,
-		clsnBaseScale:    [2]float32{1, 1},
-		clsnScaleMul:     [2]float32{1, 1},
-		clsnScale:        [2]float32{1, 1},
-		zScale:           1,
-		aimg:             *newAfterImage(),
+		playerNo:      n,
+		helperIndex:   idx,
+		controller:    n,
+		animPN:        n,
+		id:            -1,
+		index:         -1,
+		runorder:      -1,
+		parentIndex:   IErr,
+		hoIdx:         -1,
+		mctype:        MC_Hit,
+		ownpal:        true,
+		facing:        1,
+		minus:         2,
+		winquote:      -1,
+		clsnBaseScale: [2]float32{1, 1},
+		clsnScaleMul:  [2]float32{1, 1},
+		clsnScale:     [2]float32{1, 1},
+		zScale:        1,
+		aimg:          *newAfterImage(),
 		CharSystemVar: CharSystemVar{
-			superDefenseMul:  1.0,
-			fallDefenseMul:   1.0,
-			customDefense:    1.0,
-			finalDefense:     1.0,
+			superDefenseMul: 1.0,
+			fallDefenseMul:  1.0,
+			customDefense:   1.0,
+			finalDefense:    1.0,
 		},
 	}
 
@@ -2410,7 +2410,7 @@ func (c *Char) clsnOverlapTrigger(box1, pid, box2 int32) bool {
 }
 
 func (c *Char) copyParent(p *Char) {
-	c.name = p.name+"'s helper"
+	c.name = p.name + "'s helper"
 	c.parentIndex = p.helperIndex
 	c.controller = p.controller
 	c.teamside = p.teamside
