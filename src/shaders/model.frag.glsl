@@ -34,8 +34,10 @@ uniform sampler2D tex;
 uniform sampler2D normalMap;
 uniform sampler2D metallicRoughnessMap;
 uniform sampler2D ambientOcclusionMap;
+#ifdef ENABLE_SHADOW
 uniform sampler2D shadowMap[4];
 uniform samplerCube shadowCubeMap[4];
+#endif
 uniform samplerCube lambertianEnvSampler;
 uniform samplerCube GGXEnvSampler;
 uniform sampler2D GGXLUT;
@@ -82,6 +84,7 @@ float clampedDot(vec3 x, vec3 y)
 
 float DirectionalLightShadowCalculation(int index, vec4 lightSpacePos,float NdotL,float shadowBias)
 {
+    #ifdef ENABLE_SHADOW
     // perform perspective divide
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     // transform to [0,1] range
@@ -93,12 +96,15 @@ float DirectionalLightShadowCalculation(int index, vec4 lightSpacePos,float Ndot
     // check whether current frag pos is in shadow
     float bias = shadowBias*tan(acos(NdotL));
     float shadow = closestDepth-currentDepth > -bias  ? 1.0 : 0.0;
-
+    #else
+    float shadow = 1.0;
+    #endif
     return shadow;
 }
 
 float SpotLightShadowCalculation(int index, vec3 pointToLight, vec4 lightSpacePos,float NdotL,float farPlane,float shadowBias)
 {
+    #ifdef ENABLE_SHADOW
     float closestDepth = COMPAT_TEXTURE(shadowMap[index], lightSpacePos.xy).r;
     // it is currently in linear range between [0,1]. Re-transform back to original value
     closestDepth *= farPlane;
@@ -106,12 +112,15 @@ float SpotLightShadowCalculation(int index, vec3 pointToLight, vec4 lightSpacePo
     float currentDepth = length(pointToLight);
     float bias = shadowBias*tan(acos(NdotL));
     float shadow = currentDepth-closestDepth < bias  ? 1.0 : 0.0;
-
+    #else
+    float shadow = 1.0;
+    #endif
     return shadow;
 }
 
 float PointLightShadowCalculation(int index, vec3 pointToLight,float NdotL,float farPlane,float shadowBias)
 {
+    #ifdef ENABLE_SHADOW
     float closestDepth = COMPAT_TEXTURE_CUBE(shadowCubeMap[index], -pointToLight).r;
     // it is currently in linear range between [0,1]. Re-transform back to original value
     closestDepth *= farPlane;
@@ -121,7 +130,10 @@ float PointLightShadowCalculation(int index, vec3 pointToLight,float NdotL,float
     float bias = shadowBias*tan(acos(NdotL));
 
     float shadow = currentDepth-closestDepth < bias  ? 1.0 : 0.0;
-
+    
+    #else
+    float shadow = 1.0;
+    #endif
     return shadow;
 }
 

@@ -41,6 +41,8 @@
   "DebugKeys": true,
   "DebugMode": true,
   "Difficulty": 5,
+  "EnableModel": true,
+  "EnableModelShadow": true,
   "EscOpensMenu": true,
   "ExternalShaders": [],
   "FirstRun": true,

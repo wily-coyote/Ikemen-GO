@@ -2894,6 +2894,22 @@ func systemScriptInit(l *lua.LState) {
 		sys.window.SetSwapInterval(sys.vRetrace)
 		return 0
 	})
+	luaRegister(l, "toggleEnableModel", func(*lua.LState) int {
+		if l.GetTop() >= 1 {
+			sys.enableModel = boolArg(l, 1)
+		} else {
+			sys.enableModel = !sys.enableModel
+		}
+		return 0
+	})
+	luaRegister(l, "toggleEnableModelShadow", func(*lua.LState) int {
+		if l.GetTop() >= 1 {
+			sys.enableModelShadow = boolArg(l, 1)
+		} else {
+			sys.enableModelShadow = !sys.enableModel
+		}
+		return 0
+	})
 	luaRegister(l, "updateVolume", func(l *lua.LState) int {
 		if l.GetTop() >= 1 {
 			sys.bgm.bgmVolume = int(Min(int32(numArg(l, 1)), int32(sys.maxBgmVolume)))
