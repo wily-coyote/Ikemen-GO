@@ -1651,7 +1651,7 @@
 	; This list is populated with shaders existing in 'external/shaders' directory
 	menu.itemname.menuvideo.shaders.empty = ""
 	menu.itemname.menuvideo.shaders.noshader = "Disable"
-	menu.itemname.menuvideo.shaders.back = "Backs"
+	menu.itemname.menuvideo.shaders.back = "Back"
 	menu.itemname.menuvideo.model = "3D Model Settings"
 	menu.itemname.menuvideo.model.enablemodel = "3D Model"
 	menu.itemname.menuvideo.model.enablshadow = "Shadow"
