@@ -2646,7 +2646,8 @@ func loadglTFStage(filepath string) (*Model, error) {
 				}
 				primitive.morphTargetTexture = &GLTFTexture{}
 				sys.mainThreadTask <- func() {
-					primitive.morphTargetTexture.tex = newDataTexture(int32(primitive.numVertices), 8)
+					dimension := int(math.Ceil(math.Pow(float64(8*primitive.numVertices), 0.5)))
+					primitive.morphTargetTexture.tex = newDataTexture(int32(dimension), int32(dimension))
 					//primitive.morphTargetTexture.tex.SetPixelData(targetBuffer)
 				}
 			}
@@ -2990,8 +2991,9 @@ func calculateAnimationData(mdl *Model, n *Node) {
 			p.morphTargetCount = uint32(count)
 			if len(targetBuffer) > int(8*4*p.numVertices) {
 				targetBuffer = targetBuffer[:8*4*p.numVertices]
-			} else if len(targetBuffer) < int(8*4*p.numVertices) {
-				targetBuffer = append(targetBuffer, make([]float32, int(8*4*p.numVertices)-len(targetBuffer))...)
+			}
+			if len(targetBuffer) < int(4*p.morphTargetTexture.tex.width*p.morphTargetTexture.tex.width) {
+				targetBuffer = append(targetBuffer, make([]float32, int(4*p.morphTargetTexture.tex.width*p.morphTargetTexture.tex.width)-len(targetBuffer))...)
 			}
 			p.morphTargetTexture.tex.SetPixelData(targetBuffer)
 		} else {
@@ -3074,6 +3076,7 @@ func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlend
 				gfx.SetModelUniformI("numTargets", int(Min(int32(p.morphTargetCount), 8)))
 				gfx.SetModelTexture("morphTargetValues", p.morphTargetTexture.tex)
 				gfx.SetModelUniformFv("morphTargetWeight", p.morphTargetWeight[:])
+				gfx.SetModelUniformI("morphTargetTextureDimension", int(p.morphTargetTexture.tex.width))
 			} else {
 				gfx.SetModelUniformFv("morphTargetWeight", make([]float32, 8))
 			}
