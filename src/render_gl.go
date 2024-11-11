@@ -385,7 +385,7 @@ var panoramaToCubeMapFragShader string
 //go:embed shaders/cubemapFiltering.frag.glsl
 var cubemapFilteringFragShader string
 
-//init 3D model shader
+// init 3D model shader
 func (r *Renderer) InitModelShader() error {
 	var err error
 	if r.enableShadow {
