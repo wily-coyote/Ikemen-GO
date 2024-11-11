@@ -968,18 +968,6 @@ options.t_itemname = {
 		end
 		return true
 	end,
-	--Model (submenu)
-	['model'] = function(t, item, cursorPosY, moveTxt)
-		if main.f_input(main.t_players, {'$F', '$B', 'pal', 's'}) then
-			sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
-			local t_pos = {}
-			local ok = false
-			t_pos.selected = true
-			t.submenu[t.items[item].itemname].loop()
-			t.items[item].vardisplay = ""
-		end
-		return true
-	end,
 	--Enable Model
 	['enablemodel'] = function(t, item, cursorPosY, moveTxt)
 		if main.f_input(main.t_players, {'$F', '$B', 'pal', 's'}) then
@@ -1483,9 +1471,6 @@ options.t_vardisplay = {
 	end,
 	['minturns'] = function()
 		return config.NumTurns[1]
-	end,
-	['model'] = function()
-		return ""
 	end,
 	['msaa'] = function()
 		return options.f_definedDisplay(config.MSAA, {[0] = motif.option_info.menu_valuename_disabled}, config.MSAA .. 'x')
