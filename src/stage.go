@@ -2008,7 +2008,6 @@ type Environment struct {
 	lambertianTexture     *GLTFTexture
 	GGXTexture            *GLTFTexture
 	GGXLUT                *GLTFTexture
-	init                  bool
 	lambertianSampleCount int32
 	GGXSampleCount        int32
 	GGXLUTSampleCount     int32
@@ -2018,7 +2017,6 @@ type Environment struct {
 
 func loadEnvironment(filepath string) (*Environment, error) {
 	env := &Environment{}
-	env.init = true
 	env.lambertianSampleCount = 2048
 	env.GGXSampleCount = 1024
 	env.GGXLUTSampleCount = 512
@@ -2051,6 +2049,9 @@ func loadEnvironment(filepath string) (*Environment, error) {
 			data[i], data[i+1], data[i+2], data[j], data[j+1], data[j+2] = data[j], data[j+1], data[j+2], data[i], data[i+1], data[i+2]
 		}
 		sys.mainThreadTask <- func() {
+			if !gfx.enableModel {
+				return
+			}
 			env.hdrTexture.tex = newHDRTexture(int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y))
 
 			env.hdrTexture.tex.SetRGBPixelData(data)
@@ -2645,7 +2646,8 @@ func loadglTFStage(filepath string) (*Model, error) {
 				}
 				primitive.morphTargetTexture = &GLTFTexture{}
 				sys.mainThreadTask <- func() {
-					primitive.morphTargetTexture.tex = newDataTexture(int32(primitive.numVertices), 8)
+					dimension := int(math.Ceil(math.Pow(float64(8*primitive.numVertices), 0.5)))
+					primitive.morphTargetTexture.tex = newDataTexture(int32(dimension), int32(dimension))
 					//primitive.morphTargetTexture.tex.SetPixelData(targetBuffer)
 				}
 			}
@@ -2989,8 +2991,9 @@ func calculateAnimationData(mdl *Model, n *Node) {
 			p.morphTargetCount = uint32(count)
 			if len(targetBuffer) > int(8*4*p.numVertices) {
 				targetBuffer = targetBuffer[:8*4*p.numVertices]
-			} else if len(targetBuffer) < int(8*4*p.numVertices) {
-				targetBuffer = append(targetBuffer, make([]float32, int(8*4*p.numVertices)-len(targetBuffer))...)
+			}
+			if len(targetBuffer) < int(4*p.morphTargetTexture.tex.width*p.morphTargetTexture.tex.width) {
+				targetBuffer = append(targetBuffer, make([]float32, int(4*p.morphTargetTexture.tex.width*p.morphTargetTexture.tex.width)-len(targetBuffer))...)
 			}
 			p.morphTargetTexture.tex.SetPixelData(targetBuffer)
 		} else {
@@ -3073,6 +3076,7 @@ func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlend
 				gfx.SetModelUniformI("numTargets", int(Min(int32(p.morphTargetCount), 8)))
 				gfx.SetModelTexture("morphTargetValues", p.morphTargetTexture.tex)
 				gfx.SetModelUniformFv("morphTargetWeight", p.morphTargetWeight[:])
+				gfx.SetModelUniformI("morphTargetTextureDimension", int(p.morphTargetTexture.tex.width))
 			} else {
 				gfx.SetModelUniformFv("morphTargetWeight", make([]float32, 8))
 			}
@@ -3173,7 +3177,7 @@ func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlend
 	}
 }
 func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber int) {
-	if s.model == nil || len(s.model.scenes) <= sceneNumber {
+	if s.model == nil || len(s.model.scenes) <= sceneNumber || !gfx.enableModel {
 		return
 	}
 	drawFOV := s.stageCamera.fov * math.Pi / 180
@@ -3198,7 +3202,7 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 		s.model.nodes[index].calculateWorldTransform(mgl.Ident4(), s.model.nodes)
 		calculateAnimationData(s.model, s.model.nodes[index])
 	}
-	if len(scene.lightNodes) > 0 && sceneNumber == 0 {
+	if len(scene.lightNodes) > 0 && sceneNumber == 0 && gfx.enableShadow {
 		gfx.prepareShadowMapPipeline()
 		for i := 0; i < int(Min(int32(len(scene.lightNodes)), 4)); i++ {
 			light := s.model.nodes[scene.lightNodes[i]]

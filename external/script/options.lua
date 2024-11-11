@@ -216,6 +216,8 @@ options.t_itemname = {
 			config.VolumeSfx = 80
 			config.VRetrace = 1
 			config.WindowScaleMode = true
+			config.enableModel = true
+			config.enableModelShadow = true
 			--config.WavChannels = 32
 			--config.WindowCentered = true
 			--config.WindowIcon = {"external/icons/IkemenCylia.png"}
@@ -261,6 +263,8 @@ options.t_itemname = {
 			toggleVsync(config.VRetrace)
 			toggleWindowScaleMode(config.WindowScaleMode)
 			toggleKeepAspect(config.KeepAspect)
+			toggleEnableModel(config.enableModel)
+			toggleEnableModelShadow(config.enableShadow)
 			options.modified = true
 			options.needReload = true
 		end
@@ -964,6 +968,50 @@ options.t_itemname = {
 		end
 		return true
 	end,
+	--Model (submenu)
+	['model'] = function(t, item, cursorPosY, moveTxt)
+		if main.f_input(main.t_players, {'$F', '$B', 'pal', 's'}) then
+			sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
+			local t_pos = {}
+			local ok = false
+			t_pos.selected = true
+			t.submenu[t.items[item].itemname].loop()
+			t.items[item].vardisplay = ""
+		end
+		return true
+	end,
+	--Enable Model
+	['enablemodel'] = function(t, item, cursorPosY, moveTxt)
+		if main.f_input(main.t_players, {'$F', '$B', 'pal', 's'}) then
+			sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
+			if config.EnableModel == true then
+				config.EnableModel = false
+			else
+				config.EnableModel = true
+			end
+			toggleEnableModel()
+			t.items[item].vardisplay = options.f_definedDisplay(config.EnableModel, {[true] = motif.option_info.menu_valuename_enabled}, motif.option_info.menu_valuename_disabled)
+			options.modified = true
+			options.needReload = true
+		end
+		return true
+	end,
+	--Enable Model Shadow
+	['enablemodelshadow'] = function(t, item, cursorPosY, moveTxt)
+		if main.f_input(main.t_players, {'$F', '$B', 'pal', 's'}) then
+			sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
+			if config.EnableModelShadow == true then
+				config.EnableModelShadow = false
+			else
+				config.EnableModelShadow = true
+			end
+			toggleEnableModel()
+			t.items[item].vardisplay = options.f_definedDisplay(config.EnableModelShadow, {[true] = motif.option_info.menu_valuename_enabled}, motif.option_info.menu_valuename_disabled)
+			options.modified = true
+			options.needReload = true
+		end
+		return true
+	end,
 	--Master Volume
 	['mastervolume'] = function(t, item, cursorPosY, moveTxt)
 		if main.f_input(main.t_players, {'$F'}) and config.VolumeMaster < 200 then
@@ -1375,6 +1423,12 @@ options.t_vardisplay = {
 	['difficulty'] = function()
 		return config.Difficulty
 	end,
+	['enablemodel'] = function()
+		return options.f_definedDisplay(config.EnableModel, {[true] = motif.option_info.menu_valuename_enabled}, motif.option_info.menu_valuename_disabled)
+	end,
+	['enablemodelshadow'] = function()
+		return options.f_definedDisplay(config.EnableModelShadow, {[true] = motif.option_info.menu_valuename_enabled}, motif.option_info.menu_valuename_disabled)
+	end,
 	['explodmax'] = function()
 		return config.MaxExplod
 	end,
@@ -1429,6 +1483,9 @@ options.t_vardisplay = {
 	end,
 	['minturns'] = function()
 		return config.NumTurns[1]
+	end,
+	['model'] = function()
+		return ""
 	end,
 	['msaa'] = function()
 		return options.f_definedDisplay(config.MSAA, {[0] = motif.option_info.menu_valuename_disabled}, config.MSAA .. 'x')

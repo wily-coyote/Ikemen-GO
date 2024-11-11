@@ -91,6 +91,8 @@ var sys = System{
 	panningRange:         30,
 	windowCentered:       true,
 	audioSampleRate:      44100,
+	enableModel:          true,
+	enableModelShadow:    true,
 }
 
 type TeamMode int32
@@ -337,9 +339,11 @@ type System struct {
 	windowMainIconLocation []string
 
 	// Rendering
-	borderless bool
-	vRetrace   int
-	pngFilter  bool // Controls the GL_TEXTURE_MAG_FILTER on 32bit sprites
+	borderless        bool
+	vRetrace          int
+	pngFilter         bool // Controls the GL_TEXTURE_MAG_FILTER on 32bit sprites
+	enableModel       bool // Controls the GL_TEXTURE_MAG_FILTER on 32bit sprites
+	enableModelShadow bool // Controls the GL_TEXTURE_MAG_FILTER on 32bit sprites
 
 	gameMode          string
 	frameCounter      int32

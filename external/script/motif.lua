@@ -2039,6 +2039,11 @@ function motif.setBaseOptionInfo()
 	motif.option_info.menu_itemname_menuvideo_shaders_empty = ""
 	motif.option_info.menu_itemname_menuvideo_shaders_noshader = "Disable"
 	motif.option_info.menu_itemname_menuvideo_shaders_back = "Back"
+	motif.option_info.menu_itemname_menuvideo_model = "3D Model Settings"
+	motif.option_info.menu_itemname_menuvideo_model_enablemodel = "3D Model"
+	motif.option_info.menu_itemname_menuvideo_model_enablemodelshadow = "Shadow"
+	motif.option_info.menu_itemname_menuvideo_model_empty = ""
+	motif.option_info.menu_itemname_menuvideo_model_back = "Back"
 	motif.option_info.menu_itemname_menuvideo_empty = ""
 	motif.option_info.menu_itemname_menuvideo_back = "Back"
 
@@ -2162,6 +2167,11 @@ function motif.setBaseOptionInfo()
 		"menuvideo_shaders_empty",
 		"menuvideo_shaders_noshader",
 		"menuvideo_shaders_back",
+		"menuvideo_model",
+		"menuvideo_model_enablemodel",
+		"menuvideo_model_enablemodelshadow",
+		"menuvideo_model_empty",
+		"menuvideo_model_back",
 		"menuvideo_empty",
 		"menuvideo_back",
 		"menuaudio",

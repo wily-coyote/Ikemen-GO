@@ -30,11 +30,15 @@ func chk(err error) {
 }
 
 // Extended version of 'chk()'
-func chkEX(err error, txt string) {
+func chkEX(err error, txt string, crash bool) bool {
 	if err != nil {
 		ShowErrorDialog(txt + err.Error())
-		panic(Error(txt + err.Error()))
+		if crash {
+			panic(Error(txt + err.Error()))
+		}
+		return true
 	}
+	return false
 }
 
 func createLog(p string) *os.File {
@@ -218,6 +222,8 @@ type configSettings struct {
 	Difficulty                 int
 	EscOpensMenu               bool
 	ExternalShaders            []string
+	EnableModel                bool
+	EnableModelShadow          bool
 	FirstRun                   bool
 	FontShaderVer              uint
 	ForceStageZoomin           float32
@@ -321,7 +327,7 @@ func setupConfig() configSettings {
 			bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf {
 			bytes = bytes[3:]
 		}
-		chkEX(json.Unmarshal(bytes, &tmp), "Error while loading the config file.\n")
+		chkEX(json.Unmarshal(bytes, &tmp), "Error while loading the config file.\n", true)
 	}
 	// Fix incorrect settings (default values saved into config.json)
 	switch tmp.AudioSampleRate {
@@ -377,6 +383,8 @@ func setupConfig() configSettings {
 	sys.clsnDarken = tmp.DebugClsnDarken
 	sys.consoleRows = tmp.DebugConsoleRows
 	sys.controllerStickSensitivity = tmp.ControllerStickSensitivity
+	sys.enableModel = tmp.EnableModel
+	sys.enableModelShadow = tmp.EnableModelShadow
 	sys.explodMax = tmp.MaxExplod
 	sys.externalShaderList = tmp.ExternalShaders
 	// Bump up shader version for macOS only

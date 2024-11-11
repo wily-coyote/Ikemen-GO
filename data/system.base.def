@@ -1652,6 +1652,11 @@
 	menu.itemname.menuvideo.shaders.empty = ""
 	menu.itemname.menuvideo.shaders.noshader = "Disable"
 	menu.itemname.menuvideo.shaders.back = "Back"
+	menu.itemname.menuvideo.model = "3D Model Settings"
+	menu.itemname.menuvideo.model.enablemodel = "3D Model"
+	menu.itemname.menuvideo.model.enablshadow = "Shadow"
+	menu.itemname.menuvideo.model.empty = ""
+	menu.itemname.menuvideo.model.back = "Back"
 	menu.itemname.menuvideo.empty = ""
 	menu.itemname.menuvideo.back = "Back"
 
