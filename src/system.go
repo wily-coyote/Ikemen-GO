@@ -3452,22 +3452,24 @@ func (l *Loader) loadStage() bool {
 		var tstr string
 		tnow := time.Now()
 		defer func() {
-			sys.loadTime(tnow, tstr, false, true)
-			// Mugen compatibility mode indicator
-			if sys.stage.ikemenver[0] == 0 && sys.stage.ikemenver[1] == 0 {
-				if sys.stage.mugenver[0] == 1 && sys.stage.mugenver[1] == 1 {
-					sys.appendToConsole("Using Mugen 1.1 compatibility mode.")
-				} else if sys.stage.mugenver[0] == 1 && sys.stage.mugenver[1] == 0 {
-					sys.appendToConsole("Using Mugen 1.0 compatibility mode.")
-				} else if sys.stage.mugenver[0] != 1 {
-					sys.appendToConsole("Using WinMugen compatibility mode.")
-				} else {
-					sys.appendToConsole("Stage with unknown engine version.")
+			if sys.stage != nil {
+				sys.loadTime(tnow, tstr, false, true)
+				// Mugen compatibility mode indicator
+				if sys.stage.ikemenver[0] == 0 && sys.stage.ikemenver[1] == 0 {
+					if sys.stage.mugenver[0] == 1 && sys.stage.mugenver[1] == 1 {
+						sys.appendToConsole("Using Mugen 1.1 compatibility mode.")
+					} else if sys.stage.mugenver[0] == 1 && sys.stage.mugenver[1] == 0 {
+						sys.appendToConsole("Using Mugen 1.0 compatibility mode.")
+					} else if sys.stage.mugenver[0] != 1 {
+						sys.appendToConsole("Using WinMugen compatibility mode.")
+					} else {
+						sys.appendToConsole("Stage with unknown engine version.")
+					}
 				}
-			}
-			// Warn when camera boundaries are smaller than player boundaries
-			if int32(sys.stage.leftbound) > sys.stage.stageCamera.boundleft || int32(sys.stage.rightbound) < sys.stage.stageCamera.boundright {
-				sys.appendToConsole("Warning: Stage player boundaries defined incorrectly")
+				// Warn when camera boundaries are smaller than player boundaries
+				if int32(sys.stage.leftbound) > sys.stage.stageCamera.boundleft || int32(sys.stage.rightbound) < sys.stage.stageCamera.boundright {
+					sys.appendToConsole("Warning: Stage player boundaries defined incorrectly")
+				}
 			}
 		}()
 		var def string

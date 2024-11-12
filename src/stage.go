@@ -2726,25 +2726,25 @@ func loadglTFStage(filepath string) (*Model, error) {
 					node.castShadow = false
 				}
 				if v["shadowMapNear"] != nil {
-					node.shadowMapNear = v["shadowMapNear"].(float32)
+					node.shadowMapNear = (float32)(v["shadowMapNear"].(float64))
 				}
 				if v["shadowMapFar"] != nil {
-					node.shadowMapFar = v["shadowMapFar"].(float32)
+					node.shadowMapFar = (float32)(v["shadowMapFar"].(float64))
 				}
 				if v["shadowMapBottom"] != nil {
-					node.shadowMapBottom = v["shadowMapBottom"].(float32)
+					node.shadowMapBottom = (float32)(v["shadowMapBottom"].(float64))
 				}
 				if v["shadowMapTop"] != nil {
-					node.shadowMapTop = v["shadowMapTop"].(float32)
+					node.shadowMapTop = (float32)(v["shadowMapTop"].(float64))
 				}
 				if v["shadowMapLeft"] != nil {
-					node.shadowMapLeft = v["shadowMapLeft"].(float32)
+					node.shadowMapLeft = (float32)(v["shadowMapLeft"].(float64))
 				}
 				if v["shadowMapTop"] != nil {
-					node.shadowMapRight = v["shadowMapRight"].(float32)
+					node.shadowMapRight = (float32)(v["shadowMapRight"].(float64))
 				}
 				if v["shadowMapBias"] != nil {
-					node.shadowMapBias = v["shadowMapBias"].(float32)
+					node.shadowMapBias = (float32)(v["shadowMapBias"].(float64))
 				}
 			}
 		}
