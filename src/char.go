@@ -2074,7 +2074,7 @@ type CharGlobalInfo struct {
 	palettedata      *Palette
 	snd              *Snd
 	anim             AnimationTable
-	palno, drawpalno int32
+	palno            int32
 	pal              [MaxPalNo]string
 	palExist         [MaxPalNo]bool
 	palSelectable    [MaxPalNo]bool
@@ -3145,6 +3145,7 @@ func (c *Char) load(def string) error {
 	}
 	return nil
 }
+
 func (c *Char) loadPalette() {
 	gi := c.gi()
 	if gi.sff.header.Ver0 == 1 {
@@ -3219,7 +3220,9 @@ func (c *Char) loadPalette() {
 			}
 		}
 	}
-	gi.drawpalno = gi.palno
+	// Check if the current palette exists and is not already being used
+	// Palette conflicts are first checked in the select screen script according to the character slot
+	// That doesn't avoid cases like the same character being picked from different select screen slots, so we check duplicates again here
 	starti := gi.palno - 1
 	if !gi.palExist[starti] {
 		starti %= 6
@@ -3227,44 +3230,51 @@ func (c *Char) loadPalette() {
 	i := starti
 	for {
 		if gi.palExist[i] {
-			j := 0
-			for ; j < len(sys.chars); j++ {
+			// Check for palette conflicts with other instances of the same character
+			conflict := false
+			for j := 0; j < len(sys.chars); j++ {
 				if j != c.playerNo && len(sys.chars[j]) > 0 &&
-					sys.cgi[j].def == gi.def && sys.cgi[j].drawpalno == i+1 {
+					sys.cgi[j].def == gi.def && sys.cgi[j].palno == i+1 {
+					conflict = true
 					break
 				}
 			}
-			if j >= len(sys.chars) {
-				gi.drawpalno = i + 1
-				if !gi.palExist[gi.palno-1] {
-					gi.palno = gi.drawpalno
-				}
-				break
+			// If no conflict is found, assign this palette to palno
+			if !conflict {
+				gi.palno = i + 1
+				break // Palette assigned successfully
 			}
 		}
+		// Try the next palette index
 		i++
+		// Wrap around if the index exceeds the maximum number of palettes
 		if i >= MaxPalNo {
 			i = 0
 		}
+		// If we've looped back to the starting index, handle fallback
 		if i == starti {
+			// If the original desired palette does not exist
 			if !gi.palExist[gi.palno-1] {
 				i := 0
+				// Search for the first available palette
 				for ; i < len(gi.palExist); i++ {
 					if gi.palExist[i] {
-						gi.palno, gi.drawpalno = int32(i+1), int32(i+1)
+						gi.palno = int32(i+1)
 						break
 					}
 				}
+				// If no palettes are available, default to the first palette
 				if i >= len(gi.palExist) {
 					gi.palno, gi.palExist[0] = 1, true
 					gi.palSelectable[0] = true
 				}
 			}
-			break
+			break // Exit the loop after handling fallback
 		}
 	}
 	gi.remappedpal = [...]int32{1, gi.palno}
 }
+
 func (c *Char) clearHitCount() {
 	c.hitCount = 0
 	c.uniqHitCount = 0
@@ -4108,12 +4118,7 @@ func (c *Char) palfxvar2(x int32) float32 {
 	}
 	return n * 256
 }
-func (c *Char) palno() int32 {
-	if c.helperIndex != 0 && c.gi().mugenver[0] != 1 {
-		return 1
-	}
-	return c.gi().palno
-}
+
 func (c *Char) pauseTime() int32 {
 	var p int32
 	if sys.super > 0 && c.prevSuperMovetime == 0 {
