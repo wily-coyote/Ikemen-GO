@@ -14,6 +14,7 @@ uniform mat4 model;
 uniform sampler2D jointMatrices;
 //uniform highp sampler2D morphTargetValues;
 uniform sampler2D morphTargetValues;
+uniform int morphTargetTextureDimension;
 uniform int numJoints;
 uniform int numTargets;
 uniform vec4 morphTargetWeight[2];
@@ -63,10 +64,12 @@ void main(void) {
 	if(morphTargetOffset[0] > 0){
 		for(int idx = 0; idx < numTargets; ++idx)
 		{
+			float i = idx*numVertices+vertexId;
+			vec2 xy = vec2((i+0.5)/morphTargetTextureDimension-floor(i/morphTargetTextureDimension),(floor(i/morphTargetTextureDimension)+0.5)/morphTargetTextureDimension);
 			if(idx < morphTargetOffset[0]){
-				pos += morphTargetWeight[idx/4][idx%4] * COMPAT_TEXTURE(morphTargetValues,vec2((vertexId+0.5)/numVertices,(idx+0.5)/8));
+				pos += morphTargetWeight[idx/4][idx%4] * COMPAT_TEXTURE(morphTargetValues,xy);
 			}else if(idx >= morphTargetOffset[2] && idx < morphTargetOffset[3]){
-				texcoord += morphTargetWeight[idx/4][idx%4] * vec2(COMPAT_TEXTURE(morphTargetValues,vec2((vertexId+0.5)/numVertices,(idx+0.5)/8)));
+				texcoord += morphTargetWeight[idx/4][idx%4] * vec2(COMPAT_TEXTURE(morphTargetValues,xy));
 			}
 		}
 	}

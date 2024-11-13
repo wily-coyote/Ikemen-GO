@@ -3154,6 +3154,7 @@ func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlend
 				gfx.SetShadowMapUniformI("numTargets", int(Min(int32(p.morphTargetCount), 8)))
 				gfx.SetShadowMapTexture("morphTargetValues", p.morphTargetTexture.tex)
 				gfx.SetShadowMapUniformFv("morphTargetWeight", p.morphTargetWeight[:])
+				gfx.SetShadowMapUniformI("morphTargetTextureDimension", int(p.morphTargetTexture.tex.width))
 			} else {
 				gfx.SetShadowMapUniformFv("morphTargetOffset", make([]float32, 4))
 				gfx.SetShadowMapUniformI("numTargets", 0)
