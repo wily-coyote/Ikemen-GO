@@ -1,9 +1,16 @@
 #if __VERSION__ >= 130
+#extension GL_ARB_texture_cube_map_array : enable
 #define COMPAT_VARYING in
 #define COMPAT_TEXTURE texture
 #define COMPAT_TEXTURE_CUBE texture
 #define COMPAT_TEXTURE_CUBE_LOD textureLod
 out vec4 FragColor;
+#ifdef ENABLE_SHADOW
+uniform sampler2DArray shadowMap;
+uniform samplerCubeArray shadowCubeMap;
+#define COMPAT_SHADOW_MAP_TEXTURE() texture(shadowMap,vec3(xy,index)).r
+#define COMPAT_SHADOW_CUBE_MAP_TEXTURE() texture(shadowCubeMap,vec4(xyz,index)).r
+#endif
 #else
 #extension GL_ARB_shader_texture_lod : enable
 #define COMPAT_VARYING varying
@@ -11,6 +18,12 @@ out vec4 FragColor;
 #define COMPAT_TEXTURE texture2D
 #define COMPAT_TEXTURE_CUBE textureCube
 #define COMPAT_TEXTURE_CUBE_LOD textureCubeLod
+#ifdef ENABLE_SHADOW
+uniform sampler2D shadowMap[4];
+uniform samplerCube shadowCubeMap[4];
+#define COMPAT_SHADOW_MAP_TEXTURE() texture2D(shadowMap[index],xy).r
+#define COMPAT_SHADOW_CUBE_MAP_TEXTURE() textureCube(shadowCubeMap[index],xyz).r
+#endif
 #endif
 struct Light
 {
@@ -34,10 +47,6 @@ uniform sampler2D tex;
 uniform sampler2D normalMap;
 uniform sampler2D metallicRoughnessMap;
 uniform sampler2D ambientOcclusionMap;
-#ifdef ENABLE_SHADOW
-uniform sampler2D shadowMap[4];
-uniform samplerCube shadowCubeMap[4];
-#endif
 uniform samplerCube lambertianEnvSampler;
 uniform samplerCube GGXEnvSampler;
 uniform sampler2D GGXLUT;
@@ -90,7 +99,8 @@ float DirectionalLightShadowCalculation(int index, vec4 lightSpacePos,float Ndot
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
     // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = COMPAT_TEXTURE(shadowMap[index], projCoords.xy).r; 
+    vec2 xy = projCoords.xy;
+    float closestDepth = COMPAT_SHADOW_MAP_TEXTURE(); 
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
@@ -105,7 +115,8 @@ float DirectionalLightShadowCalculation(int index, vec4 lightSpacePos,float Ndot
 float SpotLightShadowCalculation(int index, vec3 pointToLight, vec4 lightSpacePos,float NdotL,float farPlane,float shadowBias)
 {
     #ifdef ENABLE_SHADOW
-    float closestDepth = COMPAT_TEXTURE(shadowMap[index], lightSpacePos.xy).r;
+    vec2 xy = lightSpacePos.xy;
+    float closestDepth = COMPAT_SHADOW_MAP_TEXTURE();
     // it is currently in linear range between [0,1]. Re-transform back to original value
     closestDepth *= farPlane;
     // get depth of current fragment from light's perspective
@@ -121,7 +132,8 @@ float SpotLightShadowCalculation(int index, vec3 pointToLight, vec4 lightSpacePo
 float PointLightShadowCalculation(int index, vec3 pointToLight,float NdotL,float farPlane,float shadowBias)
 {
     #ifdef ENABLE_SHADOW
-    float closestDepth = COMPAT_TEXTURE_CUBE(shadowCubeMap[index], -pointToLight).r;
+    vec3 xyz = -pointToLight;
+    float closestDepth = COMPAT_SHADOW_CUBE_MAP_TEXTURE();
     // it is currently in linear range between [0,1]. Re-transform back to original value
     closestDepth *= farPlane;
     // now get current linear depth as the length between the fragment and light position
