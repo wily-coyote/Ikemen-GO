@@ -1,10 +1,8 @@
 #if __VERSION__ >= 130
 #define COMPAT_VARYING in
-out float FragDepth;
 #define COMPAT_TEXTURE texture
 #else
 #define COMPAT_VARYING varying
-#define FragDepth gl_FragDepth
 #define COMPAT_TEXTURE texture2D
 #endif
 
@@ -38,8 +36,8 @@ void main()
     
         lightDistance = lightDistance / farPlane;
         
-        FragDepth = lightDistance;
+        gl_FragDepth = lightDistance;
     }else{
-        FragDepth = gl_FragCoord.z/gl_FragCoord.w;
+        gl_FragDepth = gl_FragCoord.z/gl_FragCoord.w;
     }
 }

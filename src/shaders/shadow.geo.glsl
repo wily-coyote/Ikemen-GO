@@ -8,6 +8,7 @@ in vec2 texcoord[];
 out vec4 FragPos;
 out vec4 vColor0;
 out vec2 texcoord0;
+uniform int layerOffset;
 #else
 #extension GL_EXT_geometry_shader4: enable
 #define COMPAT_POS_IN(i) gl_PositionIn[i]
@@ -17,6 +18,7 @@ varying in vec2 texcoord[3];
 varying out vec4 FragPos;
 varying out vec4 vColor0;
 varying out vec2 texcoord0;
+const int layerOffset = 0;
 #endif
 
 uniform int lightType;
@@ -30,7 +32,7 @@ void main() {
     if(lightType == LightType_Point){
         for(int face = 0; face < 6; ++face)
         {
-            gl_Layer = face; // built-in variable that specifies to which face we render.
+            gl_Layer = layerOffset+face; // built-in variable that specifies to which face we render.
             for(int i = 0; i < 3; ++i) // for each triangle vertex
             {
                 FragPos = COMPAT_POS_IN(i);

@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"strconv"
 	"unsafe"
 
 	gl "github.com/go-gl/gl/v3.2-core/gl"
@@ -326,8 +325,8 @@ type Renderer struct {
 	fbo_f_texture *Texture
 	// Shadow Map
 	fbo_shadow              uint32
-	fbo_shadow_texture      [4]uint32
-	fbo_shadow_cube_texture [4]uint32
+	fbo_shadow_texture      uint32
+	fbo_shadow_cube_texture uint32
 	fbo_env                 uint32
 	// Post-processing shaders
 	postVertBuffer   uint32
@@ -404,8 +403,7 @@ func (r *Renderer) InitModelShader() error {
 		"lights[3].direction", "lights[3].range", "lights[3].color", "lights[3].intensity", "lights[3].position", "lights[3].innerConeCos", "lights[3].outerConeCos", "lights[3].type", "lights[3].shadowBias", "lights[3].shadowMapFar",
 	)
 	r.modelShader.RegisterTextures("tex", "morphTargetValues", "jointMatrices", "normalMap", "metallicRoughnessMap", "ambientOcclusionMap", "lambertianEnvSampler", "GGXEnvSampler", "GGXLUT",
-		"shadowMap[0]", "shadowMap[1]", "shadowMap[2]", "shadowMap[3]",
-		"shadowCubeMap[0]", "shadowCubeMap[1]", "shadowCubeMap[2]", "shadowCubeMap[3]")
+		"shadowMap", "shadowCubeMap")
 
 	if r.enableShadow {
 		r.shadowMapShader, err = newShaderProgram(shadowVertShader, shadowFragShader, shadowGeoShader, "Shadow Map Shader", false)
@@ -413,7 +411,7 @@ func (r *Renderer) InitModelShader() error {
 			return err
 		}
 		r.shadowMapShader.RegisterAttributes("vertexId", "position", "vertColor", "uv", "joints_0", "joints_1", "weights_0", "weights_1")
-		r.shadowMapShader.RegisterUniforms("model", "lightMatrices[0]", "lightMatrices[1]", "lightMatrices[2]", "lightMatrices[3]", "lightMatrices[4]", "lightMatrices[5]", "lightType", "lightPos", "farPlane", "numJoints", "morphTargetWeight", "morphTargetOffset", "numTargets", "numVertices", "enableAlpha", "alphaThreshold", "baseColorFactor", "useTexture")
+		r.shadowMapShader.RegisterUniforms("model", "lightMatrices[0]", "lightMatrices[1]", "lightMatrices[2]", "lightMatrices[3]", "lightMatrices[4]", "lightMatrices[5]", "lightType", "lightPos", "farPlane", "numJoints", "morphTargetWeight", "morphTargetOffset", "morphTargetTextureDimension", "numTargets", "numVertices", "layerOffset", "enableAlpha", "alphaThreshold", "baseColorFactor", "useTexture")
 		r.shadowMapShader.RegisterTextures("morphTargetValues", "jointMatrices", "tex")
 	}
 	r.panoramaToCubeMapShader, err = newShaderProgram(identVertShader, panoramaToCubeMapFragShader, "", "Panorama To Cubemap Shader", false)
@@ -567,29 +565,24 @@ func (r *Renderer) Init() {
 		if r.enableShadow {
 			gl.GenFramebuffers(1, &r.fbo_shadow)
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.GenTextures(4, &r.fbo_shadow_texture[0])
-			gl.GenTextures(4, &r.fbo_shadow_cube_texture[0])
+			gl.GenTextures(1, &r.fbo_shadow_texture)
+			gl.GenTextures(1, &r.fbo_shadow_cube_texture)
 
-			for i := 0; i < 4; i++ {
-				gl.BindTexture(gl.TEXTURE_2D, r.fbo_shadow_texture[i])
+			gl.BindTexture(gl.TEXTURE_2D_ARRAY, r.fbo_shadow_texture)
+			gl.TexStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.DEPTH_COMPONENT24, 1024, 1024, 4)
+			gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+			gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+			gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+			gl.TexParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
-				gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, 1024, 1024, 0, gl.DEPTH_COMPONENT, gl.FLOAT, nil)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+			gl.BindTexture(gl.TEXTURE_CUBE_MAP_ARRAY_ARB, r.fbo_shadow_cube_texture)
+			gl.TexStorage3D(gl.TEXTURE_CUBE_MAP_ARRAY_ARB, 1, gl.DEPTH_COMPONENT24, 1024, 1024, 4*6)
+			gl.TexParameteri(gl.TEXTURE_CUBE_MAP_ARRAY_ARB, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+			gl.TexParameteri(gl.TEXTURE_CUBE_MAP_ARRAY_ARB, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+			gl.TexParameteri(gl.TEXTURE_CUBE_MAP_ARRAY_ARB, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+			gl.TexParameteri(gl.TEXTURE_CUBE_MAP_ARRAY_ARB, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
-				gl.BindTexture(gl.TEXTURE_CUBE_MAP, r.fbo_shadow_cube_texture[i])
-				for j := 0; j < 6; j++ {
-					gl.TexImage2D(uint32(gl.TEXTURE_CUBE_MAP_POSITIVE_X+j), 0, gl.DEPTH_COMPONENT, 1024, 1024, 0, gl.DEPTH_COMPONENT, gl.FLOAT, nil)
-				}
-				gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-				gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-				gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-				gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-			}
 			gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_shadow)
-			//gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, r.fbo_shadow_texture[0], 0)
 			gl.DrawBuffer(gl.NONE)
 			gl.ReadBuffer(gl.NONE)
 			if status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER); status != gl.FRAMEBUFFER_COMPLETE {
@@ -711,6 +704,11 @@ func (r *Renderer) prepareShadowMapPipeline() {
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.stageVertexBuffer)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.stageIndexBuffer)
+
+	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, r.fbo_shadow_texture, 0)
+	gl.Clear(gl.DEPTH_BUFFER_BIT)
+	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, r.fbo_shadow_cube_texture, 0)
+	gl.Clear(gl.DEPTH_BUFFER_BIT)
 }
 func (r *Renderer) setShadowMapPipeline(doubleSided, invertFrontFace, useUV, useNormal, useTangent, useVertColor, useJoint0, useJoint1 bool, numVertices, vertAttrOffset uint32) {
 	if invertFrontFace {
@@ -836,16 +834,15 @@ func (r *Renderer) prepareModelPipeline(env *Environment) {
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.stageVertexBuffer)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.stageIndexBuffer)
 	if r.enableShadow {
-		for i := 0; i < 4; i++ {
-			loc, unit := r.modelShader.u["shadowMap["+strconv.Itoa(i)+"]"], r.modelShader.t["shadowMap["+strconv.Itoa(i)+"]"]
-			gl.ActiveTexture((uint32(gl.TEXTURE0 + unit)))
-			gl.BindTexture(gl.TEXTURE_2D, r.fbo_shadow_texture[i])
-			gl.Uniform1i(loc, int32(unit))
-			loc, unit = r.modelShader.u["shadowCubeMap["+strconv.Itoa(i)+"]"], r.modelShader.t["shadowCubeMap["+strconv.Itoa(i)+"]"]
-			gl.ActiveTexture((uint32(gl.TEXTURE0 + unit)))
-			gl.BindTexture(gl.TEXTURE_CUBE_MAP, r.fbo_shadow_cube_texture[i])
-			gl.Uniform1i(loc, int32(unit))
-		}
+		loc, unit := r.modelShader.u["shadowMap"], r.modelShader.t["shadowMap"]
+		gl.ActiveTexture((uint32(gl.TEXTURE0 + unit)))
+		gl.BindTexture(gl.TEXTURE_2D_ARRAY, r.fbo_shadow_texture)
+		gl.Uniform1i(loc, int32(unit))
+
+		loc, unit = r.modelShader.u["shadowCubeMap"], r.modelShader.t["shadowCubeMap"]
+		gl.ActiveTexture((uint32(gl.TEXTURE0 + unit)))
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP_ARRAY_ARB, r.fbo_shadow_cube_texture)
+		gl.Uniform1i(loc, int32(unit))
 	}
 	if env != nil {
 		loc, unit := r.modelShader.u["lambertianEnvSampler"], r.modelShader.t["lambertianEnvSampler"]
@@ -1160,13 +1157,13 @@ func (r *Renderer) SetShadowMapTexture(name string, t *Texture) {
 }
 
 func (r *Renderer) SetShadowFrameTexture(i uint32) {
-	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, r.fbo_shadow_texture[i], 0)
-	gl.Clear(gl.DEPTH_BUFFER_BIT)
+	gl.FramebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, r.fbo_shadow_texture, 0, int32(i))
+	//gl.Clear(gl.DEPTH_BUFFER_BIT)
 }
 
 func (r *Renderer) SetShadowFrameCubeTexture(i uint32) {
-	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, r.fbo_shadow_cube_texture[i], 0)
-	gl.Clear(gl.DEPTH_BUFFER_BIT)
+	gl.FramebufferTexture(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, r.fbo_shadow_cube_texture, 0)
+	//gl.Clear(gl.DEPTH_BUFFER_BIT)
 }
 
 func (r *Renderer) SetVertexData(values ...float32) {
