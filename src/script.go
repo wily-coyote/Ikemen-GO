@@ -3647,28 +3647,28 @@ func triggerFunctions(l *lua.LState) {
 		c := sys.debugWC
 		flagStr := func(flag int32) lua.LString {
 			str := ""
-			if flag&int32(ST_S) != 0 {
+			if flag&int32(HF_H) != 0 {
 				str += "H"
 			}
-			if flag&int32(ST_C) != 0 {
+			if flag&int32(HF_L) != 0 {
 				str += "L"
 			}
-			if flag&int32(ST_A) != 0 {
+			if flag&int32(HF_A) != 0 {
 				str += "A"
 			}
-			if flag&int32(ST_F) != 0 {
+			if flag&int32(HF_F) != 0 {
 				str += "F"
 			}
-			if flag&int32(ST_D) != 0 {
+			if flag&int32(HF_D) != 0 {
 				str += "D"
 			}
-			if flag&int32(ST_P) != 0 {
+			if flag&int32(HF_P) != 0 {
 				str += "P"
 			}
-			if flag&int32(MT_MNS) != 0 {
+			if flag&int32(HF_MNS) != 0 {
 				str += "-"
 			}
-			if flag&int32(MT_PLS) != 0 {
+			if flag&int32(HF_PLS) != 0 {
 				str += "+"
 			}
 			return lua.LString(str)

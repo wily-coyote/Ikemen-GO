@@ -20,9 +20,6 @@ const (
 	ST_N
 	ST_U
 	ST_MASK = 1<<iota - 1
-	ST_D    = ST_L
-	ST_F    = ST_N
-	ST_P    = ST_U
 	ST_SCA  = ST_S | ST_C | ST_A
 )
 
@@ -54,8 +51,20 @@ const (
 	MT_H
 	MT_A
 	MT_U
-	MT_MNS = MT_I
-	MT_PLS = MT_H
+)
+
+type HitFlag int32
+
+const (
+	HF_H HitFlag = 1 << iota
+	HF_L
+	HF_A
+	HF_D
+	HF_F
+	HF_P
+	HF_MNS
+	HF_PLS
+	HF_M = HF_H | HF_L
 )
 
 type ValueType int

@@ -638,7 +638,7 @@ func (hd *HitDef) clear(localscl float32) {
 
 	*hd = HitDef{
 		isprojectile:       false,
-		hitflag:            int32(ST_S | ST_C | ST_A | ST_F),
+		hitflag:            int32(HF_H | HF_L | HF_A | HF_F),
 		affectteam:         1,
 		teamside:           -1,
 		animtype:           RA_Light,
@@ -6978,6 +6978,13 @@ func (c *Char) hitByPlayerIdCheck(getterid int32) bool {
 
 // Check if Hitdef attributes can hit a player
 func (c *Char) attrCheck(ghd *HitDef, getter *Char, gstyp StateType) bool {
+
+	// Invalid Hitdef attributes
+	if ghd.attr <= 0 {
+		return false
+	}
+
+	// Unhittable and ChainID checks
 	if c.unhittableTime > 0 || ghd.chainid >= 0 && c.ghv.hitid != ghd.chainid && ghd.nochainid[0] == -1 {
 		return false
 	}
@@ -6988,15 +6995,34 @@ func (c *Char) attrCheck(ghd *HitDef, getter *Char, gstyp StateType) bool {
 			}
 		}
 	}
+
+	// Reversaldef vs Hitdef attributes check
 	if ghd.reversal_attr > 0 {
 		return c.atktmp != 0 && c.hitdef.attr > 0 &&
 			(c.hitdef.attr&ghd.reversal_attr&int32(ST_MASK)) != 0 &&
 			(c.hitdef.attr&ghd.reversal_attr&^int32(ST_MASK)) != 0
 	}
-	if ghd.attr <= 0 || ghd.hitflag&int32(c.ss.stateType) == 0 ||
-		(ghd.hitflag&int32(ST_F) == 0 || getter.asf(ASF_nofallhitflag)) && c.hittmp >= 2 ||
-		ghd.hitflag&int32(MT_MNS) != 0 && c.hittmp > 0 ||
-		ghd.hitflag&int32(MT_PLS) != 0 && (c.hittmp <= 0 || c.inGuardState()) {
+
+	// Main hitflag checks
+	if ghd.hitflag&int32(HF_H) == 0 && c.ss.stateType == ST_S ||
+		ghd.hitflag&int32(HF_L) == 0 && c.ss.stateType == ST_C ||
+		ghd.hitflag&int32(HF_A) == 0 && c.ss.stateType == ST_A ||
+		ghd.hitflag&int32(HF_D) == 0 && c.ss.stateType == ST_L {
+		return false
+	}
+
+	// "F" hitflag check
+	if (ghd.hitflag&int32(HF_F) == 0 || getter.asf(ASF_nofallhitflag)) && c.hittmp >= 2 {
+		return false
+	}
+
+	// "-" hitflag check
+	if ghd.hitflag&int32(HF_MNS) != 0 && c.hittmp > 0 {
+		return false
+	}
+
+	// "+" hitflag check
+	if ghd.hitflag&int32(HF_PLS) != 0 && (c.hittmp <= 0 || c.inGuardState()) {
 		return false
 	}
 
@@ -8357,32 +8383,33 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 
 		// Automatically choose high or low in case of auto guard
 		if canguard && getter.asf(ASF_autoguard) && getter.acttmp > 0 && !getter.csf(CSF_gethit) {
-			if int32(getter.ss.stateType)&hd.guardflag == 0 {
-				if getter.ss.stateType == ST_S {
-					// High to Low
-					if int32(ST_C)&hd.guardflag != 0 && !getter.asf(ASF_nocrouchguard) {
-						getter.ss.changeStateType(ST_C)
-					}
-				} else if getter.ss.stateType == ST_C {
-					// Low to High
-					if int32(ST_S)&hd.guardflag != 0 && !getter.asf(ASF_nostandguard) {
-						getter.ss.changeStateType(ST_S)
-					}
+			highflag := hd.guardflag&int32(HF_H) != 0
+			lowflag := hd.guardflag&int32(HF_L) != 0
+			if highflag != lowflag {
+				if lowflag && getter.ss.stateType == ST_S { // High to low
+					getter.ss.changeStateType(ST_C)
+				} else if highflag && getter.ss.stateType == ST_C { // Low to high
+					getter.ss.changeStateType(ST_S)
 				}
 			}
 		}
 
 		hitType = 1
 		getter.ghv.kill = hd.kill
-		// If enemy is guarding the correct way, "hitType" is set to "guard"
-		if canguard && int32(getter.ss.stateType)&hd.guardflag != 0 {
-			getter.ghv.kill = hd.guard_kill
-			// We only switch to guard behavior if the enemy can survive guarding the attack
-			if getter.life > getter.computeDamage(float64(hd.guarddamage), hd.guard_kill, false, attackMul[0], c, true) ||
-				sys.gsf(GSF_globalnoko) || getter.asf(ASF_noko) || getter.asf(ASF_noguardko) {
-				hitType = 2
-			} else {
-				getter.ghv.cheeseKO = true // TODO: find a better name then expose this variable
+		// If enemy is guarding the correct way, "hitType" is set to guard (2)
+		if canguard {
+			// Guardflag checks
+			if hd.guardflag&int32(HF_H) != 0 && getter.ss.stateType == ST_S ||
+				hd.guardflag&int32(HF_L) != 0 && getter.ss.stateType == ST_C ||
+				hd.guardflag&int32(HF_A) != 0 && getter.ss.stateType == ST_A { // Statetype L is left out here
+				// We only switch to guard behavior if the enemy can survive guarding the attack
+				if getter.life > getter.computeDamage(float64(hd.guarddamage), hd.guard_kill, false, attackMul[0], c, true) ||
+					sys.gsf(GSF_globalnoko) || getter.asf(ASF_noko) || getter.asf(ASF_noguardko) {
+					hitType = 2
+				} else {
+					getter.ghv.cheeseKO = true // TODO: find a better name then expose this variable
+				getter.ghv.kill = hd.guard_kill
+				}
 			}
 		}
 
@@ -9205,7 +9232,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				// Cancel a projectile with hitflag P
 				if getter.atktmp != 0 && (getter.hitdef.affectteam == 0 ||
 					(p.hitdef.teamside-1 != getter.teamside) == (getter.hitdef.affectteam > 0)) &&
-					getter.hitdef.hitflag&int32(ST_P) != 0 &&
+					getter.hitdef.hitflag&int32(HF_P) != 0 &&
 					getter.projClsnCheck(p, 1, 2) &&
 					sys.zAxisOverlap(getter.pos[2], getter.hitdef.attack.depth[0], getter.hitdef.attack.depth[1], getter.localscl,
 						p.pos[2], p.hitdef.attack.depth[0], p.hitdef.attack.depth[1], p.localscl) {
