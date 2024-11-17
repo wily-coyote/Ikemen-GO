@@ -74,7 +74,6 @@ var sys = System{
 	errLog:           log.New(NewLogWriter(), "", log.LstdFlags),
 	keyInput:         KeyUnknown,
 	wavChannels:      256,
-	fontShaderVer:    120,
 	//FLAC_FrameWait:          -1,
 	luaSpriteScale:       1,
 	luaPortraitScale:     1,
@@ -327,7 +326,6 @@ type System struct {
 	// Shader Vars
 	postProcessingShader    int32
 	multisampleAntialiasing int32
-	fontShaderVer           uint
 
 	// External Shader Vars
 	externalShaderList  []string

@@ -225,7 +225,6 @@ type configSettings struct {
 	EnableModel                bool
 	EnableModelShadow          bool
 	FirstRun                   bool
-	FontShaderVer              uint
 	ForceStageZoomin           float32
 	ForceStageZoomout          float32
 	Framerate                  int32
@@ -387,11 +386,6 @@ func setupConfig() configSettings {
 	sys.enableModelShadow = tmp.EnableModelShadow
 	sys.explodMax = tmp.MaxExplod
 	sys.externalShaderList = tmp.ExternalShaders
-	// Bump up shader version for macOS only
-	if runtime.GOOS == "darwin" {
-		tmp.FontShaderVer = uint(MaxI(150, int(tmp.FontShaderVer)))
-	}
-	sys.fontShaderVer = tmp.FontShaderVer
 	// Resoluion stuff
 	sys.fullscreen = tmp.Fullscreen
 	sys.fullscreenRefreshRate = tmp.FullscreenRefreshRate
