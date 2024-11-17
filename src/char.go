@@ -2062,39 +2062,39 @@ const (
 )
 
 type CharGlobalInfo struct {
-	def              string
-	nameLow          string
-	displayname      string
-	displaynameLow   string
-	author           string
-	authorLow        string
-	lifebarname      string
-	palkeymap        [MaxPalNo]int32
-	sff              *Sff
-	palettedata      *Palette
-	snd              *Snd
-	anim             AnimationTable
-	palno            int32
-	pal              [MaxPalNo]string
-	palExist         [MaxPalNo]bool
-	palSelectable    [MaxPalNo]bool
-	ikemenver        [3]uint16
-	ikemenverF       float32
-	mugenver         [2]uint16
-	data             CharData
-	velocity         CharVelocity
-	movement         CharMovement
-	states           map[int32]StateBytecode
-	wakewakaLength   int32
-	pctype           ProjContact
-	pctime, pcid     int32
-	quotes           [MaxQuotes]string
-	portraitscale    float32
-	constants        map[string]float32
-	remapPreset      map[string]RemapPreset
-	remappedpal      [2]int32
-	localcoord       [2]float32
-	fnt              [10]*Fnt
+	def            string
+	nameLow        string
+	displayname    string
+	displaynameLow string
+	author         string
+	authorLow      string
+	lifebarname    string
+	palkeymap      [MaxPalNo]int32
+	sff            *Sff
+	palettedata    *Palette
+	snd            *Snd
+	anim           AnimationTable
+	palno          int32
+	pal            [MaxPalNo]string
+	palExist       [MaxPalNo]bool
+	palSelectable  [MaxPalNo]bool
+	ikemenver      [3]uint16
+	ikemenverF     float32
+	mugenver       [2]uint16
+	data           CharData
+	velocity       CharVelocity
+	movement       CharMovement
+	states         map[int32]StateBytecode
+	wakewakaLength int32
+	pctype         ProjContact
+	pctime, pcid   int32
+	quotes         [MaxQuotes]string
+	portraitscale  float32
+	constants      map[string]float32
+	remapPreset    map[string]RemapPreset
+	remappedpal    [2]int32
+	localcoord     [2]float32
+	fnt            [10]*Fnt
 }
 
 func (cgi *CharGlobalInfo) clearPCTime() {
@@ -3259,7 +3259,7 @@ func (c *Char) loadPalette() {
 				// Search for the first available palette
 				for ; i < len(gi.palExist); i++ {
 					if gi.palExist[i] {
-						gi.palno = int32(i+1)
+						gi.palno = int32(i + 1)
 						break
 					}
 				}
@@ -8408,7 +8408,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 					hitType = 2
 				} else {
 					getter.ghv.cheeseKO = true // TODO: find a better name then expose this variable
-				getter.ghv.kill = hd.guard_kill
+					getter.ghv.kill = hd.guard_kill
 				}
 			}
 		}
