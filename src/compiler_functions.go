@@ -1352,23 +1352,23 @@ func (c *Compiler) hitDefSub(is IniSection, sc *StateControllerBase) error {
 		for _, c := range data {
 			switch c {
 			case 'H', 'h':
-				flg |= int32(ST_S)
+				flg |= int32(HF_H)
 			case 'L', 'l':
-				flg |= int32(ST_C)
+				flg |= int32(HF_L)
 			case 'M', 'm':
-				flg |= int32(ST_S | ST_C)
+				flg |= int32(HF_H | HF_L)
 			case 'A', 'a':
-				flg |= int32(ST_A)
+				flg |= int32(HF_A)
 			case 'F', 'f':
-				flg |= int32(ST_F)
+				flg |= int32(HF_F)
 			case 'D', 'd':
-				flg |= int32(ST_D)
+				flg |= int32(HF_D)
 			case 'P', 'p':
-				flg |= int32(ST_P)
+				flg |= int32(HF_P)
 			case '-':
-				flg |= int32(MT_MNS)
+				flg |= int32(HF_MNS)
 			case '+':
-				flg |= int32(MT_PLS)
+				flg |= int32(HF_PLS)
 			}
 		}
 		sc.add(id, sc.iToExp(flg))

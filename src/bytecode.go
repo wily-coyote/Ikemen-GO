@@ -20,9 +20,6 @@ const (
 	ST_N
 	ST_U
 	ST_MASK = 1<<iota - 1
-	ST_D    = ST_L
-	ST_F    = ST_N
-	ST_P    = ST_U
 	ST_SCA  = ST_S | ST_C | ST_A
 )
 
@@ -54,8 +51,20 @@ const (
 	MT_H
 	MT_A
 	MT_U
-	MT_MNS = MT_I
-	MT_PLS = MT_H
+)
+
+type HitFlag int32
+
+const (
+	HF_H HitFlag = 1 << iota
+	HF_L
+	HF_A
+	HF_D
+	HF_F
+	HF_P
+	HF_MNS
+	HF_PLS
+	HF_M = HF_H | HF_L
 )
 
 type ValueType int
@@ -459,7 +468,6 @@ const (
 	OC_ex_roundsexisted
 	OC_ex_ishometeam
 	OC_ex_tickspersecond
-	OC_ex_drawpalno
 	OC_ex_const240p
 	OC_ex_const480p
 	OC_ex_const720p
@@ -1657,7 +1665,9 @@ func (be BytecodeExp) run(c *Char) BytecodeValue {
 		case OC_numtext:
 			*sys.bcStack.Top() = c.numText(*sys.bcStack.Top())
 		case OC_palno:
-			sys.bcStack.PushI(c.palno())
+			sys.bcStack.PushI(c.gi().palno)
+			// In Winmugen a helper's PalNo is always 1
+			// That behavior has no apparent benefits and even Mugen 1.0 compatibility mode does not keep it
 		case OC_pos_x:
 			var bindVelx float32
 			if c.bindToId > 0 && !math.IsNaN(float64(c.bindPos[0])) && c.stWgi().ikemenver[0] == 0 && c.stWgi().ikemenver[1] == 0 {
@@ -2563,8 +2573,6 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushI(c.dizzyPoints)
 	case OC_ex_dizzypointsmax:
 		sys.bcStack.PushI(c.dizzyPointsMax)
-	case OC_ex_drawpalno:
-		sys.bcStack.PushI(c.gi().drawpalno)
 	case OC_ex_envshakevar_time:
 		sys.bcStack.PushI(sys.envShake.time)
 	case OC_ex_envshakevar_freq:

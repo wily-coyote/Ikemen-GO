@@ -1763,9 +1763,11 @@ type LifeBarRound struct {
 	drawgame_top       AnimLayout
 	drawgame_bg        [32]AnimLayout
 	current            int32
-	waitTimer          [4]int32
+	waitTimer          [4]int32 // 0 round call; 1 fight call; 2 KO screen; 3 winner announcement
 	waitSoundTimer     [4]int32
 	drawTimer          [4]int32
+	roundCallOver      bool
+	fightCallOver      bool
 	timerActive        bool
 	wint               [WT_NumTypes * 2]LbBgTextSnd
 	fadein_time        int32
@@ -1775,7 +1777,6 @@ type LifeBarRound struct {
 	shutter_time       int32
 	shutter_col        uint32
 	callfight_time     int32
-	introState         [2]bool
 }
 
 func newLifeBarRound(snd *Snd) *LifeBarRound {
@@ -2106,6 +2107,7 @@ func (ro *LifeBarRound) act() bool {
 		ro.waitTimer[0], ro.waitSoundTimer[0], ro.drawTimer[0] = ro.round_time, ro.round_sndtime, 0
 		ro.waitTimer[1] = ro.callfight_time
 	} else if (sys.intro >= 0 && !sys.tickNextFrame()) || sys.shuttertime > 0 || sys.dialogueFlg {
+		// Skip announcements during the middle of the round, "shuttertime" or dialogues
 		// Mugen ignores the "shuttertime" here, but that makes the round/fight announcement too abrupt
 		return false
 	} else {
@@ -2118,7 +2120,7 @@ func (ro *LifeBarRound) act() bool {
 			return false
 		}
 		// Round intro. Consists of round and fight calls
-		if !ro.introState[0] || !ro.introState[1] {
+		if !ro.roundCallOver || !ro.fightCallOver {
 
 			if sys.round == 1 && sys.intro == ro.ctrl_time && len(sys.commonLua) > 0 {
 				for _, p := range sys.chars {
@@ -2132,16 +2134,16 @@ func (ro *LifeBarRound) act() bool {
 			// Previously skipping the char intros took us to the fight call, like Mugen
 			// Most games go to the round call instead so this was changed
 			//if sys.introSkipped && !sys.dialogueFlg {
-			//	ro.introState[0] = true
+			//	ro.roundCallOver = true
 			//	ro.callFight()
 			//	sys.introSkipped = false
 			//}
 			// Round call
 			if sys.gsf(GSF_norounddisplay) && canSkip(0) { // Skip
-				ro.introState[0] = true
+				ro.roundCallOver = true
 				ro.waitTimer[1] = 0
 			}
-			if !ro.introState[0] {
+			if !ro.roundCallOver {
 				roundNum := sys.round
 				if sys.consecutiveRounds {
 					roundNum = sys.consecutiveWins[0] + 1
@@ -2179,7 +2181,7 @@ func (ro *LifeBarRound) act() bool {
 								ro.round_default_bg[i].Action()
 							}
 						}
-						ro.introState[0] = ro.round_single.End(ro.drawTimer[0], true) && ro.round_default.End(ro.drawTimer[0], true)
+						ro.roundCallOver = ro.round_single.End(ro.drawTimer[0], true) && ro.round_default.End(ro.drawTimer[0], true)
 					} else if ro.isFinalRound() && ro.round_final.snd[0] != -1 {
 						if len(ro.round_final_top.anim.frames) > 0 {
 							ro.round_final_top.Action()
@@ -2197,7 +2199,7 @@ func (ro *LifeBarRound) act() bool {
 								ro.round_default_bg[i].Action()
 							}
 						}
-						ro.introState[0] = ro.round_final.End(ro.drawTimer[0], true) && ro.round_default.End(ro.drawTimer[0], true)
+						ro.roundCallOver = ro.round_final.End(ro.drawTimer[0], true) && ro.round_default.End(ro.drawTimer[0], true)
 					} else if int(roundNum) <= len(ro.round) {
 						ro.round_default_top.Action()
 						ro.round[roundNum-1].Action()
@@ -2205,14 +2207,14 @@ func (ro *LifeBarRound) act() bool {
 						for i := len(ro.round_default_bg) - 1; i >= 0; i-- {
 							ro.round_default_bg[i].Action()
 						}
-						ro.introState[0] = ro.round[roundNum-1].End(ro.drawTimer[0], true) && ro.round_default.End(ro.drawTimer[0], true)
+						ro.roundCallOver = ro.round[roundNum-1].End(ro.drawTimer[0], true) && ro.round_default.End(ro.drawTimer[0], true)
 					} else {
 						ro.round_default_top.Action()
 						ro.round_default.Action()
 						for i := len(ro.round_default_bg) - 1; i >= 0; i-- {
 							ro.round_default_bg[i].Action()
 						}
-						ro.introState[0] = ro.round_default.End(ro.drawTimer[0], true)
+						ro.roundCallOver = ro.round_default.End(ro.drawTimer[0], true)
 					}
 				}
 				ro.waitTimer[0]--
@@ -2222,17 +2224,17 @@ func (ro *LifeBarRound) act() bool {
 				ro.current = 2
 				ro.waitTimer[2], ro.waitSoundTimer[2], ro.drawTimer[2] = ro.ko_time, ro.ko_sndtime, 0
 				ro.waitTimer[3], ro.waitSoundTimer[3], ro.drawTimer[3] = ro.win_time, ro.win_sndtime, 0
-				ro.introState[1] = true
+				ro.fightCallOver = true
 			}
 			// Skip fight call
 			// Cannot be skipped unless round call is finished or also skipped
-			if ro.introState[0] && sys.gsf(GSF_nofightdisplay) && canSkip(1) {
+			if ro.roundCallOver && sys.gsf(GSF_nofightdisplay) && canSkip(1) {
 				endFightCall()
 				if sys.intro > 1 {
 					sys.intro = 1 // Skip ctrl waiting time
 				}
 			}
-			if !ro.introState[1] {
+			if !ro.fightCallOver {
 				if ro.current == 0 {
 					if ro.waitTimer[1] == 0 {
 						// This used to be callFight()
@@ -2246,7 +2248,7 @@ func (ro *LifeBarRound) act() bool {
 						ro.timerActive = true
 					}
 					ro.waitTimer[1]--
-				} else if !ro.introState[1] {
+				} else if !ro.fightCallOver {
 					if ro.waitSoundTimer[1] == 0 {
 						ro.snd.play(ro.fight.snd, 100, 0, 0, 0, 0)
 					}
@@ -2465,7 +2467,12 @@ func (ro *LifeBarRound) reset() {
 	for i := range ro.wint {
 		ro.wint[i].reset()
 	}
-	ro.introState = [2]bool{}
+	ro.roundCallOver = false
+	ro.fightCallOver = false
+	// Reset action timers
+	ro.waitTimer = [4]int32{}
+	ro.waitSoundTimer = [4]int32{}
+	ro.drawTimer = [4]int32{}
 }
 
 func (ro *LifeBarRound) draw(layerno int16, f []*Fnt) {
@@ -2473,7 +2480,7 @@ func (ro *LifeBarRound) draw(layerno int16, f []*Fnt) {
 	sys.brightness = 256
 
 	// Round call animations
-	if !ro.introState[0] && ro.waitTimer[0] < 0 && sys.intro <= ro.ctrl_time {
+	if !ro.roundCallOver && ro.waitTimer[0] < 0 && sys.intro <= ro.ctrl_time {
 
 		// Draw default round background
 		for i := range ro.round_default_bg {
@@ -2551,7 +2558,7 @@ func (ro *LifeBarRound) draw(layerno int16, f []*Fnt) {
 	}
 
 	// "Fight!" animations
-	if !ro.introState[1] && ro.waitTimer[1] < 0 {
+	if !ro.fightCallOver && ro.waitTimer[1] < 0 {
 		for i := range ro.fight_bg {
 			ro.fight_bg[i].Draw(float32(ro.pos[0])+sys.lifebarOffsetX, float32(ro.pos[1]), layerno, sys.lifebarScale)
 		}

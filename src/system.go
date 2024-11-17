@@ -1184,7 +1184,7 @@ func (s *System) nextRound() {
 				s.cgi[i].palettedata.palList.ResetRemap()
 				if s.cgi[i].sff.header.Ver0 == 1 {
 					p[0].remapPal(p[0].getPalfx(),
-						[...]int32{1, 1}, [...]int32{1, s.cgi[i].drawpalno})
+						[...]int32{1, 1}, [...]int32{1, s.cgi[i].palno})
 				}
 			}
 			s.cgi[i].clearPCTime()
@@ -2424,7 +2424,7 @@ func (s *System) fight() (reload bool) {
 					tmp.RawSetString("lifeMax", lua.LNumber(p[0].lifeMax))
 					tmp.RawSetString("winquote", lua.LNumber(p[0].winquote))
 					tmp.RawSetString("aiLevel", lua.LNumber(p[0].aiLevel()))
-					tmp.RawSetString("palno", lua.LNumber(p[0].palno()))
+					tmp.RawSetString("palno", lua.LNumber(p[0].gi().palno))
 					tmp.RawSetString("ratiolevel", lua.LNumber(p[0].ocd().ratioLevel))
 					tmp.RawSetString("win", lua.LBool(p[0].win()))
 					tmp.RawSetString("winKO", lua.LBool(p[0].winKO()))
@@ -3267,13 +3267,18 @@ type Loader struct {
 func newLoader() *Loader {
 	return &Loader{state: LS_NotYet, loadExit: make(chan LoaderState, 1)}
 }
+
 func (l *Loader) loadChar(pn int) int {
 	if sys.roundsExisted[pn&1] > 0 {
 		return 1
 	}
 	sys.loadMutex.Lock()
 	result := -1
+
+	// Get number of selected characters in team
 	nsel := len(sys.sel.selected[pn&1])
+
+	// Check if player number is acceptable for Simul and Tag
 	if sys.tmode[pn&1] == TM_Simul || sys.tmode[pn&1] == TM_Tag {
 		if pn>>1 >= int(sys.numSimul[pn&1]) {
 			sys.cgi[pn].states = nil
@@ -3283,6 +3288,8 @@ func (l *Loader) loadChar(pn int) int {
 	} else if pn >= 2 {
 		result = 0
 	}
+
+	// Check if player number is acceptable for Turns
 	if sys.tmode[pn&1] == TM_Turns && nsel < int(sys.numTurns[pn&1]) {
 		result = 0
 	}
@@ -3297,11 +3304,15 @@ func (l *Loader) loadChar(pn int) int {
 		sys.loadMutex.Unlock()
 		return result
 	}
-	pal, idx := int32(sys.sel.selected[pn&1][memberNo][1]), make([]int, nsel)
+
+	idx := make([]int, nsel)
 	for i := range idx {
 		idx[i] = sys.sel.selected[pn&1][i][0]
 	}
+
 	sys.loadMutex.Unlock()
+
+	// Prepare loading time clipboard message
 	var tstr string
 	tnow := time.Now()
 	defer func() {
@@ -3319,8 +3330,10 @@ func (l *Loader) loadChar(pn int) int {
 			}
 		}
 	}()
+
 	var cdef string
 	var cdefOWnumber int
+
 	if sys.tmode[pn&1] == TM_Turns {
 		cdefOWnumber = memberNo*2 + pn&1
 	} else {
@@ -3331,6 +3344,8 @@ func (l *Loader) loadChar(pn int) int {
 	} else {
 		cdef = sys.sel.charlist[idx[memberNo]].def
 	}
+
+	// Reuse character or create a new one
 	var p *Char
 	if len(sys.chars[pn]) > 0 && cdef == sys.cgi[pn].def {
 		p = sys.chars[pn][0]
@@ -3352,6 +3367,8 @@ func (l *Loader) loadChar(pn int) int {
 			p.dizzyPoints = sys.chars[pn][0].dizzyPoints
 		}
 	}
+
+	// Set new character parameters
 	p.memberNo = memberNo
 	p.selectNo = sys.sel.selected[pn&1][memberNo][0]
 	p.teamside = p.playerNo & 1
@@ -3362,6 +3379,8 @@ func (l *Loader) loadChar(pn int) int {
 	}
 	sys.chars[pn] = make([]*Char, 1)
 	sys.chars[pn][0] = p
+
+	// Load new SFF if previous one was not cached
 	if sys.cgi[pn].sff == nil {
 		if l.err = p.load(cdef); l.err != nil {
 			sys.chars[pn] = nil
@@ -3378,7 +3397,11 @@ func (l *Loader) loadChar(pn int) int {
 	} else {
 		tstr = fmt.Sprintf("Cached char loaded: %v", cdef)
 	}
-	sys.cgi[pn].palno = pal //sys.cgi[pn].palkeymap[pal-1] + 1
+
+	// Get palette number from select screen choice
+	sys.cgi[pn].palno = int32(sys.sel.selected[pn&1][memberNo][1])
+
+	// Get portraits for Turns mode
 	if pn < len(sys.lifebar.fa[sys.tmode[pn&1]]) &&
 		sys.tmode[pn&1] == TM_Turns && sys.round == 1 {
 		fa := sys.lifebar.fa[sys.tmode[pn&1]][pn]
@@ -3390,6 +3413,7 @@ func (l *Loader) loadChar(pn int) int {
 				int16(fa.teammate_face_spr[1]))
 		}
 	}
+
 	return 1
 }
 
@@ -3555,6 +3579,7 @@ func (l *Loader) load() {
 	}
 	l.state = LS_Complete
 }
+
 func (l *Loader) reset() {
 	if l.state != LS_NotYet {
 		l.state = LS_Cancel
@@ -3564,10 +3589,11 @@ func (l *Loader) reset() {
 	l.err = nil
 	for i := range sys.cgi {
 		if sys.roundsExisted[i&1] == 0 {
-			sys.cgi[i].drawpalno = -1
+			sys.cgi[i].palno = -1
 		}
 	}
 }
+
 func (l *Loader) runTread() bool {
 	if l.state != LS_NotYet {
 		return false

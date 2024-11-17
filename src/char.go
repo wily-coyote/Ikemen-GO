@@ -638,7 +638,7 @@ func (hd *HitDef) clear(localscl float32) {
 
 	*hd = HitDef{
 		isprojectile:       false,
-		hitflag:            int32(ST_S | ST_C | ST_A | ST_F),
+		hitflag:            int32(HF_H | HF_L | HF_A | HF_F),
 		affectteam:         1,
 		teamside:           -1,
 		animtype:           RA_Light,
@@ -2074,7 +2074,7 @@ type CharGlobalInfo struct {
 	palettedata      *Palette
 	snd              *Snd
 	anim             AnimationTable
-	palno, drawpalno int32
+	palno            int32
 	pal              [MaxPalNo]string
 	palExist         [MaxPalNo]bool
 	palSelectable    [MaxPalNo]bool
@@ -3145,6 +3145,7 @@ func (c *Char) load(def string) error {
 	}
 	return nil
 }
+
 func (c *Char) loadPalette() {
 	gi := c.gi()
 	if gi.sff.header.Ver0 == 1 {
@@ -3219,7 +3220,9 @@ func (c *Char) loadPalette() {
 			}
 		}
 	}
-	gi.drawpalno = gi.palno
+	// Check if the current palette exists and is not already being used
+	// Palette conflicts are first checked in the select screen script according to the character slot
+	// That doesn't avoid cases like the same character being picked from different select screen slots, so we check duplicates again here
 	starti := gi.palno - 1
 	if !gi.palExist[starti] {
 		starti %= 6
@@ -3227,44 +3230,51 @@ func (c *Char) loadPalette() {
 	i := starti
 	for {
 		if gi.palExist[i] {
-			j := 0
-			for ; j < len(sys.chars); j++ {
+			// Check for palette conflicts with other instances of the same character
+			conflict := false
+			for j := 0; j < len(sys.chars); j++ {
 				if j != c.playerNo && len(sys.chars[j]) > 0 &&
-					sys.cgi[j].def == gi.def && sys.cgi[j].drawpalno == i+1 {
+					sys.cgi[j].def == gi.def && sys.cgi[j].palno == i+1 {
+					conflict = true
 					break
 				}
 			}
-			if j >= len(sys.chars) {
-				gi.drawpalno = i + 1
-				if !gi.palExist[gi.palno-1] {
-					gi.palno = gi.drawpalno
-				}
-				break
+			// If no conflict is found, assign this palette to palno
+			if !conflict {
+				gi.palno = i + 1
+				break // Palette assigned successfully
 			}
 		}
+		// Try the next palette index
 		i++
+		// Wrap around if the index exceeds the maximum number of palettes
 		if i >= MaxPalNo {
 			i = 0
 		}
+		// If we've looped back to the starting index, handle fallback
 		if i == starti {
+			// If the original desired palette does not exist
 			if !gi.palExist[gi.palno-1] {
 				i := 0
+				// Search for the first available palette
 				for ; i < len(gi.palExist); i++ {
 					if gi.palExist[i] {
-						gi.palno, gi.drawpalno = int32(i+1), int32(i+1)
+						gi.palno = int32(i+1)
 						break
 					}
 				}
+				// If no palettes are available, default to the first palette
 				if i >= len(gi.palExist) {
 					gi.palno, gi.palExist[0] = 1, true
 					gi.palSelectable[0] = true
 				}
 			}
-			break
+			break // Exit the loop after handling fallback
 		}
 	}
 	gi.remappedpal = [...]int32{1, gi.palno}
 }
+
 func (c *Char) clearHitCount() {
 	c.hitCount = 0
 	c.uniqHitCount = 0
@@ -4108,12 +4118,7 @@ func (c *Char) palfxvar2(x int32) float32 {
 	}
 	return n * 256
 }
-func (c *Char) palno() int32 {
-	if c.helperIndex != 0 && c.gi().mugenver[0] != 1 {
-		return 1
-	}
-	return c.gi().palno
-}
+
 func (c *Char) pauseTime() int32 {
 	var p int32
 	if sys.super > 0 && c.prevSuperMovetime == 0 {
@@ -6973,6 +6978,13 @@ func (c *Char) hitByPlayerIdCheck(getterid int32) bool {
 
 // Check if Hitdef attributes can hit a player
 func (c *Char) attrCheck(ghd *HitDef, getter *Char, gstyp StateType) bool {
+
+	// Invalid Hitdef attributes
+	if ghd.attr <= 0 {
+		return false
+	}
+
+	// Unhittable and ChainID checks
 	if c.unhittableTime > 0 || ghd.chainid >= 0 && c.ghv.hitid != ghd.chainid && ghd.nochainid[0] == -1 {
 		return false
 	}
@@ -6983,15 +6995,34 @@ func (c *Char) attrCheck(ghd *HitDef, getter *Char, gstyp StateType) bool {
 			}
 		}
 	}
+
+	// Reversaldef vs Hitdef attributes check
 	if ghd.reversal_attr > 0 {
 		return c.atktmp != 0 && c.hitdef.attr > 0 &&
 			(c.hitdef.attr&ghd.reversal_attr&int32(ST_MASK)) != 0 &&
 			(c.hitdef.attr&ghd.reversal_attr&^int32(ST_MASK)) != 0
 	}
-	if ghd.attr <= 0 || ghd.hitflag&int32(c.ss.stateType) == 0 ||
-		(ghd.hitflag&int32(ST_F) == 0 || getter.asf(ASF_nofallhitflag)) && c.hittmp >= 2 ||
-		ghd.hitflag&int32(MT_MNS) != 0 && c.hittmp > 0 ||
-		ghd.hitflag&int32(MT_PLS) != 0 && (c.hittmp <= 0 || c.inGuardState()) {
+
+	// Main hitflag checks
+	if ghd.hitflag&int32(HF_H) == 0 && c.ss.stateType == ST_S ||
+		ghd.hitflag&int32(HF_L) == 0 && c.ss.stateType == ST_C ||
+		ghd.hitflag&int32(HF_A) == 0 && c.ss.stateType == ST_A ||
+		ghd.hitflag&int32(HF_D) == 0 && c.ss.stateType == ST_L {
+		return false
+	}
+
+	// "F" hitflag check
+	if (ghd.hitflag&int32(HF_F) == 0 || getter.asf(ASF_nofallhitflag)) && c.hittmp >= 2 {
+		return false
+	}
+
+	// "-" hitflag check
+	if ghd.hitflag&int32(HF_MNS) != 0 && c.hittmp > 0 {
+		return false
+	}
+
+	// "+" hitflag check
+	if ghd.hitflag&int32(HF_PLS) != 0 && (c.hittmp <= 0 || c.inGuardState()) {
 		return false
 	}
 
@@ -8352,32 +8383,33 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 
 		// Automatically choose high or low in case of auto guard
 		if canguard && getter.asf(ASF_autoguard) && getter.acttmp > 0 && !getter.csf(CSF_gethit) {
-			if int32(getter.ss.stateType)&hd.guardflag == 0 {
-				if getter.ss.stateType == ST_S {
-					// High to Low
-					if int32(ST_C)&hd.guardflag != 0 && !getter.asf(ASF_nocrouchguard) {
-						getter.ss.changeStateType(ST_C)
-					}
-				} else if getter.ss.stateType == ST_C {
-					// Low to High
-					if int32(ST_S)&hd.guardflag != 0 && !getter.asf(ASF_nostandguard) {
-						getter.ss.changeStateType(ST_S)
-					}
+			highflag := hd.guardflag&int32(HF_H) != 0
+			lowflag := hd.guardflag&int32(HF_L) != 0
+			if highflag != lowflag {
+				if lowflag && getter.ss.stateType == ST_S { // High to low
+					getter.ss.changeStateType(ST_C)
+				} else if highflag && getter.ss.stateType == ST_C { // Low to high
+					getter.ss.changeStateType(ST_S)
 				}
 			}
 		}
 
 		hitType = 1
 		getter.ghv.kill = hd.kill
-		// If enemy is guarding the correct way, "hitType" is set to "guard"
-		if canguard && int32(getter.ss.stateType)&hd.guardflag != 0 {
-			getter.ghv.kill = hd.guard_kill
-			// We only switch to guard behavior if the enemy can survive guarding the attack
-			if getter.life > getter.computeDamage(float64(hd.guarddamage), hd.guard_kill, false, attackMul[0], c, true) ||
-				sys.gsf(GSF_globalnoko) || getter.asf(ASF_noko) || getter.asf(ASF_noguardko) {
-				hitType = 2
-			} else {
-				getter.ghv.cheeseKO = true // TODO: find a better name then expose this variable
+		// If enemy is guarding the correct way, "hitType" is set to guard (2)
+		if canguard {
+			// Guardflag checks
+			if hd.guardflag&int32(HF_H) != 0 && getter.ss.stateType == ST_S ||
+				hd.guardflag&int32(HF_L) != 0 && getter.ss.stateType == ST_C ||
+				hd.guardflag&int32(HF_A) != 0 && getter.ss.stateType == ST_A { // Statetype L is left out here
+				// We only switch to guard behavior if the enemy can survive guarding the attack
+				if getter.life > getter.computeDamage(float64(hd.guarddamage), hd.guard_kill, false, attackMul[0], c, true) ||
+					sys.gsf(GSF_globalnoko) || getter.asf(ASF_noko) || getter.asf(ASF_noguardko) {
+					hitType = 2
+				} else {
+					getter.ghv.cheeseKO = true // TODO: find a better name then expose this variable
+				getter.ghv.kill = hd.guard_kill
+				}
 			}
 		}
 
@@ -9200,7 +9232,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				// Cancel a projectile with hitflag P
 				if getter.atktmp != 0 && (getter.hitdef.affectteam == 0 ||
 					(p.hitdef.teamside-1 != getter.teamside) == (getter.hitdef.affectteam > 0)) &&
-					getter.hitdef.hitflag&int32(ST_P) != 0 &&
+					getter.hitdef.hitflag&int32(HF_P) != 0 &&
 					getter.projClsnCheck(p, 1, 2) &&
 					sys.zAxisOverlap(getter.pos[2], getter.hitdef.attack.depth[0], getter.hitdef.attack.depth[1], getter.localscl,
 						p.pos[2], p.hitdef.attack.depth[0], p.hitdef.attack.depth[1], p.localscl) {

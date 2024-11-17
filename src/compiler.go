@@ -359,7 +359,6 @@ var triggerMap = map[string]int{
 	"dizzy":              1,
 	"dizzypoints":        1,
 	"dizzypointsmax":     1,
-	"drawpalno":          1,
 	"envshakevar":        1,
 	"explodvar":          1,
 	"fightscreenvar":     1,
@@ -1203,19 +1202,19 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		for _, ch := range base {
 			switch ch {
 			case 'H', 'h':
-				flg |= int32(ST_S)
+				flg |= int32(HF_H)
 			case 'L', 'l':
-				flg |= int32(ST_C)
+				flg |= int32(HF_L)
 			case 'M', 'm':
-				flg |= int32(ST_S | ST_C)
+				flg |= int32(HF_H | HF_L)
 			case 'A', 'a':
-				flg |= int32(ST_A)
+				flg |= int32(HF_A)
 			case 'F', 'f':
-				flg |= int32(ST_F)
+				flg |= int32(HF_F)
 			case 'D', 'd':
-				flg |= int32(ST_D)
+				flg |= int32(HF_D)
 			case 'P', 'p':
-				flg |= int32(ST_P)
+				flg |= int32(HF_P)
 			default:
 				return flg, Error("Invalid flags: " + base)
 			}
@@ -1225,11 +1224,11 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 			switch (*in)[0] {
 			case '+':
 				// move forward
-				flg |= int32(MT_PLS)
+				flg |= int32(HF_PLS)
 				*in = (*in)[1:]
 			case '-':
 				// move forward
-				flg |= int32(MT_MNS)
+				flg |= int32(HF_MNS)
 				*in = (*in)[1:]
 			}
 		}
@@ -4113,8 +4112,6 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 			return bvNone(), err
 		}
 		out.append(OC_ex_, OC_ex_playerindexexist)
-	case "drawpalno":
-		out.append(OC_ex_, OC_ex_drawpalno)
 	case "angle":
 		out.append(OC_ex_, OC_ex_angle)
 	case "scale":
@@ -4220,7 +4217,7 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 	c.token = c.tokenizer(in)
 	return bv, nil
 }
-func (c *Compiler) renzokuEnzansihaError(in *string) error {
+func (c *Compiler) contiguousOperator(in *string) error {
 	*in = strings.TrimSpace(*in)
 	if len(*in) > 0 {
 		switch (*in)[0] {
@@ -4270,7 +4267,7 @@ func (c *Compiler) expPostNot(out *BytecodeExp, in *string) (BytecodeValue,
 					return bvNone(), Error("No comparison operator" +
 						"\n[ECID 4]\n")
 				}
-				if err := c.renzokuEnzansihaError(in); err != nil {
+				if err := c.contiguousOperator(in); err != nil {
 					return bvNone(), err
 				}
 				oldin = oldin[:len(oldin)-len(*in)]
@@ -4278,7 +4275,7 @@ func (c *Compiler) expPostNot(out *BytecodeExp, in *string) (BytecodeValue,
 					" " + *in
 			}
 		} else if opp > 0 {
-			if err := c.renzokuEnzansihaError(in); err != nil {
+			if err := c.contiguousOperator(in); err != nil {
 				return bvNone(), err
 			}
 		}
