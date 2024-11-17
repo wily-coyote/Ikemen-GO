@@ -254,11 +254,14 @@ func (input *Input) GetJoystickIndices(guid string) []int {
 
 // From @leonkasovan's branch
 func CheckAxisForDpad(joy int, axes *[]float32, base int) string {
-	var s string
+	var s string = ""
 	if (*axes)[0] > sys.controllerStickSensitivity { // right
 		s = strconv.Itoa(2 + base)
 	} else if -(*axes)[0] > sys.controllerStickSensitivity { // left
 		s = strconv.Itoa(1 + base)
+	}
+	if len(*axes) < 2 {
+		return s
 	}
 	if (*axes)[1] > sys.controllerStickSensitivity { // down
 		s = strconv.Itoa(3 + base)

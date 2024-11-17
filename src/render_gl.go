@@ -1,4 +1,4 @@
-//go:build !kinc && !darwin
+//go:build !kinc && !gl32
 
 // IF YOU MAKE CHANGES TO THIS FILE, YOU MUST ALSO MAKE
 // EQUIVALENT CHANGES TO render_gl_darwin.go
@@ -20,6 +20,8 @@ import (
 	mgl "github.com/go-gl/mathgl/mgl32"
 	"golang.org/x/mobile/exp/f32"
 )
+
+const GL_SHADER_VER = 120 // OpenGL 2.1
 
 var InternalFormatLUT = map[int32]uint32{
 	8:  gl.LUMINANCE,
@@ -1005,11 +1007,10 @@ func (r *Renderer) ReleaseModelPipeline() {
 }
 
 func (r *Renderer) ReadPixels(data []uint8, width, height int) {
-	r.EndFrame()
-	sys.window.SwapBuffers()
+	// we defer the EndFrame(), SwapBuffers(), and BeginFrame() calls that were previously below now to
+	// a single spot in order to prevent the blank screenshot bug on single digit FPS
 	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
 	gl.ReadPixels(0, 0, int32(width), int32(height), gl.RGBA, gl.UNSIGNED_BYTE, unsafe.Pointer(&data[0]))
-	r.BeginFrame(false)
 }
 
 func (r *Renderer) Scissor(x, y, width, height int32) {

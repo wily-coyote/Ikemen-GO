@@ -1,4 +1,4 @@
-//go:build !kinc
+//go:build !kinc && gl32
 
 // This is almost identical to render_gl.go except it uses a VAO
 // for GL 3.2 which is the minimum version that runs on modern
@@ -20,6 +20,8 @@ import (
 	mgl "github.com/go-gl/mathgl/mgl32"
 	"golang.org/x/mobile/exp/f32"
 )
+
+const GL_SHADER_VER = 150 // OpenGL 3.2
 
 var InternalFormatLUT = map[int32]uint32{
 	8:  gl.RED,
@@ -145,6 +147,12 @@ func linkProgram(params ...uint32) (program uint32, err error) {
 	program = gl.CreateProgram()
 	for _, param := range params {
 		gl.AttachShader(program, param)
+	}
+	if len(params) > 2 {
+		// Geometry Shader Params
+		gl.ProgramParameteri(program, gl.GEOMETRY_INPUT_TYPE, gl.TRIANGLES)
+		gl.ProgramParameteri(program, gl.GEOMETRY_OUTPUT_TYPE, gl.TRIANGLE_STRIP)
+		gl.ProgramParameteri(program, gl.GEOMETRY_VERTICES_OUT, 3*6)
 	}
 	gl.LinkProgram(program)
 	// Mark shaders for deletion when the program is deleted
@@ -1011,11 +1019,10 @@ func (r *Renderer) ReleaseModelPipeline() {
 }
 
 func (r *Renderer) ReadPixels(data []uint8, width, height int) {
-	r.EndFrame()
-	sys.window.SwapBuffers()
+	// we defer the EndFrame(), SwapBuffers(), and BeginFrame() calls that were previously below now to
+	// a single spot in order to prevent the blank screenshot bug on single digit FPS
 	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
 	gl.ReadPixels(0, 0, int32(width), int32(height), gl.RGBA, gl.UNSIGNED_BYTE, unsafe.Pointer(&data[0]))
-	r.BeginFrame(false)
 }
 
 func (r *Renderer) Scissor(x, y, width, height int32) {

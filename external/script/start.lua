@@ -4036,8 +4036,11 @@ function start.f_stageMusic()
 	if gamemode('demo') and motif.demo_mode.fight_playbgm == 0 then
 		return
 	end
+	-- Reset
+	local fn = bgmvar("filename")
+	local didLoadBGM = fn ~= nil and fn ~= ""
 	-- bgmusic / bgmusic.roundX / bgmusic.final
-	if roundstart() then
+	if (stagetime() > 0 and not didLoadBGM) then
 		-- only if the round is not restarted
 		if start.bgmround ~= roundno() then
 			start.bgmround = roundno()
