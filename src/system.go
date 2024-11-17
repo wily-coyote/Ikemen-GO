@@ -392,6 +392,9 @@ type System struct {
 	gameFPS       float32
 	prevTimestamp float64
 	absTickCountF float32
+
+	// screenshot deferral
+	isTakingScreenshot bool
 }
 
 // Check if the application is running inside a macOS app bundle
@@ -579,6 +582,10 @@ func (s *System) await(fps int) bool {
 		// Render the finished frame
 		gfx.EndFrame()
 		s.window.SwapBuffers()
+		if s.isTakingScreenshot {
+			defer captureScreen()
+			s.isTakingScreenshot = false
+		}
 		// Begin the next frame after events have been processed. Do not clear
 		// the screen if network input is present.
 		defer gfx.BeginFrame(sys.netInput == nil)
@@ -2344,11 +2351,6 @@ func (s *System) fight() (reload bool) {
 		}
 	}
 
-	// default bgm playback, used only in Quick VS or if externalized Lua implementaion is disabled
-	if s.round == 1 && (s.gameMode == "" || len(sys.commonLua) == 0) {
-		s.bgm.Open(s.stage.bgmusic, 1, int(s.stage.bgmvolume), int(s.stage.bgmloopstart), int(s.stage.bgmloopend), int(s.stage.bgmstartposition), s.stage.bgmfreqmul, -1)
-	}
-
 	oldWins, oldDraws := s.wins, s.draws
 	oldTeamLeader := s.teamLeader
 	// Anonymous function to reset values, called at the start of each round
@@ -2391,6 +2393,10 @@ func (s *System) fight() (reload bool) {
 	// Loop until end of match
 	fin := false
 	for !s.endMatch {
+		// default bgm playback, used only in Quick VS or if externalized Lua implementaion is disabled
+		if s.round == 1 && (s.gameMode == "" || len(sys.commonLua) == 0) && sys.stage.stageTime > 0 && sys.bgm.streamer == nil {
+			s.bgm.Open(s.stage.bgmusic, 1, int(s.stage.bgmvolume), int(s.stage.bgmloopstart), int(s.stage.bgmloopend), int(s.stage.bgmstartposition), s.stage.bgmfreqmul, -1)
+		}
 		s.step = false
 		for _, v := range s.shortcutScripts {
 			if v.Activate {

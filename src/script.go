@@ -1991,7 +1991,9 @@ func systemScriptInit(l *lua.LState) {
 		return 0
 	})
 	luaRegister(l, "screenshot", func(*lua.LState) int {
-		captureScreen()
+		if !sys.isTakingScreenshot {
+			sys.isTakingScreenshot = true
+		}
 		return 0
 	})
 	luaRegister(l, "searchFile", func(l *lua.LState) int {
