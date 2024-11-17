@@ -21,6 +21,8 @@ import (
 	"golang.org/x/mobile/exp/f32"
 )
 
+const GL_SHADER_VER = 120 // OpenGL 2.1
+
 var InternalFormatLUT = map[int32]uint32{
 	8:  gl.LUMINANCE,
 	24: gl.RGB,

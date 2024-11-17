@@ -38,7 +38,7 @@ func (s *System) newWindow(w, h int) (*Window, error) {
 	glfw.WindowHint(glfw.Resizable, glfw.True)
 
 	// only GL 3.2 needs this
-	if sys.fontShaderVer == 150 {
+	if GL_SHADER_VER == 150 {
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 2)
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
