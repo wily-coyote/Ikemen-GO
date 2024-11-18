@@ -74,6 +74,7 @@ jobs:
             goos: windows
             goarch: amd64
             bin: Ikemen_GO.exe
+            binGL32: Ikemen_GO_GL32.exe
             glibc: ''
             target: ''
           - runner_os: linux
@@ -81,6 +82,7 @@ jobs:
             goos: linux
             goarch: amd64
             bin: Ikemen_GO_Linux
+            binGL32: Ikemen_GO_Linux_GL32
             glibc: '2.13'
             target: ''
           - runner_os: macos
@@ -88,6 +90,7 @@ jobs:
             goos: darwin
             goarch: amd64
             bin: Ikemen_GO_MacOS
+            binGL32: ''
             glibc: ''
             target: '10.7'
     runs-on: ${{ matrix.cfg.os }}
@@ -136,8 +139,14 @@ jobs:
           go env -w GO111MODULE=on
           go mod download
           go build -v -ldflags "$ldflags" -o ./${{ matrix.cfg.bin }} ./src
+          if [ "${{ matrix.cfg.binGL32 }}" != "" ]; then
+            go build -tags gl32 -v -ldflags "$ldflags" -o ./${{ matrix.cfg.binGL32 }} ./src
+          fi
           if [ "$RUNNER_OS" != "Windows" ]; then
             chmod +x ${{ matrix.cfg.bin }}
+            if [ "${{ matrix.cfg.binGL32 }}" != "" ]; then
+              chmod +x ${{ matrix.cfg.binGL32 }}
+            fi
           fi
         shell: bash
 
@@ -147,6 +156,9 @@ jobs:
           echo "Preparing files for deployment"
           mkdir deploy
           cp ${{ matrix.cfg.bin }} deploy/
+          if [ "${{ matrix.cfg.binGL32 }}" != "" ]; then
+            cp ${{ matrix.cfg.binGL32 }} deploy/
+          fi
           git clone https://github.com/ikemen-engine/Ikemen_GO-Elecbyte-Screenpack.git
           cp -r data external font Ikemen_GO-Elecbyte-Screenpack/chars Ikemen_GO-Elecbyte-Screenpack/data Ikemen_GO-Elecbyte-Screenpack/font Ikemen_GO-Elecbyte-Screenpack/sound Ikemen_GO-Elecbyte-Screenpack/stages deploy/
           cp License.txt deploy/
