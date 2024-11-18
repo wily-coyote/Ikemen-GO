@@ -1256,65 +1256,6 @@ func (s *System) resetFrameTime() {
 	s.tickCount, s.oldTickCount, s.tickCountF, s.lastTick, s.absTickCountF = 0, -1, 0, 0, 0
 	s.nextAddTime, s.oldNextAddTime = 1, 1
 }
-func (s *System) commandUpdate() {
-	for i, p := range s.chars {
-		if len(p) > 0 {
-			r := p[0]
-			act := true
-			if s.super > 0 {
-				act = r.superMovetime != 0
-			} else if s.pause > 0 && r.pauseMovetime == 0 {
-				act = false
-			}
-			// Having this here makes B and F inputs reverse the same instant the character turns
-			if act && !r.asf(ASF_noautoturn) && (r.scf(SCF_ctrl) || sys.roundState() > 2) &&
-				(r.ss.no == 0 || r.ss.no == 11 || r.ss.no == 20 || r.ss.no == 52) && s.stage.autoturn {
-				r.turn()
-			}
-			if r.inputOver() || r.asf(ASF_noinput) {
-				for j := range r.cmd {
-					r.cmd[j].BufReset()
-				}
-				continue
-			}
-			for _, c := range p {
-				if (c.helperIndex == 0 ||
-					c.helperIndex > 0 && &c.cmd[0] != &r.cmd[0]) &&
-					c.cmd[0].Input(c.controller, int32(c.facing), sys.com[i], c.inputFlag) {
-					hp := c.hitPause() && c.gi().constants["input.pauseonhitpause"] != 0
-					buftime := Btoi(hp && c.gi().mugenver[0] != 1)
-					if s.super > 0 {
-						if !act && s.super <= s.superendcmdbuftime {
-							hp = true
-						}
-					} else if s.pause > 0 {
-						if !act && s.pause <= s.pauseendcmdbuftime {
-							hp = true
-						}
-					}
-					for j := range c.cmd {
-						c.cmd[j].Step(int32(c.facing), c.controller < 0, hp, buftime+Btoi(hp))
-					}
-				}
-			}
-			if r.controller < 0 {
-				cc := int32(-1)
-				// AI Scaling
-				// TODO: Balance AI Scaling
-				if sys.roundState() == 2 && RandF32(0, sys.com[i]/2+32) > 32 {
-					cc = Rand(0, int32(len(r.cmd[r.ss.sb.playerNo].Commands))-1)
-				} else {
-					cc = -1
-				}
-				for j := range p {
-					if p[j].helperIndex >= 0 {
-						p[j].cpucmd = cc
-					}
-				}
-			}
-		}
-	}
-}
 
 func (s *System) charUpdate() {
 	s.charList.update()
@@ -1561,10 +1502,6 @@ func (s *System) action() {
 					if s.intro == rs4t-1 {
 						for _, p := range s.chars {
 							if len(p) > 0 {
-								// Set inputwait flag to stop inputs until win pose time
-								if !p[0].scf(SCF_inputwait) {
-									p[0].setSCF(SCF_inputwait)
-								}
 								// Check if this player is ready to proceed to roundstate 4
 								// TODO: The game should normally only wait for players that are active in the fight // || p[0].teamside == -1 || p[0].scf(SCF_standby)
 								// TODO: This could be manageable from the char's side with an AssertSpecial or such
@@ -1634,7 +1571,6 @@ func (s *System) action() {
 							// TODO: These changestates ought to be unhardcoded
 							if !p[0].scf(SCF_over) && !p[0].hitPause() && p[0].alive() && p[0].animNo != 5 {
 								p[0].setSCF(SCF_over)
-								p[0].unsetSCF(SCF_inputwait)
 								if p[0].win() {
 									p[0].selfState(180, -1, -1, -1, "")
 								} else if p[0].lose() {
