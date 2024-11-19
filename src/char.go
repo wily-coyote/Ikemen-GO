@@ -19,7 +19,6 @@ const (
 	SCF_dizzy
 	SCF_guard
 	SCF_guardbreak
-	SCF_inputwait
 	SCF_ko
 	SCF_ko_round_middle
 	SCF_over
@@ -4372,7 +4371,7 @@ func (c *Char) playSound(ffx string, lowpriority bool, loopCount int32, g, n, ch
 	}
 }
 
-func (c *Char) turn() {
+func (c *Char) autoTurn() {
 	if c.helperIndex == 0 {
 		if e := sys.charList.enemyNear(c, 0, true, true, false); c.rdDistX(e, c).ToF() < 0 && !e.asf(ASF_noturntarget) {
 			switch c.ss.stateType {
@@ -4499,7 +4498,7 @@ func (c *Char) stateChange2() bool {
 func (c *Char) changeStateEx(no int32, pn int, anim, ctrl int32, ffx string) {
 	if c.minus <= 0 && c.scf(SCF_ctrl) && sys.roundState() <= 2 &&
 		(c.ss.stateType == ST_S || c.ss.stateType == ST_C) && !c.asf(ASF_noautoturn) && sys.stage.autoturn {
-		c.turn()
+		c.autoTurn()
 	}
 	if anim != -1 {
 		c.changeAnim(anim, c.playerNo, ffx)
@@ -6159,14 +6158,25 @@ func (c *Char) hitPause() bool {
 func (c *Char) angleSet(a float32) {
 	c.angle = a
 }
-func (c *Char) inputOver() bool {
+
+func (c *Char) inputWait() bool {
 	if c.asf(ASF_postroundinput) {
 		return false
-	} else {
-		// KO'd characters are covered by the inputwait flag
-		return sys.time == 0 || sys.intro <= -sys.lifebar.ro.over_time || c.scf(SCF_inputwait)
 	}
+	// If match just starting
+	// Not sure if Mugen actually does this
+	if sys.time == 0 {
+		return true
+	}
+	// If after round "over.waittime" and the win poses have not started
+	if sys.intro <= -sys.lifebar.ro.over_waittime && sys.wintime >= 0 {
+		return true
+	}
+	return false
+	// In Mugen, once the win poses start the winners can use inputs again but the losers (including draws) cannot
+	// This is not currently reproduced and may not be necessary
 }
+
 func (c *Char) over() bool {
 	return c.scf(SCF_over) || c.ss.no == 5150
 }
@@ -7128,7 +7138,7 @@ func (c *Char) actionPrepare() {
 		// Perform basic actions
 		if c.keyctrl[0] && c.cmd != nil {
 			// In Mugen, characters can perform basic actions even if they are KO
-			if c.ctrl() && !c.inputOver() && (c.controller >= 0 || c.helperIndex == 0) {
+			if c.ctrl() && !c.inputWait() && (c.controller >= 0 || c.helperIndex == 0) {
 				if !c.asf(ASF_nohardcodedkeys) {
 					if !c.asf(ASF_nojump) && c.ss.stateType == ST_S && c.cmd[0].Buffer.U > 0 &&
 						(!(sys.intro < 0 && sys.intro > -sys.lifebar.ro.over_waittime) || c.asf(ASF_postroundinput)) {
@@ -7311,7 +7321,7 @@ func (c *Char) actionRun() {
 	if sys.autoguard[c.playerNo] {
 		c.setASF(ASF_autoguard)
 	}
-	if !c.inputOver() &&
+	if !c.inputWait() &&
 		((c.scf(SCF_ctrl) || c.ss.no == 52) &&
 			c.ss.moveType == MT_I || c.inGuardState()) && c.cmd != nil &&
 		(c.cmd[0].Buffer.B > 0 || c.asf(ASF_autoguard)) &&
@@ -7322,7 +7332,7 @@ func (c *Char) actionRun() {
 	}
 	if !c.pauseBool {
 		if c.keyctrl[0] && c.cmd != nil {
-			if c.ctrl() && !c.inputOver() && (c.controller >= 0 || c.helperIndex == 0) {
+			if c.ctrl() && !c.inputWait() && (c.controller >= 0 || c.helperIndex == 0) {
 				if !c.asf(ASF_nohardcodedkeys) {
 					if c.inguarddist && c.scf(SCF_guard) && c.cmd[0].Buffer.B > 0 &&
 						!c.inGuardState() {
@@ -8214,6 +8224,80 @@ func (cl *CharList) delete(dc *Char) {
 	}
 }
 
+func (cl *CharList) commandUpdate() {
+	// Iterate players
+	for i, p := range sys.chars {
+		if len(p) > 0 {
+			root := p[0]
+			cheat := int32(-1)
+			// AI cheating
+			// Select a random command to cheat for the AI
+			// The way this only allows one command to be cheated at a time may be the cause of issue #2022
+			if root.controller < 0 {
+				if sys.roundState() == 2 && RandF32(0, sys.com[i]/2+32) > 32 { // TODO: Balance AI scaling
+					cheat = Rand(0, int32(len(root.cmd[root.ss.sb.playerNo].Commands))-1)
+				}
+			}
+			// Iterate root and helpers
+			for _, c := range p {
+				act := true
+				if sys.super > 0 {
+					act = c.superMovetime != 0
+				} else if sys.pause > 0 && c.pauseMovetime == 0 {
+					act = false
+				}
+				// Auto turning check for the root
+				// Having this here makes B and F inputs reverse the same instant the character turns
+				if act && c.helperIndex == 0 && !c.asf(ASF_noautoturn) && sys.stage.autoturn {
+					if (c.scf(SCF_ctrl) || sys.roundState() > 2) &&
+						(c.ss.no == 0 || c.ss.no == 11 || c.ss.no == 20 || c.ss.no == 52) {
+						c.autoTurn()
+					}
+				}
+				if (c.helperIndex == 0 || c.helperIndex > 0 && &c.cmd[0] != &root.cmd[0]) &&
+					c.cmd[0].Input(c.controller, int32(c.facing), sys.com[i], c.inputFlag) {
+					// Clear input buffers and skip the rest of the loop
+					// This used to apply only to the root, but that caused some issues with helper-based input buffers
+					if c.inputWait() || c.asf(ASF_noinput) {
+						for _, cmd := range c.cmd {
+							cmd.BufReset()
+						}
+						continue
+					}
+					// Check for buffering during hitpause, Superpause and Pause
+					buffer := false
+					winbuf := false
+					if c.hitPause() && c.gi().constants["input.pauseonhitpause"] != 0 {
+						buffer = true
+						// Winmugen chars buffer one frame longer on hitpause
+						// This is true in Winmugen itself but not Mugen 1.0+
+						if c.gi().mugenver[0] != 1 {
+							winbuf = true
+						}
+					}
+					if sys.super > 0 {
+						if !act && sys.super <= sys.superendcmdbuftime {
+							buffer = true
+						}
+					} else if sys.pause > 0 {
+						if !act && sys.pause <= sys.pauseendcmdbuftime {
+							buffer = true
+						}
+					}
+					// Update commands
+					for _, cmd := range c.cmd {
+						cmd.Step(int32(c.facing), c.controller < 0, buffer, Btoi(buffer)+Btoi(winbuf))
+					}
+					// Enable AI cheated command
+					if cheat >= 0 {
+						c.cpucmd = cheat
+					}
+				}
+			}
+		}
+	}
+}
+
 // Sort all characters into a list based on their processing order
 func (cl *CharList) sortActionRunOrder() []int {
 
@@ -8294,7 +8378,8 @@ func (cl *CharList) sortActionRunOrder() []int {
 }
 
 func (cl *CharList) action() {
-	sys.commandUpdate()
+	// Update commands for all chars
+	cl.commandUpdate()
 
 	// Prepare characters before performing their actions
 	for i := 0; i < len(cl.runOrder); i++ {
