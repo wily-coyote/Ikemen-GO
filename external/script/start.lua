@@ -10,6 +10,7 @@ end
 --globally accessible temp data
 start.challenger = 0
 --local variables
+local didLoadStageBGM = false
 local restoreCursor = false
 local selScreenEnd = false
 local stageEnd = false
@@ -4037,10 +4038,11 @@ function start.f_stageMusic()
 		return
 	end
 	-- Reset
-	local fn = bgmvar("filename")
-	local didLoadBGM = fn ~= nil and fn ~= ""
+	if roundstart() then
+		didLoadStageBGM = false
+	end
 	-- bgmusic / bgmusic.roundX / bgmusic.final
-	if (stagetime() > 0 and not didLoadBGM) then
+	if (stagetime() > 0 and not didLoadStageBGM) then
 		-- only if the round is not restarted
 		if start.bgmround ~= roundno() then
 			start.bgmround = roundno()
@@ -4057,13 +4059,16 @@ function start.f_stageMusic()
 			-- final round music assigned
 			if roundNo > 1 and roundtype() == 3 and start.t_music.musicfinal.bgmusic ~= nil then
 				main.f_playBGM(false, start.t_music.musicfinal.bgmusic, 1, start.t_music.musicfinal.bgmvolume, start.t_music.musicfinal.bgmloopstart, start.t_music.musicfinal.bgmloopend)
+				didLoadStageBGM = true
 			-- music exists for this round
 			elseif start.t_music.music[roundNo] ~= nil then
 				-- interrupt same track playing only on round 1 of first match (skips continuous survival etc.)
 				main.f_playBGM(matchno() == 1 and roundNo == 1, start.t_music.music[roundNo].bgmusic, 1, start.t_music.music[roundNo].bgmvolume, start.t_music.music[roundNo].bgmloopstart, start.t_music.music[roundNo].bgmloopend)
+				didLoadStageBGM = true
 			-- stop versus screen track or life bgm even if stage music is not assigned
 			elseif start.bgmround == 1 or start.bgmstate == 1 then
 				main.f_playBGM(true)
+				didLoadStageBGM = true
 			end
 		end
 		start.bgmstate = 0
