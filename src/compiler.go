@@ -2162,6 +2162,7 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		if err := c.checkOpeningBracket(in); err != nil {
 			return bvNone(), err
 		}
+		isFlag := 0
 		switch c.token {
 		case "xveladd":
 			bv.SetF(0)
@@ -2170,156 +2171,163 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		case "fall.envshake.dir":
 			bv.SetI(0)
 		default:
-			out.append(OC_ex_)
 			switch c.token {
 			case "animtype":
-				out.append(OC_ex_gethitvar_animtype)
+				opc = OC_ex_gethitvar_animtype
 			case "air.animtype":
-				out.append(OC_ex_gethitvar_air_animtype)
+				opc = OC_ex_gethitvar_air_animtype
 			case "ground.animtype":
-				out.append(OC_ex_gethitvar_ground_animtype)
+				opc = OC_ex_gethitvar_ground_animtype
 			case "fall.animtype":
-				out.append(OC_ex_gethitvar_fall_animtype)
+				opc = OC_ex_gethitvar_fall_animtype
 			case "type":
-				out.append(OC_ex_gethitvar_type)
+				opc = OC_ex_gethitvar_type
 			case "airtype":
-				out.append(OC_ex_gethitvar_airtype)
+				opc = OC_ex_gethitvar_airtype
 			case "groundtype":
-				out.append(OC_ex_gethitvar_groundtype)
+				opc = OC_ex_gethitvar_groundtype
 			case "damage":
-				out.append(OC_ex_gethitvar_damage)
+				opc = OC_ex_gethitvar_damage
 			case "guardcount":
-				out.append(OC_ex_gethitvar_guardcount)
+				opc = OC_ex_gethitvar_guardcount
 			case "hitcount":
-				out.append(OC_ex_gethitvar_hitcount)
+				opc = OC_ex_gethitvar_hitcount
 			case "fallcount":
-				out.append(OC_ex_gethitvar_fallcount)
+				opc = OC_ex_gethitvar_fallcount
 			case "hitshaketime":
-				out.append(OC_ex_gethitvar_hitshaketime)
+				opc = OC_ex_gethitvar_hitshaketime
 			case "hittime":
-				out.append(OC_ex_gethitvar_hittime)
+				opc = OC_ex_gethitvar_hittime
 			case "slidetime":
-				out.append(OC_ex_gethitvar_slidetime)
+				opc = OC_ex_gethitvar_slidetime
 			case "ctrltime":
-				out.append(OC_ex_gethitvar_ctrltime)
+				opc = OC_ex_gethitvar_ctrltime
 			case "recovertime", "down.recovertime": // Added second term for consistency
-				out.append(OC_ex_gethitvar_down_recovertime)
+				opc = OC_ex_gethitvar_down_recovertime
 			case "xoff":
-				out.append(OC_ex_gethitvar_xoff)
+				opc = OC_ex_gethitvar_xoff
 			case "yoff":
-				out.append(OC_ex_gethitvar_yoff)
+				opc = OC_ex_gethitvar_yoff
 			case "zoff":
-				out.append(OC_ex_gethitvar_zoff)
+				opc = OC_ex_gethitvar_zoff
 			case "xvel":
-				out.append(OC_ex_gethitvar_xvel)
+				opc = OC_ex_gethitvar_xvel
 			case "yvel":
-				out.append(OC_ex_gethitvar_yvel)
+				opc = OC_ex_gethitvar_yvel
 			case "zvel":
-				out.append(OC_ex_gethitvar_zvel)
+				opc = OC_ex_gethitvar_zvel
 			case "xaccel":
-				out.append(OC_ex_gethitvar_xaccel)
+				opc = OC_ex_gethitvar_xaccel
 			case "yaccel":
-				out.append(OC_ex_gethitvar_yaccel)
+				opc = OC_ex_gethitvar_yaccel
 			case "zaccel":
-				out.append(OC_ex_gethitvar_zaccel)
+				opc = OC_ex_gethitvar_zaccel
 			case "hitid", "chainid":
-				out.append(OC_ex_gethitvar_chainid)
+				opc = OC_ex_gethitvar_chainid
 			case "guarded":
-				out.append(OC_ex_gethitvar_guarded)
+				opc = OC_ex_gethitvar_guarded
 			case "isbound":
-				out.append(OC_ex_gethitvar_isbound)
+				opc = OC_ex_gethitvar_isbound
 			case "fall":
-				out.append(OC_ex_gethitvar_fall)
+				opc = OC_ex_gethitvar_fall
 			case "fall.damage":
-				out.append(OC_ex_gethitvar_fall_damage)
+				opc = OC_ex_gethitvar_fall_damage
 			case "fall.xvel":
-				out.append(OC_ex_gethitvar_fall_xvel)
+				opc = OC_ex_gethitvar_fall_xvel
 			case "fall.yvel":
-				out.append(OC_ex_gethitvar_fall_yvel)
+				opc = OC_ex_gethitvar_fall_yvel
 			case "fall.zvel":
-				out.append(OC_ex_gethitvar_fall_zvel)
+				opc = OC_ex_gethitvar_fall_zvel
 			case "fall.recover":
-				out.append(OC_ex_gethitvar_fall_recover)
+				opc = OC_ex_gethitvar_fall_recover
 			case "fall.time":
-				out.append(OC_ex_gethitvar_fall_time)
+				opc = OC_ex_gethitvar_fall_time
 			case "fall.recovertime":
-				out.append(OC_ex_gethitvar_fall_recovertime)
+				opc = OC_ex_gethitvar_fall_recovertime
 			case "fall.kill":
-				out.append(OC_ex_gethitvar_fall_kill)
+				opc = OC_ex_gethitvar_fall_kill
 			case "fall.envshake.time":
-				out.append(OC_ex_gethitvar_fall_envshake_time)
+				opc = OC_ex_gethitvar_fall_envshake_time
 			case "fall.envshake.freq":
-				out.append(OC_ex_gethitvar_fall_envshake_freq)
+				opc = OC_ex_gethitvar_fall_envshake_freq
 			case "fall.envshake.ampl":
-				out.append(OC_ex_gethitvar_fall_envshake_ampl)
+				opc = OC_ex_gethitvar_fall_envshake_ampl
 			case "fall.envshake.phase":
-				out.append(OC_ex_gethitvar_fall_envshake_phase)
+				opc = OC_ex_gethitvar_fall_envshake_phase
 			case "fall.envshake.mul":
-				out.append(OC_ex_gethitvar_fall_envshake_mul)
-			case "attr":
-				out.append(OC_ex_gethitvar_attr)
+				opc = OC_ex_gethitvar_fall_envshake_mul
+			case "attr.int", "attr":
+				// "attr" by itself will eventually use the flag syntax
+				// instead of the int syntax
+				opc = OC_ex_gethitvar_attr
+			case "attr.flag":
+				opc = OC_ex_gethitvar_attr_flag
+				isFlag = 1
 			case "dizzypoints":
-				out.append(OC_ex_gethitvar_dizzypoints)
+				opc = OC_ex_gethitvar_dizzypoints
 			case "guardpoints":
-				out.append(OC_ex_gethitvar_guardpoints)
+				opc = OC_ex_gethitvar_guardpoints
 			case "id":
-				out.append(OC_ex_gethitvar_id)
+				opc = OC_ex_gethitvar_id
 			case "playerno":
-				out.append(OC_ex_gethitvar_playerno)
+				opc = OC_ex_gethitvar_playerno
 			case "redlife":
-				out.append(OC_ex_gethitvar_redlife)
+				opc = OC_ex_gethitvar_redlife
 			case "score":
-				out.append(OC_ex_gethitvar_score)
+				opc = OC_ex_gethitvar_score
 			case "hitdamage":
-				out.append(OC_ex_gethitvar_hitdamage)
+				opc = OC_ex_gethitvar_hitdamage
 			case "guarddamage":
-				out.append(OC_ex_gethitvar_guarddamage)
+				opc = OC_ex_gethitvar_guarddamage
 			case "power":
-				out.append(OC_ex_gethitvar_power)
+				opc = OC_ex_gethitvar_power
 			case "hitpower":
-				out.append(OC_ex_gethitvar_hitpower)
+				opc = OC_ex_gethitvar_hitpower
 			case "guardpower":
-				out.append(OC_ex_gethitvar_guardpower)
+				opc = OC_ex_gethitvar_guardpower
 			case "kill":
-				out.append(OC_ex_gethitvar_kill)
+				opc = OC_ex_gethitvar_kill
 			case "priority":
-				out.append(OC_ex_gethitvar_priority)
+				opc = OC_ex_gethitvar_priority
 			case "facing":
-				out.append(OC_ex_gethitvar_facing)
+				opc = OC_ex_gethitvar_facing
 			case "ground.velocity.x":
-				out.append(OC_ex_gethitvar_ground_velocity_x)
+				opc = OC_ex_gethitvar_ground_velocity_x
 			case "ground.velocity.y":
-				out.append(OC_ex_gethitvar_ground_velocity_y)
+				opc = OC_ex_gethitvar_ground_velocity_y
 			case "ground.velocity.z":
-				out.append(OC_ex_gethitvar_ground_velocity_z)
+				opc = OC_ex_gethitvar_ground_velocity_z
 			case "air.velocity.x":
-				out.append(OC_ex_gethitvar_air_velocity_x)
+				opc = OC_ex_gethitvar_air_velocity_x
 			case "air.velocity.y":
-				out.append(OC_ex_gethitvar_air_velocity_y)
+				opc = OC_ex_gethitvar_air_velocity_y
 			case "air.velocity.z":
-				out.append(OC_ex_gethitvar_air_velocity_z)
+				opc = OC_ex_gethitvar_air_velocity_z
 			case "down.velocity.x":
-				out.append(OC_ex_gethitvar_down_velocity_x)
+				opc = OC_ex_gethitvar_down_velocity_x
 			case "down.velocity.y":
-				out.append(OC_ex_gethitvar_down_velocity_y)
+				opc = OC_ex_gethitvar_down_velocity_y
 			case "down.velocity.z":
-				out.append(OC_ex_gethitvar_down_velocity_z)
+				opc = OC_ex_gethitvar_down_velocity_z
 			case "guard.velocity.x":
-				out.append(OC_ex_gethitvar_guard_velocity_x)
+				opc = OC_ex_gethitvar_guard_velocity_x
 			case "guard.velocity.y":
-				out.append(OC_ex_gethitvar_guard_velocity_y)
+				opc = OC_ex_gethitvar_guard_velocity_y
 			case "guard.velocity.z":
-				out.append(OC_ex_gethitvar_guard_velocity_z)
+				opc = OC_ex_gethitvar_guard_velocity_z
 			case "airguard.velocity.x":
-				out.append(OC_ex_gethitvar_airguard_velocity_x)
+				opc = OC_ex_gethitvar_airguard_velocity_x
 			case "airguard.velocity.y":
-				out.append(OC_ex_gethitvar_airguard_velocity_y)
+				opc = OC_ex_gethitvar_airguard_velocity_y
 			case "airguard.velocity.z":
-				out.append(OC_ex_gethitvar_airguard_velocity_z)
+				opc = OC_ex_gethitvar_airguard_velocity_z
 			case "frame":
-				out.append(OC_ex_gethitvar_frame)
+				opc = OC_ex_gethitvar_frame
 			case "down.recover":
-				out.append(OC_ex_gethitvar_down_recover)
+				opc = OC_ex_gethitvar_down_recover
+			case "guardflag":
+				opc = OC_ex_gethitvar_guardflag
+				isFlag = 2
 			default:
 				return bvNone(), Error("Invalid data: " + c.token)
 			}
@@ -2327,6 +2335,39 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		c.token = c.tokenizer(in)
 		if err := c.checkClosingBracket(); err != nil {
 			return bvNone(), err
+		}
+		switch (isFlag) {
+			case 1:
+				// attr
+				hda := func() error {
+					if attr, err := c.trgAttr(in); err != nil {
+						return err
+					} else {
+						out.append(OC_ex_)
+						out.appendI32Op(opc, attr)
+					}
+					return nil
+				}
+				if err := eqne(hda); err != nil {
+					return bvNone(), err
+				}
+			case 2:
+				// hit/guard flag
+				hgf := func() error {
+					if flg, err := flagSub(); err != nil {
+						return err
+					} else {
+						out.append(OC_ex_)
+						out.appendI32Op(opc, flg)
+						return nil
+					}
+				}
+				if err := eqne(hgf); err != nil {
+					return bvNone(), err
+				}
+			default:
+				// no flag
+				out.append(OC_ex_, opc)
 		}
 	case "groundlevel":
 		out.append(OC_ex_, OC_ex_groundlevel)
