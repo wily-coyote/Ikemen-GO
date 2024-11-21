@@ -9516,7 +9516,6 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 									// getter.ghv.fall = c.hitdef.fall
 
 									getter.ghv.attr = c.hitdef.attr
-									getter.ghv.guardflag = c.hitdef.guardflag
 									getter.ghv.hitid = c.hitdef.id
 									getter.ghv.playerNo = c.playerNo
 									getter.ghv.id = c.id
