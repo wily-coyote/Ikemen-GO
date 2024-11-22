@@ -2336,38 +2336,38 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		if err := c.checkClosingBracket(); err != nil {
 			return bvNone(), err
 		}
-		switch (isFlag) {
-			case 1:
-				// attr
-				hda := func() error {
-					if attr, err := c.trgAttr(in); err != nil {
-						return err
-					} else {
-						out.append(OC_ex_)
-						out.appendI32Op(opc, attr)
-					}
+		switch isFlag {
+		case 1:
+			// attr
+			hda := func() error {
+				if attr, err := c.trgAttr(in); err != nil {
+					return err
+				} else {
+					out.append(OC_ex_)
+					out.appendI32Op(opc, attr)
+				}
+				return nil
+			}
+			if err := eqne(hda); err != nil {
+				return bvNone(), err
+			}
+		case 2:
+			// hit/guard flag
+			hgf := func() error {
+				if flg, err := flagSub(); err != nil {
+					return err
+				} else {
+					out.append(OC_ex_)
+					out.appendI32Op(opc, flg)
 					return nil
 				}
-				if err := eqne(hda); err != nil {
-					return bvNone(), err
-				}
-			case 2:
-				// hit/guard flag
-				hgf := func() error {
-					if flg, err := flagSub(); err != nil {
-						return err
-					} else {
-						out.append(OC_ex_)
-						out.appendI32Op(opc, flg)
-						return nil
-					}
-				}
-				if err := eqne(hgf); err != nil {
-					return bvNone(), err
-				}
-			default:
-				// no flag
-				out.append(OC_ex_, opc)
+			}
+			if err := eqne(hgf); err != nil {
+				return bvNone(), err
+			}
+		default:
+			// no flag
+			out.append(OC_ex_, opc)
 		}
 	case "groundlevel":
 		out.append(OC_ex_, OC_ex_groundlevel)

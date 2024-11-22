@@ -13,13 +13,13 @@ import (
 type StateType int32
 
 const (
-	ST_S StateType = 1 << iota // 1
-	ST_C // 2
-	ST_A // 4
-	ST_L // 8
-	ST_N // 16
-	ST_U // 32
-	ST_MASK = 1<<iota - 1 // (1 << 6) -1 (63)
+	ST_S    StateType     = 1 << iota // 1
+	ST_C                              // 2
+	ST_A                              // 4
+	ST_L                              // 8
+	ST_N                              // 16
+	ST_U                              // 32
+	ST_MASK = 1<<iota - 1             // (1 << 6) -1 (63)
 	ST_SCA  = ST_S | ST_C | ST_A
 )
 
