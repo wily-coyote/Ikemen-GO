@@ -3147,11 +3147,11 @@ func triggerFunctions(l *lua.LState) {
 	})
 	// animelem (deprecated by animelemtime)
 	luaRegister(l, "animelemno", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animElemNo(int32(numArg(l, 1))).ToI()))
+		l.Push(lua.LNumber(sys.debugWC.animElemNo(int32(numArg(l, 1))-1).ToI())) // Offset by 1 because animations step before scripts run
 		return 1
 	})
 	luaRegister(l, "animelemtime", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animElemTime(int32(numArg(l, 1))).ToI()))
+		l.Push(lua.LNumber(sys.debugWC.animElemTime(int32(numArg(l, 1))).ToI())-1) // Offset by 1 because animations step before scripts run
 		return 1
 	})
 	luaRegister(l, "animexist", func(*lua.LState) int {
@@ -4956,101 +4956,103 @@ func triggerFunctions(l *lua.LState) {
 		return 1
 	})
 	luaRegister(l, "animframe", func(*lua.LState) int {
+		// Because the char's animation steps at the end of each frame, before the scripts run,
+		// AnimFrame Lua version uses curFrame instead of anim.CurrentFrame()
 		c := sys.debugWC
 		switch strArg(l, 1) {
 		case "alphadest":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.DstAlpha))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "alphasource":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.SrcAlpha))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "angle":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Angle))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "group":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Group))
 			} else {
 				l.Push(lua.LNumber(-1))
 			}
 			return 1
 		case "hflip":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LBool(f.Hscale < 0))
 			} else {
 				l.Push(lua.LBool(false))
 			}
 			return 1
 		case "image":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Number))
 			} else {
 				l.Push(lua.LNumber(-1))
 			}
 			return 1
 		case "numclsn1":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(len(f.Clsn1()) / 4))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "numclsn2":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(len(f.Clsn2()) / 4))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "time":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Time))
 			} else {
 				l.Push(lua.LNumber(-1))
 			}
 			return 1
 		case "vflip":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LBool(f.Vscale < 0))
 			} else {
 				l.Push(lua.LBool(false))
 			}
 			return 1
 		case "xoffset":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Xoffset))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "xscale":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Xscale))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "yoffset":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Yoffset))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "yscale":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Yscale))
 			} else {
 				l.Push(lua.LNumber(0))
