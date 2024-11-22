@@ -217,7 +217,7 @@ end
 function actionInfo()
 	return string.format(
 		'ActionID: %d (P%d); SPR: %d,%d; ElemNo: %d/%d; Time: %d/%d (%d/%d)',
-		anim(), animplayerno(), animframe("group"), animframe("image"), animelemno(-1), animelemcount(), animelemtimesum(), animframe("time"), animtimesum(), animlength()
+		anim(), animplayerno(), animframe("group"), animframe("image"), animelemno(0), animelemcount(), animelemtime(animelemno(0)), animframe("time"), animtimesum(), animlength()
 	)
 end
 

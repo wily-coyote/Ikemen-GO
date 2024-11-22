@@ -3147,11 +3147,11 @@ func triggerFunctions(l *lua.LState) {
 	})
 	// animelem (deprecated by animelemtime)
 	luaRegister(l, "animelemno", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animElemNo(int32(numArg(l, 1))).ToI()))
+		l.Push(lua.LNumber(sys.debugWC.animElemNo(int32(numArg(l, 1))-1).ToI())) // Offset by 1 because animations step before scripts run
 		return 1
 	})
 	luaRegister(l, "animelemtime", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animElemTime(int32(numArg(l, 1))).ToI()))
+		l.Push(lua.LNumber(sys.debugWC.animElemTime(int32(numArg(l, 1))).ToI())-1) // Offset by 1 because animations step before scripts run
 		return 1
 	})
 	luaRegister(l, "animexist", func(*lua.LState) int {
@@ -3732,6 +3732,12 @@ func triggerFunctions(l *lua.LState) {
 			l.Push(lua.LNumber(c.hitdef.hitdamage))
 		case "guarddamage":
 			l.Push(lua.LNumber(c.hitdef.guarddamage))
+		case "p1stateno":
+			l.Push(lua.LNumber(c.hitdef.p1stateno))
+		case "p2stateno":
+			l.Push(lua.LNumber(c.hitdef.p2stateno))
+		case "priority":
+			l.Push(lua.LNumber(c.hitdef.priority))
 		default:
 			l.RaiseError("\nInvalid argument: %v\n", strArg(l, 1))
 		}
@@ -3927,6 +3933,72 @@ func triggerFunctions(l *lua.LState) {
 	})
 	luaRegister(l, "helperid", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.helperId))
+		return 1
+	})
+	luaRegister(l, "hitbyattr", func(*lua.LState) int {
+		flg := int32(0)
+		input := strings.ToLower(strArg(l, 1))
+		// Split input at the commas
+		attr := strings.Split(input, ",")
+		if len(attr) < 2 {
+			l.RaiseError("Attribute must contain at least two flags separated by ','")
+			return 0
+		}
+		// Get SCA attribute
+		attrsca := strings.TrimSpace(attr[0])
+		for _, letter := range attrsca {
+			switch letter {
+			case 's':
+				flg |= int32(ST_S)
+			case 'c':
+				flg |= int32(ST_C)
+			case 'a':
+				flg |= int32(ST_A)
+			default:
+				l.RaiseError("Invalid attribute: %c", letter)
+				return 0
+			}
+		}
+		// Get attack type attributes
+		for i := 1; i < len(attr); i++ {
+			attrtype := strings.TrimSpace(attr[i])
+			switch attrtype {
+			case "na":
+				flg |= int32(AT_NA)
+			case "nt":
+				flg |= int32(AT_NT)
+			case "np":
+				flg |= int32(AT_NP)
+			case "sa":
+				flg |= int32(AT_SA)
+			case "st":
+				flg |= int32(AT_ST)
+			case "sp":
+				flg |= int32(AT_SP)
+			case "ha":
+				flg |= int32(AT_HA)
+			case "ht":
+				flg |= int32(AT_HT)
+			case "hp":
+				flg |= int32(AT_HP)
+			case "aa":
+				flg |= int32(AT_AA)
+			case "at":
+				flg |= int32(AT_AT)
+			case "ap":
+				flg |= int32(AT_AP)
+			case "n":
+				flg |= int32(AT_NA | AT_NT | AT_NP)
+			case "s":
+				flg |= int32(AT_SA | AT_ST | AT_SP)
+			case "h", "a":
+				flg |= int32(AT_HA | AT_HT | AT_HP)
+			default:
+				l.RaiseError("Invalid attribute: %s", attrtype)
+				return 0
+			}
+		}
+		l.Push(lua.LBool(sys.debugWC.hitByAttrTrigger(flg)))
 		return 1
 	})
 	luaRegister(l, "hitcount", func(*lua.LState) int {
@@ -4882,101 +4954,103 @@ func triggerFunctions(l *lua.LState) {
 		return 1
 	})
 	luaRegister(l, "animframe", func(*lua.LState) int {
+		// Because the char's animation steps at the end of each frame, before the scripts run,
+		// AnimFrame Lua version uses curFrame instead of anim.CurrentFrame()
 		c := sys.debugWC
 		switch strArg(l, 1) {
 		case "alphadest":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.DstAlpha))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "alphasource":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.SrcAlpha))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "angle":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Angle))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "group":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Group))
 			} else {
 				l.Push(lua.LNumber(-1))
 			}
 			return 1
 		case "hflip":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LBool(f.Hscale < 0))
 			} else {
 				l.Push(lua.LBool(false))
 			}
 			return 1
 		case "image":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Number))
 			} else {
 				l.Push(lua.LNumber(-1))
 			}
 			return 1
 		case "numclsn1":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(len(f.Clsn1()) / 4))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "numclsn2":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(len(f.Clsn2()) / 4))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "time":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Time))
 			} else {
 				l.Push(lua.LNumber(-1))
 			}
 			return 1
 		case "vflip":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LBool(f.Vscale < 0))
 			} else {
 				l.Push(lua.LBool(false))
 			}
 			return 1
 		case "xoffset":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Xoffset))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "xscale":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Xscale))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "yoffset":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Yoffset))
 			} else {
 				l.Push(lua.LNumber(0))
 			}
 			return 1
 		case "yscale":
-			if f := c.anim.CurrentFrame(); f != nil {
+			if f := c.curFrame; f != nil {
 				l.Push(lua.LNumber(f.Yscale))
 			} else {
 				l.Push(lua.LNumber(0))
