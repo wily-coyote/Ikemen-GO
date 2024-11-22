@@ -3437,14 +3437,19 @@ func newStateBlock() *StateBlock {
 	return &StateBlock{persistent: 1, persistentIndex: -1, ignorehitpause: -2}
 }
 func (b StateBlock) Run(c *Char, ps []int32) (changeState bool) {
+	// Check if the character is currently in a hit pause
 	if c.hitPause() {
+		// If ignorehitpause is less than -1, do not proceed with this controller
 		if b.ignorehitpause < -1 {
 			return false
 		}
+		// If ignorehitpause is non-negative, use the hitPauseExecutionToggleFlags mechanism
 		if b.ignorehitpause >= 0 {
-			ww := &c.ss.wakegawakaranai[sys.workingState.playerNo][b.ignorehitpause]
-			*ww = !*ww
-			if !*ww {
+			flag := &c.ss.hitPauseExecutionToggleFlags[sys.workingState.playerNo][b.ignorehitpause]
+			// Toggle the flag
+			*flag = !*flag
+			// If the flag is now false, skip the execution of this controller during this tick
+			if !*flag {
 				return false
 			}
 		}

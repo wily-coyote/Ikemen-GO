@@ -365,8 +365,10 @@ func (c *Compiler) changeStateSub(is IniSection,
 		return err
 	}
 	if c.block != nil && c.stateNo >= 0 && c.block.ignorehitpause == -1 {
-		c.block.ignorehitpause = sys.cgi[c.playerNo].wakewakaLength
-		sys.cgi[c.playerNo].wakewakaLength++
+		// Assign a unique index to ignorehitpause for this controller
+		c.block.ignorehitpause = sys.cgi[c.playerNo].hitPauseToggleFlagCount
+		// Increment the count of hitPauseExecutionToggleFlags
+		sys.cgi[c.playerNo].hitPauseToggleFlagCount++
 	}
 	return nil
 }
@@ -412,8 +414,8 @@ func (c *Compiler) tagIn(is IniSection, sc *StateControllerBase, _ int8) (StateC
 		return nil
 	})
 	//if c.block != nil && c.block.ignorehitpause == -1 {
-	//	c.block.ignorehitpause = sys.cgi[c.playerNo].wakewakaLength
-	//	sys.cgi[c.playerNo].wakewakaLength++
+	//	c.block.ignorehitpause = sys.cgi[c.playerNo].hitPauseToggleFlagCount
+	//	sys.cgi[c.playerNo].hitPauseToggleFlagCount++
 	//}
 	return *ret, err
 }
@@ -438,8 +440,8 @@ func (c *Compiler) tagOut(is IniSection, sc *StateControllerBase, _ int8) (State
 		return nil
 	})
 	//if c.block != nil && c.block.ignorehitpause == -1 {
-	//	c.block.ignorehitpause = sys.cgi[c.playerNo].wakewakaLength
-	//	sys.cgi[c.playerNo].wakewakaLength++
+	//	c.block.ignorehitpause = sys.cgi[c.playerNo].hitPauseToggleFlagCount
+	//	sys.cgi[c.playerNo].hitPauseToggleFlagCount++
 	//}
 	return *ret, err
 }

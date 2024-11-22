@@ -2061,39 +2061,39 @@ const (
 )
 
 type CharGlobalInfo struct {
-	def            string
-	nameLow        string
-	displayname    string
-	displaynameLow string
-	author         string
-	authorLow      string
-	lifebarname    string
-	palkeymap      [MaxPalNo]int32
-	sff            *Sff
-	palettedata    *Palette
-	snd            *Snd
-	anim           AnimationTable
-	palno          int32
-	pal            [MaxPalNo]string
-	palExist       [MaxPalNo]bool
-	palSelectable  [MaxPalNo]bool
-	ikemenver      [3]uint16
-	ikemenverF     float32
-	mugenver       [2]uint16
-	data           CharData
-	velocity       CharVelocity
-	movement       CharMovement
-	states         map[int32]StateBytecode
-	wakewakaLength int32
-	pctype         ProjContact
-	pctime, pcid   int32
-	quotes         [MaxQuotes]string
-	portraitscale  float32
-	constants      map[string]float32
-	remapPreset    map[string]RemapPreset
-	remappedpal    [2]int32
-	localcoord     [2]float32
-	fnt            [10]*Fnt
+	def                     string
+	nameLow                 string
+	displayname             string
+	displaynameLow          string
+	author                  string
+	authorLow               string
+	lifebarname             string
+	palkeymap               [MaxPalNo]int32
+	sff                     *Sff
+	palettedata             *Palette
+	snd                     *Snd
+	anim                    AnimationTable
+	palno                   int32
+	pal                     [MaxPalNo]string
+	palExist                [MaxPalNo]bool
+	palSelectable           [MaxPalNo]bool
+	ikemenver               [3]uint16
+	ikemenverF              float32
+	mugenver                [2]uint16
+	data                    CharData
+	velocity                CharVelocity
+	movement                CharMovement
+	states                  map[int32]StateBytecode
+	hitPauseToggleFlagCount int32
+	pctype                  ProjContact
+	pctime, pcid            int32
+	quotes                  [MaxQuotes]string
+	portraitscale           float32
+	constants               map[string]float32
+	remapPreset             map[string]RemapPreset
+	remappedpal             [2]int32
+	localcoord              [2]float32
+	fnt                     [10]*Fnt
 }
 
 func (cgi *CharGlobalInfo) clearPCTime() {
@@ -2104,17 +2104,17 @@ func (cgi *CharGlobalInfo) clearPCTime() {
 
 // StateState contains the state variables like stateNo, prevStateNo, time, stateType, moveType, and physics of the current state.
 type StateState struct {
-	stateType       StateType
-	prevStateType   StateType
-	moveType        MoveType
-	prevMoveType    MoveType
-	storeMoveType   bool
-	physics         StateType
-	ps              []int32
-	wakegawakaranai [MaxSimul*2 + MaxAttachedChar][]bool
-	no, prevno      int32
-	time            int32
-	sb              StateBytecode
+	stateType                    StateType
+	prevStateType                StateType
+	moveType                     MoveType
+	prevMoveType                 MoveType
+	storeMoveType                bool
+	physics                      StateType
+	ps                           []int32
+	hitPauseExecutionToggleFlags [MaxSimul*2 + MaxAttachedChar][]bool // Flags if an sctrl runs during a hit pause on the current tick.
+	no, prevno                   int32
+	time                         int32
+	sb                           StateBytecode
 }
 
 func (ss *StateState) changeStateType(t StateType) {
@@ -2132,22 +2132,28 @@ func (ss *StateState) clear() {
 	ss.changeMoveType(MT_I)
 	ss.physics = ST_N
 	ss.ps = nil
-	for i, v := range ss.wakegawakaranai {
-		if len(v) < int(sys.cgi[i].wakewakaLength) {
-			ss.wakegawakaranai[i] = make([]bool, sys.cgi[i].wakewakaLength)
+	// Iterate over each player's hitPauseExecutionToggleFlags
+	for i, v := range ss.hitPauseExecutionToggleFlags {
+		// Ensure the slice has enough capacity based on hitPauseToggleFlagCount
+		if len(v) < int(sys.cgi[i].hitPauseToggleFlagCount) {
+			ss.hitPauseExecutionToggleFlags[i] = make([]bool, sys.cgi[i].hitPauseToggleFlagCount)
 		} else {
+			// Reset all flags to false
 			for i := range v {
 				v[i] = false
 			}
 		}
 	}
-	ss.clearWw()
+	// Further clear the hitPauseExecutionToggleFlags
+	ss.clearHitPauseExecutionToggleFlags()
 	ss.no, ss.prevno = 0, 0
 	ss.time = 0
 	ss.sb = StateBytecode{}
 }
-func (ss *StateState) clearWw() {
-	for _, v := range ss.wakegawakaranai {
+// Resets all hitPauseExecutionToggleFlags to false.
+// This ensures that all state controllers are set to execute on the next eligible tick.
+func (ss *StateState) clearHitPauseExecutionToggleFlags() {
+	for _, v := range ss.hitPauseExecutionToggleFlags {
 		for i := range v {
 			v[i] = false
 		}
@@ -7760,7 +7766,7 @@ func (c *Char) tick() {
 		// This flag prevents the previous move type from being changed twice
 		c.ss.storeMoveType = true
 		if c.hitPauseTime > 0 {
-			c.ss.clearWw()
+			c.ss.clearHitPauseExecutionToggleFlags()
 		}
 		c.hitPauseTime = 0
 		//c.targetDrop(-1, false) // GitHub #1148
@@ -7828,7 +7834,7 @@ func (c *Char) tick() {
 		if c.hitPauseTime > 0 {
 			c.hitPauseTime--
 			if c.hitPauseTime == 0 {
-				c.ss.clearWw()
+				c.ss.clearHitPauseExecutionToggleFlags()
 			}
 		}
 		// Fast recovery from lie down

@@ -3500,7 +3500,7 @@ func (l *Loader) load() {
 				for j := i + 2; j < len(sys.chars); j += 2 {
 					if !charDone[j] {
 						sys.chars[j], sys.cgi[j].states, charDone[j] = nil, nil, true
-						sys.cgi[j].wakewakaLength = 0
+						sys.cgi[j].hitPauseToggleFlagCount = 0
 					}
 				}
 			}
