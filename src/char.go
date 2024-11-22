@@ -2150,6 +2150,7 @@ func (ss *StateState) clear() {
 	ss.time = 0
 	ss.sb = StateBytecode{}
 }
+
 // Resets all hitPauseExecutionToggleFlags to false.
 // This ensures that all state controllers are set to execute on the next eligible tick.
 func (ss *StateState) clearHitPauseExecutionToggleFlags() {
