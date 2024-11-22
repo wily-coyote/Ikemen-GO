@@ -2256,12 +2256,8 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 				opc = OC_ex_gethitvar_fall_envshake_phase
 			case "fall.envshake.mul":
 				opc = OC_ex_gethitvar_fall_envshake_mul
-			case "attr.int", "attr":
-				// "attr" by itself will eventually use the flag syntax
-				// instead of the int syntax
+			case "attr":
 				opc = OC_ex_gethitvar_attr
-			case "attr.flag":
-				opc = OC_ex_gethitvar_attr_flag
 				isFlag = 1
 			case "dizzypoints":
 				opc = OC_ex_gethitvar_dizzypoints
