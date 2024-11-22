@@ -513,7 +513,6 @@ const (
 	OC_ex_gethitvar_fall_envshake_phase
 	OC_ex_gethitvar_fall_envshake_mul
 	OC_ex_gethitvar_attr
-	OC_ex_gethitvar_attr_flag
 	OC_ex_gethitvar_dizzypoints
 	OC_ex_gethitvar_guardpoints
 	OC_ex_gethitvar_id
@@ -2396,9 +2395,7 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushF(c.ghv.fall.envshake_phase)
 	case OC_ex_gethitvar_fall_envshake_mul:
 		sys.bcStack.PushF(c.ghv.fall.envshake_mul)
-	case OC_ex_gethitvar_attr: // TODO: deprecate this
-		sys.bcStack.PushI(c.ghv.attr)
-	case OC_ex_gethitvar_attr_flag:
+	case OC_ex_gethitvar_attr:
 		attr := (*(*int32)(unsafe.Pointer(&be[*i])))
 		// same as c.hitDefAttr()
 		sys.bcStack.PushB(c.ghv.testAttr(attr))

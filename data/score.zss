@@ -60,27 +60,26 @@ if !const(Default.Enable.Score) || teamSide = 0 {
 	let ret = call IkSys_ReceivedDamage();
 	if $ret && getHitVar(score) = 0 {
 		let dmgMul = 0;
-		switch getHitVar(attr) {
 		# normal attacks
-		case [const(AttrStandingHyperAttack), const(AttrAerialHyperAttack)]:
+		if getHitVar(attr) = SCA, HA {
 			let dmgMul = 10;
-		case [const(AttrStandingSpecialAttack), const(AttrAerialSpecialAttack)]:
+		} else if getHitVar(attr) = SCA, SA {
 			let dmgMul = 9;
-		case [const(AttrStandingNormalAttack), const(AttrAerialNormalAttack)]:
+		} else if getHitVar(attr) = SCA, NA {
 			let dmgMul = 8;
 		# throws
-		case [const(AttrStandingHyperThrow), const(AttrAerialHyperThrow)]:
+		} else if getHitVar(attr) = SCA, HT {
 			let dmgMul = 10;
-		case [const(AttrStandingSpecialThrow), const(AttrAerialSpecialThrow)]:
+		} else if getHitVar(attr) = SCA, ST {
 			let dmgMul = 9;
-		case [const(AttrStandingNormalThrow), const(AttrAerialNormalThrow)]:
+		} else if getHitVar(attr) = SCA, NT {
 			let dmgMul = 8;
 		# projectiles
-		case [const(AttrStandingHyperProjectile), const(AttrAerialHyperProjectile)]:
+		} else if getHitVar(attr) = SCA, HP {
 			let dmgMul = 10;
-		case [const(AttrStandingSpecialProjectile), const(AttrAerialSpecialProjectile)]:
+		} else if getHitVar(attr) = SCA, SP {
 			let dmgMul = 9;
-		case [const(AttrStandingNormalProjectile), const(AttrAerialNormalProjectile)]:
+		} else if getHitVar(attr) = SCA, NP {
 			let dmgMul = 8;
 		}
 		if $dmgMul > 0 {

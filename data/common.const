@@ -270,35 +270,6 @@ MsgGuardBreak = 422
 MsgParry = 423
 MsgJustDefend = 424
 
-; GetHitVar(attr)
-AttrStandingNormalAttack = 65
-AttrCrouchingNormalAttack = 66
-AttrAerialNormalAttack = 68
-AttrStandingNormalThrow = 129
-AttrCrouchingNormalThrow = 130
-AttrAerialNormalThrow = 132
-AttrStandingNormalProjectile = 257
-AttrCrouchingNormalProjectile = 258
-AttrAerialNormalProjectile = 260
-AttrStandingSpecialAttack = 513
-AttrCrouchingSpecialAttack = 514
-AttrAerialSpecialAttack = 516
-AttrStandingSpecialThrow = 1025
-AttrCrouchingSpecialThrow = 1026
-AttrAerialSpecialThrow = 1028
-AttrStandingSpecialProjectile = 2049
-AttrCrouchingSpecialProjectile = 2050
-AttrAerialSpecialProjectile = 2052
-AttrStandingHyperAttack = 4097
-AttrCrouchingHyperAttack = 4098
-AttrAerialHyperAttack = 4100
-AttrStandingHyperThrow = 8193
-AttrCrouchingHyperThrow = 8194
-AttrAerialHyperThrow = 8196
-AttrStandingHyperProjectile = 16385
-AttrCrouchingHyperProjectile = 16386
-AttrAerialHyperProjectile = 16388
-
 ; Bitwise shifting
 Bit1 = 1
 Bit2 = 2

@@ -3839,9 +3839,7 @@ func triggerFunctions(l *lua.LState) {
 			ln = lua.LNumber(c.ghv.fall.envshake_phase)
 		case "fall.envshake.mul":
 			ln = lua.LNumber(c.ghv.fall.envshake_mul)
-		case "attr", "attr.int":
-			ln = lua.LNumber(c.ghv.attr)
-		case "attr.flag":
+		case "attr":
 			// return here, because ln is a
 			// LNumber (we have a LString)
 			l.Push(attrLStr(c.ghv.attr))
