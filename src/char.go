@@ -817,6 +817,7 @@ type GetHitVar struct {
 	cheeseKO          bool
 	down_recover      bool
 	down_recovertime  int32
+	guardflag         int32
 }
 
 func (ghv *GetHitVar) clear(c *Char) {
@@ -879,6 +880,12 @@ func (ghv *GetHitVar) addId(id, juggle int32) {
 	juggle = ghv.getJuggle(id, juggle)
 	ghv.dropId(id)
 	ghv.hitBy = append(ghv.hitBy, [...]int32{id, juggle})
+}
+
+// Same as testAttr from HitDef
+func (ghv *GetHitVar) testAttr(attr int32) bool {
+	attr &= ghv.attr
+	return (attr&int32(ST_MASK) != 0 && attr&^int32(ST_MASK)&^(-1<<31) != 0)
 }
 
 type HitBy struct {
@@ -7479,6 +7486,7 @@ func (c *Char) actionRun() {
 					if !c.hoKeepState {
 						c.ghv.hitshaketime = 0
 						c.ghv.attr = 0
+						c.ghv.guardflag = 0
 						c.ghv.id = 0
 						c.ghv.playerNo = -1
 					}
@@ -8643,6 +8651,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				ghv.cheeseKO = cheese
 				// Update variables
 				ghv.attr = hd.attr
+				ghv.guardflag = hd.guardflag
 				ghv.hitid = hd.id
 				ghv.playerNo = hd.playerNo
 				ghv.id = hd.attackerID

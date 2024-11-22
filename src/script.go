@@ -52,6 +52,46 @@ func userDataError(l *lua.LState, argi int, udtype interface{}) {
 	l.RaiseError("\nArgument %v is not a userdata of type: %T\n", argi, udtype)
 }
 
+// Converts a hitflag to a LString.
+// Previously in hitdefvar, moved here
+// for reusability in gethitvar
+func flagLStr(flag int32) lua.LString {
+	str := ""
+	if flag&int32(HF_H) != 0 { str += "H" }
+	if flag&int32(HF_L) != 0 { str += "L" }
+	if flag&int32(HF_A) != 0 { str += "A" }
+	if flag&int32(HF_F) != 0 { str += "F" }
+	if flag&int32(HF_D) != 0 { str += "D" }
+	if flag&int32(HF_P) != 0 { str += "P" }
+	if flag&int32(HF_MNS) != 0 { str += "-" }
+	if flag&int32(HF_PLS) != 0 { str += "+" }
+	return lua.LString(str)
+}
+
+// Converts an attr (statetype, attacktype) to a LString.
+// Used in gethitvar("attr.flag").
+func attrLStr(attr int32) lua.LString {
+	str := ""
+	if attr == 0 { return lua.LString(str) } // no attr? return an empty string
+	st := attr & int32(ST_MASK) // state type
+	at := attr & ^int32(ST_MASK) // attack type (everything that's not statetype)
+	// flag1
+	if st&int32(ST_S) != 0 { str += "S" }
+	if st&int32(ST_C) != 0 { str += "C" }
+	if st&int32(ST_A) != 0 { str += "A" }
+	str += ", "
+	// first char
+	if at&int32(AT_AN) != 0 { str += "N" }
+	if at&int32(AT_AS) != 0 { str += "S" }
+	if at&int32(AT_AH) != 0 { str += "H" }
+	// second char
+	if at&int32(AT_AA) != 0 { str += "A" }
+	if at&int32(AT_AT) != 0 { str += "T" }
+	if at&int32(AT_AP) != 0 { str += "P" }
+
+	return lua.LString(str)
+}
+
 // -------------------------------------------------------------------------------------------------
 // Register external functions to be called from Lua scripts
 func systemScriptInit(l *lua.LState) {
@@ -3647,39 +3687,11 @@ func triggerFunctions(l *lua.LState) {
 	})
 	luaRegister(l, "hitdefvar", func(*lua.LState) int {
 		c := sys.debugWC
-		flagStr := func(flag int32) lua.LString {
-			str := ""
-			if flag&int32(HF_H) != 0 {
-				str += "H"
-			}
-			if flag&int32(HF_L) != 0 {
-				str += "L"
-			}
-			if flag&int32(HF_A) != 0 {
-				str += "A"
-			}
-			if flag&int32(HF_F) != 0 {
-				str += "F"
-			}
-			if flag&int32(HF_D) != 0 {
-				str += "D"
-			}
-			if flag&int32(HF_P) != 0 {
-				str += "P"
-			}
-			if flag&int32(HF_MNS) != 0 {
-				str += "-"
-			}
-			if flag&int32(HF_PLS) != 0 {
-				str += "+"
-			}
-			return lua.LString(str)
-		}
 		switch strArg(l, 1) {
 		case "guardflag":
-			l.Push(flagStr(c.hitdef.guardflag))
+			l.Push(flagLStr(c.hitdef.guardflag))
 		case "hitflag":
-			l.Push(flagStr(c.hitdef.hitflag))
+			l.Push(flagLStr(c.hitdef.hitflag))
 		case "hitdamage":
 			l.Push(lua.LNumber(c.hitdef.hitdamage))
 		case "guarddamage":
@@ -3791,8 +3803,13 @@ func triggerFunctions(l *lua.LState) {
 			ln = lua.LNumber(c.ghv.fall.envshake_phase)
 		case "fall.envshake.mul":
 			ln = lua.LNumber(c.ghv.fall.envshake_mul)
-		case "attr":
+		case "attr", "attr.int":
 			ln = lua.LNumber(c.ghv.attr)
+		case "attr.flag":
+			// return here, because ln is a
+			// LNumber (we have a LString)
+			l.Push(attrLStr(c.ghv.attr))
+			return 1
 		case "dizzypoints":
 			ln = lua.LNumber(c.ghv.dizzypoints)
 		case "guardpoints":
@@ -3855,6 +3872,11 @@ func triggerFunctions(l *lua.LState) {
 			ln = lua.LNumber(Btoi(c.ghv.frame))
 		case "down.recover":
 			ln = lua.LNumber(Btoi(c.ghv.down_recover))
+		case "guardflag":
+			// return here, because ln is a
+			// LNumber (we have a LString)
+			l.Push(flagLStr(c.ghv.guardflag))
+			return 1
 		default:
 			l.RaiseError("\nInvalid argument: %v\n", strArg(l, 1))
 		}

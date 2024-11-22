@@ -13,13 +13,13 @@ import (
 type StateType int32
 
 const (
-	ST_S StateType = 1 << iota
-	ST_C
-	ST_A
-	ST_L
-	ST_N
-	ST_U
-	ST_MASK = 1<<iota - 1
+	ST_S StateType = 1 << iota // 1
+	ST_C // 2
+	ST_A // 4
+	ST_L // 8
+	ST_N // 16
+	ST_U // 32
+	ST_MASK = 1<<iota - 1 // (1 << 6) -1 (63)
 	ST_SCA  = ST_S | ST_C | ST_A
 )
 
@@ -513,6 +513,7 @@ const (
 	OC_ex_gethitvar_fall_envshake_phase
 	OC_ex_gethitvar_fall_envshake_mul
 	OC_ex_gethitvar_attr
+	OC_ex_gethitvar_attr_flag
 	OC_ex_gethitvar_dizzypoints
 	OC_ex_gethitvar_guardpoints
 	OC_ex_gethitvar_id
@@ -546,6 +547,7 @@ const (
 	OC_ex_gethitvar_frame
 	OC_ex_gethitvar_down_recover
 	OC_ex_gethitvar_down_recovertime
+	OC_ex_gethitvar_guardflag
 	OC_ex_ailevelf
 	OC_ex_animframe_alphadest
 	OC_ex_animframe_angle
@@ -2394,8 +2396,13 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushF(c.ghv.fall.envshake_phase)
 	case OC_ex_gethitvar_fall_envshake_mul:
 		sys.bcStack.PushF(c.ghv.fall.envshake_mul)
-	case OC_ex_gethitvar_attr:
+	case OC_ex_gethitvar_attr: // TODO: deprecate this
 		sys.bcStack.PushI(c.ghv.attr)
+	case OC_ex_gethitvar_attr_flag:
+		attr := (*(*int32)(unsafe.Pointer(&be[*i])))
+		// same as c.hitDefAttr()
+		sys.bcStack.PushB(c.ghv.testAttr(attr))
+		*i += 4
 	case OC_ex_gethitvar_dizzypoints:
 		sys.bcStack.PushI(c.ghv.dizzypoints)
 	case OC_ex_gethitvar_guardpoints:
@@ -2458,6 +2465,12 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushB(c.ghv.frame)
 	case OC_ex_gethitvar_down_recover:
 		sys.bcStack.PushB(c.ghv.down_recover)
+	case OC_ex_gethitvar_guardflag:
+		attr := (*(*int32)(unsafe.Pointer(&be[*i])))
+		sys.bcStack.PushB(
+			c.ghv.guardflag&attr != 0,
+		)
+		*i += 4
 	case OC_ex_ailevelf:
 		if !c.asf(ASF_noailevel) {
 			sys.bcStack.PushF(c.aiLevel())
