@@ -6797,7 +6797,7 @@ func (c *Compiler) Compile(pn int, def string, constants map[string]float32) (ma
 
 	/* Compile states */
 	sys.stringPool[pn].Clear()
-	sys.cgi[pn].wakewakaLength = 0
+	sys.cgi[pn].hitPauseToggleFlagCount = 0
 	c.funcUsed = make(map[string]bool)
 	// Compile state files
 	for _, s := range st {
