@@ -244,7 +244,7 @@ var triggerMap = map[string]int{
 	"gametime":          1,
 	"gamewidth":         1,
 	"gethitvar":         1,
-	"hitbyattr":        1,
+	"hitbyattr":         1,
 	"hitcount":          1,
 	"hitdefattr":        1,
 	"hitfall":           1,

@@ -3147,11 +3147,11 @@ func triggerFunctions(l *lua.LState) {
 	})
 	// animelem (deprecated by animelemtime)
 	luaRegister(l, "animelemno", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animElemNo(int32(numArg(l, 1))-1).ToI())) // Offset by 1 because animations step before scripts run
+		l.Push(lua.LNumber(sys.debugWC.animElemNo(int32(numArg(l, 1)) - 1).ToI())) // Offset by 1 because animations step before scripts run
 		return 1
 	})
 	luaRegister(l, "animelemtime", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animElemTime(int32(numArg(l, 1))).ToI())-1) // Offset by 1 because animations step before scripts run
+		l.Push(lua.LNumber(sys.debugWC.animElemTime(int32(numArg(l, 1))).ToI()) - 1) // Offset by 1 because animations step before scripts run
 		return 1
 	})
 	luaRegister(l, "animexist", func(*lua.LState) int {
