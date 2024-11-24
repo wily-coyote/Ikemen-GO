@@ -2326,10 +2326,12 @@ func (s *System) fight() (reload bool) {
 
 	// Loop until end of match
 	fin := false
+	didTryLoadBGM := false
 	for !s.endMatch {
 		// default bgm playback, used only in Quick VS or if externalized Lua implementaion is disabled
-		if s.round == 1 && (s.gameMode == "" || len(sys.commonLua) == 0) && sys.stage.stageTime > 0 && sys.bgm.streamer == nil {
+		if s.round == 1 && (s.gameMode == "" || len(sys.commonLua) == 0) && sys.stage.stageTime > 0 && !didTryLoadBGM {
 			s.bgm.Open(s.stage.bgmusic, 1, int(s.stage.bgmvolume), int(s.stage.bgmloopstart), int(s.stage.bgmloopend), int(s.stage.bgmstartposition), s.stage.bgmfreqmul, -1)
+			didTryLoadBGM = true
 		}
 		s.step = false
 		for _, v := range s.shortcutScripts {
