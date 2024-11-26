@@ -2317,7 +2317,7 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 	case OC_ex_gethitvar_ground_animtype:
 		sys.bcStack.PushI(int32(c.ghv.groundanimtype))
 	case OC_ex_gethitvar_fall_animtype:
-		sys.bcStack.PushI(int32(c.ghv.fall.animtype))
+		sys.bcStack.PushI(int32(c.ghv.fall_animtype))
 	case OC_ex_gethitvar_type:
 		sys.bcStack.PushI(int32(c.ghv._type))
 	case OC_ex_gethitvar_airtype:
@@ -2369,39 +2369,39 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 	case OC_ex_gethitvar_fall:
 		sys.bcStack.PushB(c.ghv.fallflag)
 	case OC_ex_gethitvar_fall_damage:
-		sys.bcStack.PushI(c.ghv.fall.damage)
+		sys.bcStack.PushI(c.ghv.fall_damage)
 	case OC_ex_gethitvar_fall_xvel:
-		if math.IsNaN(float64(c.ghv.fall.xvelocity)) {
+		if math.IsNaN(float64(c.ghv.fall_xvelocity)) {
 			sys.bcStack.PushF(-32760) // Winmugen behavior
 		} else {
-			sys.bcStack.PushF(c.ghv.fall.xvelocity * (c.localscl / oc.localscl))
+			sys.bcStack.PushF(c.ghv.fall_xvelocity * (c.localscl / oc.localscl))
 		}
 	case OC_ex_gethitvar_fall_yvel:
-		sys.bcStack.PushF(c.ghv.fall.yvelocity * (c.localscl / oc.localscl))
+		sys.bcStack.PushF(c.ghv.fall_yvelocity * (c.localscl / oc.localscl))
 	case OC_ex_gethitvar_fall_zvel:
-		if math.IsNaN(float64(c.ghv.fall.zvelocity)) {
+		if math.IsNaN(float64(c.ghv.fall_zvelocity)) {
 			sys.bcStack.PushF(-32760) // Winmugen behavior
 		} else {
-			sys.bcStack.PushF(c.ghv.fall.zvelocity * (c.localscl / oc.localscl))
+			sys.bcStack.PushF(c.ghv.fall_zvelocity * (c.localscl / oc.localscl))
 		}
 	case OC_ex_gethitvar_fall_recover:
-		sys.bcStack.PushB(c.ghv.fall.recover)
+		sys.bcStack.PushB(c.ghv.fall_recover)
 	case OC_ex_gethitvar_fall_time:
 		sys.bcStack.PushI(c.fallTime)
 	case OC_ex_gethitvar_fall_recovertime:
-		sys.bcStack.PushI(c.ghv.fall.recovertime)
+		sys.bcStack.PushI(c.ghv.fall_recovertime)
 	case OC_ex_gethitvar_fall_kill:
-		sys.bcStack.PushB(c.ghv.fall.kill)
+		sys.bcStack.PushB(c.ghv.fall_kill)
 	case OC_ex_gethitvar_fall_envshake_time:
-		sys.bcStack.PushI(c.ghv.fall.envshake_time)
+		sys.bcStack.PushI(c.ghv.fall_envshake_time)
 	case OC_ex_gethitvar_fall_envshake_freq:
-		sys.bcStack.PushF(c.ghv.fall.envshake_freq)
+		sys.bcStack.PushF(c.ghv.fall_envshake_freq)
 	case OC_ex_gethitvar_fall_envshake_ampl:
-		sys.bcStack.PushI(int32(float32(c.ghv.fall.envshake_ampl) * (c.localscl / oc.localscl)))
+		sys.bcStack.PushI(int32(float32(c.ghv.fall_envshake_ampl) * (c.localscl / oc.localscl)))
 	case OC_ex_gethitvar_fall_envshake_phase:
-		sys.bcStack.PushF(c.ghv.fall.envshake_phase)
+		sys.bcStack.PushF(c.ghv.fall_envshake_phase)
 	case OC_ex_gethitvar_fall_envshake_mul:
-		sys.bcStack.PushF(c.ghv.fall.envshake_mul)
+		sys.bcStack.PushF(c.ghv.fall_envshake_mul)
 	case OC_ex_gethitvar_attr:
 		attr := (*(*int32)(unsafe.Pointer(&be[*i])))
 		// same as c.hitDefAttr()
@@ -2412,7 +2412,7 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 	case OC_ex_gethitvar_guardpoints:
 		sys.bcStack.PushI(c.ghv.guardpoints)
 	case OC_ex_gethitvar_id:
-		sys.bcStack.PushI(c.ghv.id)
+		sys.bcStack.PushI(c.ghv.playerId)
 	case OC_ex_gethitvar_playerno:
 		sys.bcStack.PushI(int32(c.ghv.playerNo) + 1)
 	case OC_ex_gethitvar_redlife:
@@ -2792,7 +2792,7 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 	case OC_ex_movehitvar_frame:
 		sys.bcStack.PushB(c.mhv.frame)
 	case OC_ex_movehitvar_id:
-		sys.bcStack.PushI(c.mhv.id)
+		sys.bcStack.PushI(c.mhv.playerId)
 	case OC_ex_movehitvar_overridden:
 		sys.bcStack.PushB(c.mhv.overridden)
 	case OC_ex_movehitvar_playerno:
@@ -6109,7 +6109,7 @@ const (
 	hitDef_down_cornerpush_veloff
 	hitDef_ground_hittime
 	hitDef_guard_hittime
-	hitDef_guard_dist
+	hitDef_guard_dist_x
 	hitDef_guard_dist_y
 	hitDef_guard_dist_z
 	hitDef_pausetime
@@ -6171,7 +6171,7 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 	case hitDef_air_animtype:
 		hd.air_animtype = Reaction(exp[0].evalI(c))
 	case hitDef_fall_animtype:
-		hd.fall.animtype = Reaction(exp[0].evalI(c))
+		hd.fall_animtype = Reaction(exp[0].evalI(c))
 	case hitDef_affectteam:
 		hd.affectteam = exp[0].evalI(c)
 	case hitDef_teamside:
@@ -6196,7 +6196,7 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 	case hitDef_guard_kill:
 		hd.guard_kill = exp[0].evalB(c)
 	case hitDef_fall_kill:
-		hd.fall.kill = exp[0].evalB(c)
+		hd.fall_kill = exp[0].evalB(c)
 	case hitDef_hitonce:
 		hd.hitonce = Btoi(exp[0].evalB(c))
 	case hitDef_air_juggle:
@@ -6255,17 +6255,17 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 	case hitDef_forcenofall:
 		hd.forcenofall = exp[0].evalB(c)
 	case hitDef_fall_damage:
-		hd.fall.damage = exp[0].evalI(c)
+		hd.fall_damage = exp[0].evalI(c)
 	case hitDef_fall_xvelocity:
-		hd.fall.xvelocity = exp[0].evalF(c)
+		hd.fall_xvelocity = exp[0].evalF(c)
 	case hitDef_fall_yvelocity:
-		hd.fall.yvelocity = exp[0].evalF(c)
+		hd.fall_yvelocity = exp[0].evalF(c)
 	case hitDef_fall_zvelocity:
-		hd.fall.zvelocity = exp[0].evalF(c)
+		hd.fall_zvelocity = exp[0].evalF(c)
 	case hitDef_fall_recover:
-		hd.fall.recover = exp[0].evalB(c)
+		hd.fall_recover = exp[0].evalB(c)
 	case hitDef_fall_recovertime:
-		hd.fall.recovertime = exp[0].evalI(c)
+		hd.fall_recovertime = exp[0].evalI(c)
 	case hitDef_sparkno:
 		hd.sparkno_ffx = string(*(*[]byte)(unsafe.Pointer(&exp[0])))
 		hd.sparkno = exp[1].evalI(c)
@@ -6342,10 +6342,10 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 		hd.guard_hittime = hd.ground_hittime
 	case hitDef_guard_hittime:
 		hd.guard_hittime = exp[0].evalI(c)
-	case hitDef_guard_dist:
-		hd.guard_dist[0] = exp[0].evalI(c)
+	case hitDef_guard_dist_x:
+		hd.guard_dist_x[0] = exp[0].evalI(c)
 		if len(exp) > 1 {
-			hd.guard_dist[1] = exp[1].evalI(c)
+			hd.guard_dist_x[1] = exp[1].evalI(c)
 		}
 	case hitDef_guard_dist_y:
 		hd.guard_dist_y[0] = exp[0].evalI(c)
@@ -6436,15 +6436,15 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 	case hitDef_envshake_mul:
 		hd.envshake_mul = exp[0].evalF(c)
 	case hitDef_fall_envshake_time:
-		hd.fall.envshake_time = exp[0].evalI(c)
+		hd.fall_envshake_time = exp[0].evalI(c)
 	case hitDef_fall_envshake_ampl:
-		hd.fall.envshake_ampl = exp[0].evalI(c)
+		hd.fall_envshake_ampl = exp[0].evalI(c)
 	case hitDef_fall_envshake_freq:
-		hd.fall.envshake_freq = MaxF(0, exp[0].evalF(c))
+		hd.fall_envshake_freq = MaxF(0, exp[0].evalF(c))
 	case hitDef_fall_envshake_phase:
-		hd.fall.envshake_phase = exp[0].evalF(c)
+		hd.fall_envshake_phase = exp[0].evalF(c)
 	case hitDef_fall_envshake_mul:
-		hd.fall.envshake_mul = exp[0].evalF(c)
+		hd.fall_envshake_mul = exp[0].evalF(c)
 	case hitDef_dizzypoints:
 		hd.dizzypoints = Max(IErr+1, exp[0].evalI(c))
 	case hitDef_guardpoints:
@@ -7101,7 +7101,7 @@ func (sc modifyProjectile) Run(c *Char, _ []int32) bool {
 				})
 			case hitDef_fall_animtype:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.animtype = Reaction(exp[0].evalI(c))
+					p.hitdef.fall_animtype = Reaction(exp[0].evalI(c))
 				})
 			case hitDef_affectteam:
 				eachProj(func(p *Projectile) {
@@ -7142,7 +7142,7 @@ func (sc modifyProjectile) Run(c *Char, _ []int32) bool {
 				})
 			case hitDef_fall_kill:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.kill = exp[0].evalB(c)
+					p.hitdef.fall_kill = exp[0].evalB(c)
 				})
 			case hitDef_hitonce:
 				eachProj(func(p *Projectile) {
@@ -7239,27 +7239,27 @@ func (sc modifyProjectile) Run(c *Char, _ []int32) bool {
 				})
 			case hitDef_fall_damage:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.damage = exp[0].evalI(c)
+					p.hitdef.fall_damage = exp[0].evalI(c)
 				})
 			case hitDef_fall_xvelocity:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.xvelocity = exp[0].evalF(c)
+					p.hitdef.fall_xvelocity = exp[0].evalF(c)
 				})
 			case hitDef_fall_yvelocity:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.yvelocity = exp[0].evalF(c)
+					p.hitdef.fall_yvelocity = exp[0].evalF(c)
 				})
 			case hitDef_fall_zvelocity:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.zvelocity = exp[0].evalF(c)
+					p.hitdef.fall_zvelocity = exp[0].evalF(c)
 				})
 			case hitDef_fall_recover:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.recover = exp[0].evalB(c)
+					p.hitdef.fall_recover = exp[0].evalB(c)
 				})
 			case hitDef_fall_recovertime:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.recovertime = exp[0].evalI(c)
+					p.hitdef.fall_recovertime = exp[0].evalI(c)
 				})
 			case hitDef_sparkno:
 				eachProj(func(p *Projectile) {
@@ -7370,11 +7370,11 @@ func (sc modifyProjectile) Run(c *Char, _ []int32) bool {
 				eachProj(func(p *Projectile) {
 					p.hitdef.guard_hittime = exp[0].evalI(c)
 				})
-			case hitDef_guard_dist:
+			case hitDef_guard_dist_x:
 				eachProj(func(p *Projectile) {
-					p.hitdef.guard_dist[0] = exp[0].evalI(c)
+					p.hitdef.guard_dist_x[0] = exp[0].evalI(c)
 					if len(exp) > 1 {
-						p.hitdef.guard_dist[1] = exp[1].evalI(c)
+						p.hitdef.guard_dist_x[1] = exp[1].evalI(c)
 					}
 				})
 			case hitDef_guard_dist_y:
@@ -7505,23 +7505,23 @@ func (sc modifyProjectile) Run(c *Char, _ []int32) bool {
 				})
 			case hitDef_fall_envshake_time:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.envshake_time = exp[0].evalI(c)
+					p.hitdef.fall_envshake_time = exp[0].evalI(c)
 				})
 			case hitDef_fall_envshake_ampl:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.envshake_ampl = exp[0].evalI(c)
+					p.hitdef.fall_envshake_ampl = exp[0].evalI(c)
 				})
 			case hitDef_fall_envshake_freq:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.envshake_freq = MaxF(0, exp[0].evalF(c))
+					p.hitdef.fall_envshake_freq = MaxF(0, exp[0].evalF(c))
 				})
 			case hitDef_fall_envshake_phase:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.envshake_phase = exp[0].evalF(c)
+					p.hitdef.fall_envshake_phase = exp[0].evalF(c)
 				})
 			case hitDef_fall_envshake_mul:
 				eachProj(func(p *Projectile) {
-					p.hitdef.fall.envshake_mul = exp[0].evalF(c)
+					p.hitdef.fall_envshake_mul = exp[0].evalF(c)
 				})
 			case hitDef_dizzypoints:
 				eachProj(func(p *Projectile) {
@@ -9128,14 +9128,14 @@ func (sc fallEnvShake) Run(c *Char, _ []int32) bool {
 	StateControllerBase(sc).run(c, func(id byte, exp []BytecodeExp) bool {
 		switch id {
 		case fallEnvShake_:
-			if crun.ghv.fall.envshake_time > 0 {
-				sys.envShake = EnvShake{time: crun.ghv.fall.envshake_time,
-					freq:  crun.ghv.fall.envshake_freq * math.Pi / 180,
-					ampl:  float32(crun.ghv.fall.envshake_ampl) * c.localscl,
-					phase: crun.ghv.fall.envshake_phase,
-					mul:   crun.ghv.fall.envshake_mul}
+			if crun.ghv.fall_envshake_time > 0 {
+				sys.envShake = EnvShake{time: crun.ghv.fall_envshake_time,
+					freq:  crun.ghv.fall_envshake_freq * math.Pi / 180,
+					ampl:  float32(crun.ghv.fall_envshake_ampl) * c.localscl,
+					phase: crun.ghv.fall_envshake_phase,
+					mul:   crun.ghv.fall_envshake_mul}
 				sys.envShake.setDefaultPhase()
-				crun.ghv.fall.envshake_time = 0
+				crun.ghv.fall_envshake_time = 0
 			}
 		case fallEnvShake_redirectid:
 			if rid := sys.playerID(exp[0].evalI(c)); rid != nil {
@@ -11780,29 +11780,29 @@ func (sc getHitVarSet) Run(c *Char, _ []int32) bool {
 		case getHitVarSet_fall:
 			crun.ghv.fallflag = exp[0].evalB(c)
 		case getHitVarSet_fall_damage:
-			crun.ghv.fall.damage = exp[0].evalI(c)
+			crun.ghv.fall_damage = exp[0].evalI(c)
 		case getHitVarSet_fall_envshake_ampl:
-			crun.ghv.fall.envshake_ampl = int32(exp[0].evalF(c) * redirscale)
+			crun.ghv.fall_envshake_ampl = int32(exp[0].evalF(c) * redirscale)
 		case getHitVarSet_fall_envshake_freq:
-			crun.ghv.fall.envshake_freq = exp[0].evalF(c)
+			crun.ghv.fall_envshake_freq = exp[0].evalF(c)
 		case getHitVarSet_fall_envshake_mul:
-			crun.ghv.fall.envshake_mul = exp[0].evalF(c)
+			crun.ghv.fall_envshake_mul = exp[0].evalF(c)
 		case getHitVarSet_fall_envshake_phase:
-			crun.ghv.fall.envshake_phase = exp[0].evalF(c)
+			crun.ghv.fall_envshake_phase = exp[0].evalF(c)
 		case getHitVarSet_fall_envshake_time:
-			crun.ghv.fall.envshake_time = exp[0].evalI(c)
+			crun.ghv.fall_envshake_time = exp[0].evalI(c)
 		case getHitVarSet_fall_kill:
-			crun.ghv.fall.kill = exp[0].evalB(c)
+			crun.ghv.fall_kill = exp[0].evalB(c)
 		case getHitVarSet_fall_recover:
-			crun.ghv.fall.recover = exp[0].evalB(c)
+			crun.ghv.fall_recover = exp[0].evalB(c)
 		case getHitVarSet_fall_recovertime:
-			crun.ghv.fall.recovertime = exp[0].evalI(c)
+			crun.ghv.fall_recovertime = exp[0].evalI(c)
 		case getHitVarSet_fall_xvel:
-			crun.ghv.fall.xvelocity = exp[0].evalF(c) * redirscale
+			crun.ghv.fall_xvelocity = exp[0].evalF(c) * redirscale
 		case getHitVarSet_fall_yvel:
-			crun.ghv.fall.yvelocity = exp[0].evalF(c) * redirscale
+			crun.ghv.fall_yvelocity = exp[0].evalF(c) * redirscale
 		case getHitVarSet_fall_zvel:
-			crun.ghv.fall.zvelocity = exp[0].evalF(c) * redirscale
+			crun.ghv.fall_zvelocity = exp[0].evalF(c) * redirscale
 		case getHitVarSet_fallcount:
 			crun.ghv.fallcount = exp[0].evalI(c)
 		case getHitVarSet_groundtype:
@@ -11814,7 +11814,7 @@ func (sc getHitVarSet) Run(c *Char, _ []int32) bool {
 		case getHitVarSet_hitshaketime:
 			crun.ghv.hitshaketime = exp[0].evalI(c)
 		case getHitVarSet_id:
-			crun.ghv.id = exp[0].evalI(c)
+			crun.ghv.playerId = exp[0].evalI(c)
 		case getHitVarSet_playerno:
 			crun.ghv.playerNo = int(exp[0].evalI(c))
 		case getHitVarSet_slidetime:

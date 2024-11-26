@@ -3766,7 +3766,7 @@ func triggerFunctions(l *lua.LState) {
 		case "ground.animtype":
 			ln = lua.LNumber(c.ghv.groundanimtype)
 		case "fall.animtype":
-			ln = lua.LNumber(c.ghv.fall.animtype)
+			ln = lua.LNumber(c.ghv.fall_animtype)
 		case "type":
 			ln = lua.LNumber(c.ghv._type)
 		case "airtype":
@@ -3818,39 +3818,39 @@ func triggerFunctions(l *lua.LState) {
 		case "fall":
 			ln = lua.LNumber(Btoi(c.ghv.fallflag))
 		case "fall.damage":
-			ln = lua.LNumber(c.ghv.fall.damage)
+			ln = lua.LNumber(c.ghv.fall_damage)
 		case "fall.xvel":
-			if math.IsNaN(float64(c.ghv.fall.xvelocity)) {
+			if math.IsNaN(float64(c.ghv.fall_xvelocity)) {
 				ln = lua.LNumber(-32760) // Winmugen behavior
 			} else {
-				ln = lua.LNumber(c.ghv.fall.xvelocity)
+				ln = lua.LNumber(c.ghv.fall_xvelocity)
 			}
 		case "fall.yvel":
-			ln = lua.LNumber(c.ghv.fall.yvelocity)
+			ln = lua.LNumber(c.ghv.fall_yvelocity)
 		case "fall.zvel":
-			if math.IsNaN(float64(c.ghv.fall.zvelocity)) {
+			if math.IsNaN(float64(c.ghv.fall_zvelocity)) {
 				ln = lua.LNumber(-32760) // Winmugen behavior
 			} else {
-				ln = lua.LNumber(c.ghv.fall.zvelocity)
+				ln = lua.LNumber(c.ghv.fall_zvelocity)
 			}
 		case "fall.recover":
-			ln = lua.LNumber(Btoi(c.ghv.fall.recover))
+			ln = lua.LNumber(Btoi(c.ghv.fall_recover))
 		case "fall.time":
 			ln = lua.LNumber(c.fallTime)
 		case "fall.recovertime":
-			ln = lua.LNumber(c.ghv.fall.recovertime)
+			ln = lua.LNumber(c.ghv.fall_recovertime)
 		case "fall.kill":
-			ln = lua.LNumber(Btoi(c.ghv.fall.kill))
+			ln = lua.LNumber(Btoi(c.ghv.fall_kill))
 		case "fall.envshake.time":
-			ln = lua.LNumber(c.ghv.fall.envshake_time)
+			ln = lua.LNumber(c.ghv.fall_envshake_time)
 		case "fall.envshake.freq":
-			ln = lua.LNumber(c.ghv.fall.envshake_freq)
+			ln = lua.LNumber(c.ghv.fall_envshake_freq)
 		case "fall.envshake.ampl":
-			ln = lua.LNumber(c.ghv.fall.envshake_ampl)
+			ln = lua.LNumber(c.ghv.fall_envshake_ampl)
 		case "fall.envshake.phase":
-			ln = lua.LNumber(c.ghv.fall.envshake_phase)
+			ln = lua.LNumber(c.ghv.fall_envshake_phase)
 		case "fall.envshake.mul":
-			ln = lua.LNumber(c.ghv.fall.envshake_mul)
+			ln = lua.LNumber(c.ghv.fall_envshake_mul)
 		case "attr":
 			// return here, because ln is a
 			// LNumber (we have a LString)
@@ -3861,7 +3861,7 @@ func triggerFunctions(l *lua.LState) {
 		case "guardpoints":
 			ln = lua.LNumber(c.ghv.guardpoints)
 		case "id":
-			ln = lua.LNumber(c.ghv.id)
+			ln = lua.LNumber(c.ghv.playerId)
 		case "playerno":
 			ln = lua.LNumber(c.ghv.playerNo)
 		case "redlife":
@@ -4159,7 +4159,7 @@ func triggerFunctions(l *lua.LState) {
 		case "frame":
 			ln = lua.LNumber(Btoi(c.mhv.frame))
 		case "id":
-			ln = lua.LNumber(c.mhv.id)
+			ln = lua.LNumber(c.mhv.playerId)
 		case "overridden":
 			ln = lua.LNumber(Btoi(c.mhv.overridden))
 		case "playerno":
