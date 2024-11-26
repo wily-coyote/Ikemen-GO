@@ -47,6 +47,7 @@ uniform sampler2D tex;
 uniform sampler2D normalMap;
 uniform sampler2D metallicRoughnessMap;
 uniform sampler2D ambientOcclusionMap;
+uniform sampler2D emissionMap;
 uniform samplerCube lambertianEnvSampler;
 uniform samplerCube GGXEnvSampler;
 uniform sampler2D GGXLUT;
@@ -59,6 +60,7 @@ uniform vec3 cameraPosition;
 uniform vec4 baseColorFactor;
 uniform vec2 metallicRoughness;
 uniform float ambientOcclusionStrength;
+uniform vec3 emission;
 uniform bool unlit;
 
 uniform Light lights[4];
@@ -69,6 +71,7 @@ uniform float gray, hue;
 uniform bool useTexture;
 uniform bool useNormalMap;
 uniform bool useMetallicRoughnessMap;
+uniform bool useEmissionMap;
 uniform bool neg;
 uniform bool enableAlpha;
 uniform float alphaThreshold;
@@ -415,9 +418,14 @@ void main(void) {
             ambientOcclusion = 1+ambientOcclusionStrength*(COMPAT_TEXTURE(ambientOcclusionMap, texcoord).r-1);
         }
         FragColor.rgb = pbr(worldSpacePos,normalize(cameraPosition - worldSpacePos),normalize(normalF),FragColor.rgb,metallicRoughnessF[0],metallicRoughnessF[1],ambientOcclusion);
+        if(useEmissionMap){
+            FragColor.rgb += emission * pow(COMPAT_TEXTURE(emissionMap, texcoord).rgb,vec3(2.2));
+        }else{
+            FragColor.rgb += emission;
+        }
     }
-    FragColor.rgb *= vColor.a;
     FragColor.rgb = pow(FragColor.rgb, vec3(1.0/2.2));
+    FragColor.rgb *= vColor.a;
 	if(!enableAlpha){
 		if(FragColor.a < alphaThreshold){
 			discard;

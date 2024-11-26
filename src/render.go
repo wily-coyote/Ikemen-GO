@@ -17,6 +17,8 @@ const (
 	BlendZero
 	BlendSrcAlpha
 	BlendOneMinusSrcAlpha
+	BlendDstColor
+	BlendOneMinusDstColor
 )
 
 type BlendEquation int

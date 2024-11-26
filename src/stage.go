@@ -1893,11 +1893,13 @@ type Material struct {
 	normalMapIndex            *uint32
 	ambientOcclusionMapIndex  *uint32
 	metallicRoughnessMapIndex *uint32
+	emissionMapIndex          *uint32
 	baseColorFactor           [4]float32
 	doubleSided               bool
 	ambientOcclusion          float32
 	metallic                  float32
 	roughness                 float32
+	emission                  [3]float32
 	unlit                     bool
 }
 type Trans byte
@@ -1906,6 +1908,7 @@ const (
 	TransNone = iota
 	TransAdd
 	TransReverseSubtract
+	TransMul
 )
 
 type Node struct {
@@ -2213,6 +2216,11 @@ func loadglTFStage(filepath string) (*Model, error) {
 			material.ambientOcclusion = *m.OcclusionTexture.Strength
 		} else {
 			material.ambientOcclusion = 0
+		}
+		material.emission = m.EmissiveFactor
+		if m.EmissiveTexture != nil {
+			material.emissionMapIndex = new(uint32)
+			*material.emissionMapIndex = m.EmissiveTexture.Index
 		}
 		material.name = m.Name
 		material.alphaMode, _ = map[gltf.AlphaMode]AlphaMode{
@@ -2713,6 +2721,8 @@ func loadglTFStage(filepath string) (*Model, error) {
 					node.trans = TransAdd
 				case "SUB":
 					node.trans = TransReverseSubtract
+				case "MUL":
+					node.trans = TransMul
 				case "NONE":
 					node.trans = TransNone
 				}
@@ -3039,6 +3049,17 @@ func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlend
 				dst = BlendOne
 				blendEq = BlendReverseSubtract
 			}
+		case TransMul:
+			if invblend == 3 {
+				//Not accurate
+				src = BlendOneMinusDstColor
+				dst = BlendOne
+				neg = false
+				blendEq = BlendReverseSubtract
+			} else {
+				src = BlendDstColor
+				dst = BlendOneMinusSrcAlpha
+			}
 		default:
 			src = BlendOne
 			dst = BlendOneMinusSrcAlpha
@@ -3117,12 +3138,19 @@ func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlend
 			if index := mat.ambientOcclusionMapIndex; index != nil {
 				gfx.SetModelTexture("ambientOcclusionMap", mdl.textures[*index].tex)
 			}
+			gfx.SetModelUniformFv("emission", mat.emission[:])
+			if index := mat.emissionMapIndex; index != nil {
+				gfx.SetModelTexture("emissionMap", mdl.textures[*index].tex)
+				gfx.SetModelUniformI("useEmissionMap", 1)
+			} else {
+				gfx.SetModelUniformI("useEmissionMap", 0)
+			}
 			gfx.RenderElements(mode, int(p.numIndices), int(p.elementBufferOffset))
 
 			gfx.ReleaseModelPipeline()
 		}
 	} else {
-		if n.trans == TransAdd || n.trans == TransReverseSubtract || !n.zTest || !n.zWrite || !n.castShadow {
+		if n.trans == TransAdd || n.trans == TransReverseSubtract || n.trans == TransMul || !n.zTest || !n.zWrite || !n.castShadow {
 			return
 		}
 		m := mdl.meshes[*n.meshIndex]
