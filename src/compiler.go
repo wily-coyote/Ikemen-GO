@@ -2447,6 +2447,12 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 			opc = OC_ex2_hitdefvar_p2stateno
 		case "priority":
 			opc = OC_ex2_hitdefvar_priority
+		case "id":
+			opc = OC_ex2_hitdefvar_id
+		case "sparkx":
+			opc = OC_ex2_hitdefvar_sparkx
+		case "sparky":
+			opc = OC_ex2_hitdefvar_sparky
 		default:
 			return bvNone(), Error("Invalid data: " + c.token)
 		}

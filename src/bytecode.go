@@ -823,6 +823,9 @@ const (
 	OC_ex2_hitdefvar_p1stateno
 	OC_ex2_hitdefvar_p2stateno
 	OC_ex2_hitdefvar_priority
+	OC_ex2_hitdefvar_id
+	OC_ex2_hitdefvar_sparkx
+	OC_ex2_hitdefvar_sparky
 	OC_ex2_hitbyattr
 )
 const (
@@ -3351,6 +3354,12 @@ func (be BytecodeExp) run_ex2(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushI(c.hitdef.p2stateno)
 	case OC_ex2_hitdefvar_priority:
 		sys.bcStack.PushI(c.hitdef.priority)
+	case OC_ex2_hitdefvar_id:
+		sys.bcStack.PushI(c.hitdef.id)
+	case OC_ex2_hitdefvar_sparkx:
+		sys.bcStack.PushF(c.hitdef.sparkxy[0] * (c.localscl / oc.localscl))
+	case OC_ex2_hitdefvar_sparky:
+		sys.bcStack.PushF(c.hitdef.sparkxy[1] * (c.localscl / oc.localscl))
 	case OC_ex2_hitbyattr:
 		sys.bcStack.PushB(c.hitByAttrTrigger(*(*int32)(unsafe.Pointer(&be[*i]))))
 		*i += 4
