@@ -1769,7 +1769,7 @@ type LifeBarRound struct {
 	roundCallOver      bool
 	fightCallOver      bool
 	timerActive        bool
-	wint               [WT_NumTypes * 2]LbBgTextSnd
+	winType            [WT_NumTypes * 2]LbBgTextSnd
 	fadein_time        int32
 	fadein_col         uint32
 	fadeout_time       int32
@@ -2050,24 +2050,24 @@ func readLifeBarRound(is IniSection,
 	for i := range ro.drawgame_bg {
 		ro.drawgame_bg[i] = *ReadAnimLayout(fmt.Sprintf("draw.bg%v.", i), is, sff, at, 1)
 	}
-	ro.wint[WT_Normal] = readLbBgTextSnd("p1.n.", is, sff, at, 0, f)
-	ro.wint[WT_Special] = readLbBgTextSnd("p1.s.", is, sff, at, 0, f)
-	ro.wint[WT_Hyper] = readLbBgTextSnd("p1.h.", is, sff, at, 0, f)
-	ro.wint[WT_Cheese] = readLbBgTextSnd("p1.c.", is, sff, at, 0, f)
-	ro.wint[WT_Time] = readLbBgTextSnd("p1.t.", is, sff, at, 0, f)
-	ro.wint[WT_Throw] = readLbBgTextSnd("p1.throw.", is, sff, at, 0, f)
-	ro.wint[WT_Suicide] = readLbBgTextSnd("p1.suicide.", is, sff, at, 0, f)
-	ro.wint[WT_Teammate] = readLbBgTextSnd("p1.teammate.", is, sff, at, 0, f)
-	ro.wint[WT_Perfect] = readLbBgTextSnd("p1.perfect.", is, sff, at, 0, f)
-	ro.wint[WT_Normal+WT_NumTypes] = readLbBgTextSnd("p2.n.", is, sff, at, 0, f)
-	ro.wint[WT_Special+WT_NumTypes] = readLbBgTextSnd("p2.s.", is, sff, at, 0, f)
-	ro.wint[WT_Hyper+WT_NumTypes] = readLbBgTextSnd("p2.h.", is, sff, at, 0, f)
-	ro.wint[WT_Cheese+WT_NumTypes] = readLbBgTextSnd("p2.c.", is, sff, at, 0, f)
-	ro.wint[WT_Time+WT_NumTypes] = readLbBgTextSnd("p2.t.", is, sff, at, 0, f)
-	ro.wint[WT_Throw+WT_NumTypes] = readLbBgTextSnd("p2.throw.", is, sff, at, 0, f)
-	ro.wint[WT_Suicide+WT_NumTypes] = readLbBgTextSnd("p2.suicide.", is, sff, at, 0, f)
-	ro.wint[WT_Teammate+WT_NumTypes] = readLbBgTextSnd("p2.teammate.", is, sff, at, 0, f)
-	ro.wint[WT_Perfect+WT_NumTypes] = readLbBgTextSnd("p2.perfect.", is, sff, at, 0, f)
+	ro.winType[WT_Normal] = readLbBgTextSnd("p1.n.", is, sff, at, 0, f)
+	ro.winType[WT_Special] = readLbBgTextSnd("p1.s.", is, sff, at, 0, f)
+	ro.winType[WT_Hyper] = readLbBgTextSnd("p1.h.", is, sff, at, 0, f)
+	ro.winType[WT_Cheese] = readLbBgTextSnd("p1.c.", is, sff, at, 0, f)
+	ro.winType[WT_Time] = readLbBgTextSnd("p1.t.", is, sff, at, 0, f)
+	ro.winType[WT_Throw] = readLbBgTextSnd("p1.throw.", is, sff, at, 0, f)
+	ro.winType[WT_Suicide] = readLbBgTextSnd("p1.suicide.", is, sff, at, 0, f)
+	ro.winType[WT_Teammate] = readLbBgTextSnd("p1.teammate.", is, sff, at, 0, f)
+	ro.winType[WT_Perfect] = readLbBgTextSnd("p1.perfect.", is, sff, at, 0, f)
+	ro.winType[WT_Normal+WT_NumTypes] = readLbBgTextSnd("p2.n.", is, sff, at, 0, f)
+	ro.winType[WT_Special+WT_NumTypes] = readLbBgTextSnd("p2.s.", is, sff, at, 0, f)
+	ro.winType[WT_Hyper+WT_NumTypes] = readLbBgTextSnd("p2.h.", is, sff, at, 0, f)
+	ro.winType[WT_Cheese+WT_NumTypes] = readLbBgTextSnd("p2.c.", is, sff, at, 0, f)
+	ro.winType[WT_Time+WT_NumTypes] = readLbBgTextSnd("p2.t.", is, sff, at, 0, f)
+	ro.winType[WT_Throw+WT_NumTypes] = readLbBgTextSnd("p2.throw.", is, sff, at, 0, f)
+	ro.winType[WT_Suicide+WT_NumTypes] = readLbBgTextSnd("p2.suicide.", is, sff, at, 0, f)
+	ro.winType[WT_Teammate+WT_NumTypes] = readLbBgTextSnd("p2.teammate.", is, sff, at, 0, f)
+	ro.winType[WT_Perfect+WT_NumTypes] = readLbBgTextSnd("p2.perfect.", is, sff, at, 0, f)
 	is.ReadI32("fadein.time", &ro.fadein_time)
 	var col [3]int32
 	if is.ReadI32("fadein.col", &col[0], &col[1], &col[2]) {
@@ -2363,14 +2363,14 @@ func (ro *LifeBarRound) act() bool {
 					index := sys.winType[sys.winTeam]
 					if index > WT_NumTypes {
 						if sys.winTeam == 0 {
-							ro.wint[WT_Perfect].step(ro.snd)
+							ro.winType[WT_Perfect].step(ro.snd)
 							index = index - WT_NumTypes - 1
 						} else {
-							ro.wint[WT_Perfect+WT_NumTypes].step(ro.snd)
+							ro.winType[WT_Perfect+WT_NumTypes].step(ro.snd)
 							index = index - 1
 						}
 					}
-					ro.wint[index].step(ro.snd)
+					ro.winType[index].step(ro.snd)
 				}
 			}
 		} else {
@@ -2382,6 +2382,7 @@ func (ro *LifeBarRound) act() bool {
 
 func (ro *LifeBarRound) reset() {
 	ro.current = 0
+	// Round animations
 	ro.round_default.Reset()
 	ro.round_default_top.Reset()
 	for i := range ro.round_default_bg {
@@ -2390,16 +2391,25 @@ func (ro *LifeBarRound) reset() {
 	for i := range ro.round {
 		ro.round[i].Reset()
 	}
+	// Single round animations
+	ro.round_single.Reset()
+	ro.round_single_top.Reset()
+	for i := range ro.round_single_bg {
+		ro.round_single_bg[i].Reset()
+	}
+	// Final round animations
+	ro.round_final.Reset()
 	ro.round_final_top.Reset()
 	for i := range ro.round_final_bg {
 		ro.round_final_bg[i].Reset()
 	}
-	ro.round_final.Reset()
+	// Fight call animations
 	ro.fight.Reset()
 	ro.fight_top.Reset()
 	for i := range ro.fight_bg {
 		ro.fight_bg[i].Reset()
 	}
+	// KO animations
 	ro.ko.Reset()
 	ro.ko_top.Reset()
 	for i := range ro.ko_bg {
@@ -2410,6 +2420,7 @@ func (ro *LifeBarRound) reset() {
 	for i := range ro.dko_bg {
 		ro.dko_bg[i].Reset()
 	}
+	// Time Over animations
 	ro.to.Reset()
 	ro.to_top.Reset()
 	for i := range ro.to_bg {
@@ -2459,20 +2470,22 @@ func (ro *LifeBarRound) reset() {
 			ro.win4_bg[i][j].Reset()
 		}
 	}
+	// Draw game
 	ro.drawgame.Reset()
 	ro.drawgame_top.Reset()
 	for i := range ro.drawgame_bg {
 		ro.drawgame_bg[i].Reset()
 	}
-	for i := range ro.wint {
-		ro.wint[i].reset()
+	// Win types
+	for i := range ro.winType {
+		ro.winType[i].reset()
 	}
-	ro.roundCallOver = false
-	ro.fightCallOver = false
 	// Reset action timers
 	ro.waitTimer = [4]int32{}
 	ro.waitSoundTimer = [4]int32{}
 	ro.drawTimer = [4]int32{}
+	ro.roundCallOver = false
+	ro.fightCallOver = false
 }
 
 func (ro *LifeBarRound) draw(layerno int16, f []*Fnt) {
@@ -2663,15 +2676,15 @@ func (ro *LifeBarRound) draw(layerno int16, f []*Fnt) {
 				}
 				if perfect {
 					if sys.winTeam == 0 {
-						ro.wint[WT_Perfect].bgDraw(layerno)
-						ro.wint[WT_Perfect].draw(layerno, f)
+						ro.winType[WT_Perfect].bgDraw(layerno)
+						ro.winType[WT_Perfect].draw(layerno, f)
 					} else {
-						ro.wint[WT_Perfect+WT_NumTypes].bgDraw(layerno)
-						ro.wint[WT_Perfect+WT_NumTypes].draw(layerno, f)
+						ro.winType[WT_Perfect+WT_NumTypes].bgDraw(layerno)
+						ro.winType[WT_Perfect+WT_NumTypes].draw(layerno, f)
 					}
 				}
-				ro.wint[index].bgDraw(layerno)
-				ro.wint[index].draw(layerno, f)
+				ro.winType[index].bgDraw(layerno)
+				ro.winType[index].draw(layerno, f)
 			}
 		}
 	}
