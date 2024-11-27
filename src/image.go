@@ -1142,7 +1142,7 @@ func (s *Sprite) CachePalette(pal []uint32) *Texture {
 	}
 	// If cached texture is invalid, generate a new one
 	if !hasPalette {
-		s.PalTex = PaletteToTexture(pal)
+		s.PalTex = PaletteToTextureHelper(pal)
 		s.paltemp = append([]uint32{}, pal...)
 	}
 	return s.PalTex
@@ -1164,7 +1164,7 @@ func (s *Sprite) Draw(x, y, xscale, yscale, angle float32, fx *PalFX, window *[4
 		Rotation{angle, 0, 0}, 0, sys.brightness*255>>8 | 1<<9, 0, fx, window, 0, 0, 0, 0,
 		-xscale * float32(s.Offset[0]), -yscale * float32(s.Offset[1]),
 	}
-	RenderSprite(rp)
+	RenderSpriteHelper(rp)
 }
 
 type Sff struct {
