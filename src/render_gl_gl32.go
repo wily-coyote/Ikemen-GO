@@ -40,6 +40,8 @@ var BlendFunctionLUT = map[BlendFunc]uint32{
 	BlendZero:             gl.ZERO,
 	BlendSrcAlpha:         gl.SRC_ALPHA,
 	BlendOneMinusSrcAlpha: gl.ONE_MINUS_SRC_ALPHA,
+	BlendDstColor:         gl.DST_COLOR,
+	BlendOneMinusDstColor: gl.ONE_MINUS_DST_COLOR,
 }
 
 var PrimitiveModeLUT = map[PrimitiveMode]uint32{
@@ -445,9 +447,9 @@ func (r *Renderer) InitModelShader() error {
 		return err
 	}
 	r.modelShader.RegisterAttributes("vertexId", "position", "uv", "normalIn", "tangentIn", "vertColor", "joints_0", "joints_1", "weights_0", "weights_1")
-	r.modelShader.RegisterUniforms("model", "view", "projection", "farPlane", "normalMatrix", "unlit", "baseColorFactor", "add", "mult", "useTexture", "useNormalMap", "useMetallicRoughnessMap", "neg", "gray", "hue",
+	r.modelShader.RegisterUniforms("model", "view", "projection", "farPlane", "normalMatrix", "unlit", "baseColorFactor", "add", "mult", "useTexture", "useNormalMap", "useMetallicRoughnessMap", "useEmissionMap", "neg", "gray", "hue",
 		"enableAlpha", "alphaThreshold", "numJoints", "morphTargetWeight", "morphTargetOffset", "morphTargetTextureDimension", "numTargets", "numVertices",
-		"metallicRoughness", "ambientOcclusionStrength", "environmentIntensity", "mipCount",
+		"metallicRoughness", "ambientOcclusionStrength", "emission", "environmentIntensity", "mipCount",
 		"cameraPosition", "environmentRotation",
 		"lightMatrices[0]", "lightMatrices[1]", "lightMatrices[2]", "lightMatrices[3]",
 		"lights[0].direction", "lights[0].range", "lights[0].color", "lights[0].intensity", "lights[0].position", "lights[0].innerConeCos", "lights[0].outerConeCos", "lights[0].type", "lights[0].shadowBias", "lights[0].shadowMapFar",
@@ -455,7 +457,7 @@ func (r *Renderer) InitModelShader() error {
 		"lights[2].direction", "lights[2].range", "lights[2].color", "lights[2].intensity", "lights[2].position", "lights[2].innerConeCos", "lights[2].outerConeCos", "lights[2].type", "lights[2].shadowBias", "lights[2].shadowMapFar",
 		"lights[3].direction", "lights[3].range", "lights[3].color", "lights[3].intensity", "lights[3].position", "lights[3].innerConeCos", "lights[3].outerConeCos", "lights[3].type", "lights[3].shadowBias", "lights[3].shadowMapFar",
 	)
-	r.modelShader.RegisterTextures("tex", "morphTargetValues", "jointMatrices", "normalMap", "metallicRoughnessMap", "ambientOcclusionMap", "lambertianEnvSampler", "GGXEnvSampler", "GGXLUT",
+	r.modelShader.RegisterTextures("tex", "morphTargetValues", "jointMatrices", "normalMap", "metallicRoughnessMap", "ambientOcclusionMap", "emissionMap", "lambertianEnvSampler", "GGXEnvSampler", "GGXLUT",
 		"shadowMap", "shadowCubeMap")
 
 	if r.enableShadow {
