@@ -410,9 +410,7 @@ func processBatchOptimized(batch []RenderUniformData, start int32, total int32) 
 	}
 
 	//UIMode = srd.UIMode
-	if srd.forSprite {
-		gfx.Scissor(srd.window[0], srd.window[1], srd.window[2], srd.window[3])
-	}
+	gfx.Scissor(srd.window[0], srd.window[1], srd.window[2], srd.window[3])
 	gfx.SetPipeline(srd.eq, srd.src, srd.dst)
 
 	var names []string
@@ -852,7 +850,6 @@ func CalculateRectData(rect [4]int32, color uint32, trans int32) {
 
 		BatchParam(&rd)
 		rd.seqNo = batchRenderer.state.curSDRSeqNo
-		// fmt.Printf("In Prerender: eq: %d src %d dst %d a %f seqNo: %d \n", eq, src, dst, a, rd.seqNo)
 
 		batchRenderer.state.curSDRSeqNo++
 	}, trans, true, 0, nil, nil, nil, false)
