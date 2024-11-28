@@ -192,44 +192,58 @@ func JoystickState(joy, button int) bool {
 		if button >= len(btns) {
 			if len(btns) == 0 {
 				return false
-			} else {
+				// Prevent OOB errors #2141
+			} else if len(axes) > 0 {
 				if button == sys.joystickConfig[joy].dR {
 					return axes[0] > sys.controllerStickSensitivity
 				}
 				if button == sys.joystickConfig[joy].dL {
 					return -axes[0] > sys.controllerStickSensitivity
 				}
-				if button == sys.joystickConfig[joy].dU {
-					return -axes[1] > sys.controllerStickSensitivity
+
+				// Prevent OOB errors #2141
+				if len(axes) > 1 {
+					if button == sys.joystickConfig[joy].dU {
+						return -axes[1] > sys.controllerStickSensitivity
+					}
+					if button == sys.joystickConfig[joy].dD {
+						return axes[1] > sys.controllerStickSensitivity
+					}
 				}
-				if button == sys.joystickConfig[joy].dD {
-					return axes[1] > sys.controllerStickSensitivity
-				}
+				return false
+			} else {
 				return false
 			}
 		}
 
-		// override with axes
-		if button == sys.joystickConfig[joy].dR {
-			if axes[0] > sys.controllerStickSensitivity {
-				btns[button] = 1
+		// override with axes if they exist #2141
+		if len(axes) > 0 {
+			if button == sys.joystickConfig[joy].dR {
+				if axes[0] > sys.controllerStickSensitivity {
+					btns[button] = 1
+				}
+			}
+			if button == sys.joystickConfig[joy].dL {
+				if -axes[0] > sys.controllerStickSensitivity {
+					btns[button] = 1
+				}
+			}
+
+			// prevent OOB errors #2141
+			if len(axes) > 1 {
+				if button == sys.joystickConfig[joy].dU {
+					if -axes[1] > sys.controllerStickSensitivity {
+						btns[button] = 1
+					}
+				}
+				if button == sys.joystickConfig[joy].dD {
+					if axes[1] > sys.controllerStickSensitivity {
+						btns[button] = 1
+					}
+				}
 			}
 		}
-		if button == sys.joystickConfig[joy].dL {
-			if -axes[0] > sys.controllerStickSensitivity {
-				btns[button] = 1
-			}
-		}
-		if button == sys.joystickConfig[joy].dU {
-			if -axes[1] > sys.controllerStickSensitivity {
-				btns[button] = 1
-			}
-		}
-		if button == sys.joystickConfig[joy].dD {
-			if axes[1] > sys.controllerStickSensitivity {
-				btns[button] = 1
-			}
-		}
+
 		return btns[button] != 0
 	} else {
 		// Query axis state
