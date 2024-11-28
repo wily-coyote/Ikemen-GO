@@ -844,9 +844,11 @@ type StringPool struct {
 func NewStringPool() *StringPool {
 	return &StringPool{Map: make(map[string]int)}
 }
+
 func (sp *StringPool) Clear() {
 	sp.List, sp.Map = nil, make(map[string]int)
 }
+
 func (sp *StringPool) Add(s string) int {
 	i, ok := sp.Map[s]
 	if !ok {
@@ -858,42 +860,46 @@ func (sp *StringPool) Add(s string) int {
 }
 
 type BytecodeValue struct {
-	t ValueType
-	v float64
+	vtype  ValueType
+	value float64
 }
 
 func (bv BytecodeValue) IsNone() bool {
-	return bv.t == VT_None
+	return bv.vtype == VT_None
 }
 
 func (bv BytecodeValue) IsSF() bool {
-	return bv.t == VT_SFalse
+	return bv.vtype == VT_SFalse
 }
 
 func (bv BytecodeValue) ToF() float32 {
 	if bv.IsSF() {
 		return 0
 	}
-	return float32(bv.v)
+	return float32(bv.value)
 }
+
 func (bv BytecodeValue) ToI() int32 {
 	if bv.IsSF() {
 		return 0
 	}
-	return int32(bv.v)
+	return int32(bv.value)
 }
+
 func (bv BytecodeValue) ToI64() int64 {
 	if bv.IsSF() {
 		return 0
 	}
-	return int64(bv.v)
+	return int64(bv.value)
 }
+
 func (bv BytecodeValue) ToB() bool {
-	if bv.IsSF() || bv.v == 0 {
+	if bv.IsSF() || bv.value == 0 {
 		return false
 	}
 	return true
 }
+
 func (bv *BytecodeValue) SetF(f float32) {
 	if math.IsNaN(float64(f)) {
 		*bv = BytecodeSF()
@@ -901,57 +907,87 @@ func (bv *BytecodeValue) SetF(f float32) {
 		*bv = BytecodeValue{VT_Float, float64(f)}
 	}
 }
+
 func (bv *BytecodeValue) SetI(i int32) {
 	*bv = BytecodeValue{VT_Int, float64(i)}
 }
+
 func (bv *BytecodeValue) SetI64(i int64) {
 	*bv = BytecodeValue{VT_Int, float64(i)}
 }
+
 func (bv *BytecodeValue) SetB(b bool) {
-	bv.t = VT_Bool
-	bv.v = float64(Btoi(b))
+	bv.vtype = VT_Bool
+	bv.value = float64(Btoi(b))
 }
 
 func bvNone() BytecodeValue {
 	return BytecodeValue{VT_None, 0}
 }
+
 func BytecodeSF() BytecodeValue {
 	return BytecodeValue{VT_SFalse, math.NaN()}
 }
+
 func BytecodeFloat(f float32) BytecodeValue {
 	return BytecodeValue{VT_Float, float64(f)}
 }
+
 func BytecodeInt(i int32) BytecodeValue {
 	return BytecodeValue{VT_Int, float64(i)}
 }
+
 func BytecodeInt64(i int64) BytecodeValue {
 	return BytecodeValue{VT_Int, float64(i)}
 }
+
 func BytecodeBool(b bool) BytecodeValue {
 	return BytecodeValue{VT_Bool, float64(Btoi(b))}
 }
 
 type BytecodeStack []BytecodeValue
 
-func (bs *BytecodeStack) Clear()                { *bs = (*bs)[:0] }
-func (bs *BytecodeStack) Push(bv BytecodeValue) { *bs = append(*bs, bv) }
-func (bs *BytecodeStack) PushI(i int32)         { bs.Push(BytecodeInt(i)) }
-func (bs *BytecodeStack) PushI64(i int64)       { bs.Push(BytecodeInt64(i)) }
-func (bs *BytecodeStack) PushF(f float32)       { bs.Push(BytecodeFloat(f)) }
-func (bs *BytecodeStack) PushB(b bool)          { bs.Push(BytecodeBool(b)) }
+func (bs *BytecodeStack) Clear() {
+	*bs = (*bs)[:0]
+}
+
+func (bs *BytecodeStack) Push(bv BytecodeValue) {
+	*bs = append(*bs, bv)
+}
+
+func (bs *BytecodeStack) PushI(i int32) {
+	bs.Push(BytecodeInt(i))
+}
+
+func (bs *BytecodeStack) PushI64(i int64) {
+	bs.Push(BytecodeInt64(i))
+}
+
+func (bs *BytecodeStack) PushF(f float32) {
+	bs.Push(BytecodeFloat(f))
+}
+
+func (bs *BytecodeStack) PushB(b bool) {
+	bs.Push(BytecodeBool(b))
+}
+
 func (bs BytecodeStack) Top() *BytecodeValue {
 	return &bs[len(bs)-1]
 }
+
 func (bs *BytecodeStack) Pop() (bv BytecodeValue) {
 	bv, *bs = *bs.Top(), (*bs)[:len(*bs)-1]
 	return
 }
+
 func (bs *BytecodeStack) Dup() {
 	bs.Push(*bs.Top())
 }
+
 func (bs *BytecodeStack) Swap() {
 	*bs.Top(), (*bs)[len(*bs)-2] = (*bs)[len(*bs)-2], *bs.Top()
 }
+
 func (bs *BytecodeStack) Alloc(size int) []BytecodeValue {
 	if len(*bs)+size > cap(*bs) {
 		tmp := *bs
@@ -977,26 +1013,27 @@ func Float32frombytes(bytes []byte) float32 {
 func (be *BytecodeExp) append(op ...OpCode) {
 	*be = append(*be, op...)
 }
+
 func (be *BytecodeExp) appendValue(bv BytecodeValue) (ok bool) {
-	switch bv.t {
+	switch bv.vtype {
 	case VT_Float:
 		be.append(OC_float)
-		f := float32(bv.v)
+		f := float32(bv.value)
 		be.append((*(*[4]OpCode)(unsafe.Pointer(&f)))[:]...)
 	case VT_Int:
-		if bv.v >= -128 && bv.v <= 127 {
-			be.append(OC_int8, OpCode(bv.v))
-		} else if bv.v >= math.MinInt32 && bv.v <= math.MaxInt32 {
+		if bv.value >= -128 && bv.value <= 127 {
+			be.append(OC_int8, OpCode(bv.value))
+		} else if bv.value >= math.MinInt32 && bv.value <= math.MaxInt32 {
 			be.append(OC_int)
-			i := int32(bv.v)
+			i := int32(bv.value)
 			be.append((*(*[4]OpCode)(unsafe.Pointer(&i)))[:]...)
 		} else {
 			be.append(OC_int64)
-			i := int64(bv.v)
+			i := int64(bv.value)
 			be.append((*(*[8]OpCode)(unsafe.Pointer(&i)))[:]...)
 		}
 	case VT_Bool:
-		if bv.v != 0 {
+		if bv.value != 0 {
 			be.append(OC_int8, 1)
 		} else {
 			be.append(OC_int8, 0)
@@ -1020,21 +1057,25 @@ func (be *BytecodeExp) appendI64Op(op OpCode, addr int64) {
 	be.append(op)
 	be.append((*(*[8]OpCode)(unsafe.Pointer(&addr)))[:]...)
 }
+
 func (BytecodeExp) neg(v *BytecodeValue) {
-	if v.t == VT_Float {
-		v.v *= -1
+	if v.vtype == VT_Float {
+		v.value *= -1
 	} else {
 		v.SetI(-v.ToI())
 	}
 }
+
 func (BytecodeExp) not(v *BytecodeValue) {
 	v.SetI(^v.ToI())
 }
+
 func (BytecodeExp) blnot(v *BytecodeValue) {
 	v.SetB(!v.ToB())
 }
+
 func (BytecodeExp) pow(v1 *BytecodeValue, v2 BytecodeValue, pn int) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetF(Pow(v1.ToF(), v2.ToF()))
 	} else if v2.ToF() < 0 {
 		v1.SetF(Pow(v1.ToF(), v2.ToF()))
@@ -1059,15 +1100,17 @@ func (BytecodeExp) pow(v1 *BytecodeValue, v2 BytecodeValue, pn int) {
 		v1.SetI(i)
 	}
 }
+
 func (BytecodeExp) mul(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetF(v1.ToF() * v2.ToF())
 	} else {
 		v1.SetI(v1.ToI() * v2.ToI())
 	}
 }
+
 func (BytecodeExp) div(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetF(v1.ToF() / v2.ToF())
 	} else if v2.ToI() == 0 {
 		*v1 = BytecodeSF()
@@ -1075,6 +1118,7 @@ func (BytecodeExp) div(v1 *BytecodeValue, v2 BytecodeValue) {
 		v1.SetI(v1.ToI() / v2.ToI())
 	}
 }
+
 func (BytecodeExp) mod(v1 *BytecodeValue, v2 BytecodeValue) {
 	if v2.ToI() == 0 {
 		*v1 = BytecodeSF()
@@ -1082,125 +1126,150 @@ func (BytecodeExp) mod(v1 *BytecodeValue, v2 BytecodeValue) {
 		v1.SetI(v1.ToI() % v2.ToI())
 	}
 }
+
 func (BytecodeExp) add(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetF(v1.ToF() + v2.ToF())
 	} else {
 		v1.SetI(v1.ToI() + v2.ToI())
 	}
 }
+
 func (BytecodeExp) sub(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetF(v1.ToF() - v2.ToF())
 	} else {
 		v1.SetI(v1.ToI() - v2.ToI())
 	}
 }
+
 func (BytecodeExp) gt(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetB(v1.ToF() > v2.ToF())
 	} else {
 		v1.SetB(v1.ToI() > v2.ToI())
 	}
 }
+
 func (BytecodeExp) ge(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetB(v1.ToF() >= v2.ToF())
 	} else {
 		v1.SetB(v1.ToI() >= v2.ToI())
 	}
 }
+
 func (BytecodeExp) lt(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetB(v1.ToF() < v2.ToF())
 	} else {
 		v1.SetB(v1.ToI() < v2.ToI())
 	}
 }
+
 func (BytecodeExp) le(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetB(v1.ToF() <= v2.ToF())
 	} else {
 		v1.SetB(v1.ToI() <= v2.ToI())
 	}
 }
+
 func (BytecodeExp) eq(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetB(v1.ToF() == v2.ToF())
 	} else {
 		v1.SetB(v1.ToI() == v2.ToI())
 	}
 }
+
 func (BytecodeExp) ne(v1 *BytecodeValue, v2 BytecodeValue) {
-	if ValueType(Min(int32(v1.t), int32(v2.t))) == VT_Float {
+	if ValueType(Min(int32(v1.vtype), int32(v2.vtype))) == VT_Float {
 		v1.SetB(v1.ToF() != v2.ToF())
 	} else {
 		v1.SetB(v1.ToI() != v2.ToI())
 	}
 }
+
 func (BytecodeExp) and(v1 *BytecodeValue, v2 BytecodeValue) {
 	v1.SetI(v1.ToI() & v2.ToI())
 }
+
 func (BytecodeExp) xor(v1 *BytecodeValue, v2 BytecodeValue) {
 	v1.SetI(v1.ToI() ^ v2.ToI())
 }
+
 func (BytecodeExp) or(v1 *BytecodeValue, v2 BytecodeValue) {
 	v1.SetI(v1.ToI() | v2.ToI())
 }
+
 func (BytecodeExp) bland(v1 *BytecodeValue, v2 BytecodeValue) {
 	v1.SetB(v1.ToB() && v2.ToB())
 }
+
 func (BytecodeExp) blxor(v1 *BytecodeValue, v2 BytecodeValue) {
 	v1.SetB(v1.ToB() != v2.ToB())
 }
+
 func (BytecodeExp) blor(v1 *BytecodeValue, v2 BytecodeValue) {
 	v1.SetB(v1.ToB() || v2.ToB())
 }
+
 func (BytecodeExp) abs(v1 *BytecodeValue) {
-	if v1.t == VT_Float {
-		v1.v = math.Abs(v1.v)
+	if v1.vtype == VT_Float {
+		v1.value = math.Abs(v1.value)
 	} else {
 		v1.SetI(Abs(v1.ToI()))
 	}
 }
+
 func (BytecodeExp) exp(v1 *BytecodeValue) {
-	v1.SetF(float32(math.Exp(v1.v)))
+	v1.SetF(float32(math.Exp(v1.value)))
 }
+
 func (BytecodeExp) ln(v1 *BytecodeValue) {
-	if v1.v <= 0 {
+	if v1.value <= 0 {
 		*v1 = BytecodeSF()
 	} else {
-		v1.SetF(float32(math.Log(v1.v)))
+		v1.SetF(float32(math.Log(v1.value)))
 	}
 }
+
 func (BytecodeExp) log(v1 *BytecodeValue, v2 BytecodeValue) {
-	if v1.v <= 0 || v2.v <= 0 {
+	if v1.value <= 0 || v2.value <= 0 {
 		*v1 = BytecodeSF()
 	} else {
-		v1.SetF(float32(math.Log(v2.v) / math.Log(v1.v)))
+		v1.SetF(float32(math.Log(v2.value) / math.Log(v1.value)))
 	}
 }
+
 func (BytecodeExp) cos(v1 *BytecodeValue) {
-	v1.SetF(float32(math.Cos(v1.v)))
+	v1.SetF(float32(math.Cos(v1.value)))
 }
+
 func (BytecodeExp) sin(v1 *BytecodeValue) {
-	v1.SetF(float32(math.Sin(v1.v)))
+	v1.SetF(float32(math.Sin(v1.value)))
 }
+
 func (BytecodeExp) tan(v1 *BytecodeValue) {
-	v1.SetF(float32(math.Tan(v1.v)))
+	v1.SetF(float32(math.Tan(v1.value)))
 }
+
 func (BytecodeExp) acos(v1 *BytecodeValue) {
-	v1.SetF(float32(math.Acos(v1.v)))
+	v1.SetF(float32(math.Acos(v1.value)))
 }
+
 func (BytecodeExp) asin(v1 *BytecodeValue) {
-	v1.SetF(float32(math.Asin(v1.v)))
+	v1.SetF(float32(math.Asin(v1.value)))
 }
+
 func (BytecodeExp) atan(v1 *BytecodeValue) {
-	v1.SetF(float32(math.Atan(v1.v)))
+	v1.SetF(float32(math.Atan(v1.value)))
 }
+
 func (BytecodeExp) floor(v1 *BytecodeValue) {
-	if v1.t == VT_Float {
-		f := math.Floor(v1.v)
+	if v1.vtype == VT_Float {
+		f := math.Floor(v1.value)
 		if math.IsNaN(f) {
 			*v1 = BytecodeSF()
 		} else {
@@ -1208,9 +1277,10 @@ func (BytecodeExp) floor(v1 *BytecodeValue) {
 		}
 	}
 }
+
 func (BytecodeExp) ceil(v1 *BytecodeValue) {
-	if v1.t == VT_Float {
-		f := math.Ceil(v1.v)
+	if v1.vtype == VT_Float {
+		f := math.Ceil(v1.value)
 		if math.IsNaN(f) {
 			*v1 = BytecodeSF()
 		} else {
@@ -1218,63 +1288,74 @@ func (BytecodeExp) ceil(v1 *BytecodeValue) {
 		}
 	}
 }
+
 func (BytecodeExp) max(v1 *BytecodeValue, v2 BytecodeValue) {
-	if v1.v >= v2.v {
-		v1.SetF(float32(v1.v))
+	if v1.value >= v2.value {
+		v1.SetF(float32(v1.value))
 	} else {
-		v1.SetF(float32(v2.v))
+		v1.SetF(float32(v2.value))
 	}
 }
+
 func (BytecodeExp) min(v1 *BytecodeValue, v2 BytecodeValue) {
-	if v1.v <= v2.v {
-		v1.SetF(float32(v1.v))
+	if v1.value <= v2.value {
+		v1.SetF(float32(v1.value))
 	} else {
-		v1.SetF(float32(v2.v))
+		v1.SetF(float32(v2.value))
 	}
 }
+
 func (BytecodeExp) random(v1 *BytecodeValue, v2 BytecodeValue) {
-	v1.SetI(RandI(int32(v1.v), int32(v2.v)))
+	v1.SetI(RandI(int32(v1.value), int32(v2.value)))
 }
+
 func (BytecodeExp) round(v1 *BytecodeValue, v2 BytecodeValue) {
-	shift := math.Pow(10, v2.v)
-	v1.SetF(float32(math.Floor((v1.v*shift)+0.5) / shift))
+	shift := math.Pow(10, v2.value)
+	v1.SetF(float32(math.Floor((v1.value*shift)+0.5) / shift))
 }
+
 func (BytecodeExp) clamp(v1 *BytecodeValue, v2 BytecodeValue, v3 BytecodeValue) {
-	if v1.v <= v2.v {
-		v1.SetF(float32(v2.v))
-	} else if v1.v >= v3.v {
-		v1.SetF(float32(v3.v))
+	if v1.value <= v2.value {
+		v1.SetF(float32(v2.value))
+	} else if v1.value >= v3.value {
+		v1.SetF(float32(v3.value))
 	} else {
-		v1.SetF(float32(v1.v))
+		v1.SetF(float32(v1.value))
 	}
 }
+
 func (BytecodeExp) atan2(v1 *BytecodeValue, v2 BytecodeValue) {
-	v1.SetF(float32(math.Atan2(v1.v, v2.v)))
+	v1.SetF(float32(math.Atan2(v1.value, v2.value)))
 }
+
 func (BytecodeExp) sign(v1 *BytecodeValue) {
-	if v1.v < 0 {
+	if v1.value < 0 {
 		v1.SetI(int32(-1))
-	} else if v1.v > 0 {
+	} else if v1.value > 0 {
 		v1.SetI(int32(1))
 	} else {
 		v1.SetI(int32(0))
 	}
 }
+
 func (BytecodeExp) rad(v1 *BytecodeValue) {
-	v1.SetF(float32(v1.v * math.Pi / 180))
+	v1.SetF(float32(v1.value * math.Pi / 180))
 }
+
 func (BytecodeExp) deg(v1 *BytecodeValue) {
-	v1.SetF(float32(v1.v * 180 / math.Pi))
+	v1.SetF(float32(v1.value * 180 / math.Pi))
 }
+
 func (BytecodeExp) lerp(v1 *BytecodeValue, v2 BytecodeValue, v3 BytecodeValue) {
-	amount := v3.v
-	if v3.v <= 0 {
+	amount := v3.value
+	if v3.value <= 0 {
 		amount = 0
-	} else if v3.v >= 1 {
+	} else if v3.value >= 1 {
 		amount = 1
 	}
-	v1.SetF(float32(v1.v + (v2.v-v1.v)*amount))
+	v1.SetF(float32(v1.value + (v2.value-v1.value)*amount))
 }
+
 func (be BytecodeExp) run(c *Char) BytecodeValue {
 	oc := c
 	for i := 1; i <= len(be); i++ {
@@ -1783,6 +1864,7 @@ func (be BytecodeExp) run(c *Char) BytecodeValue {
 	}
 	return sys.bcStack.Pop()
 }
+
 func (be BytecodeExp) run_st(c *Char, i *int) {
 	(*i)++
 	switch be[*i-1] {
@@ -1816,6 +1898,7 @@ func (be BytecodeExp) run_st(c *Char, i *int) {
 		*i += 4
 	}
 }
+
 func (be BytecodeExp) run_const(c *Char, i *int, oc *Char) {
 	(*i)++
 	switch be[*i-1] {
@@ -2250,6 +2333,7 @@ func (be BytecodeExp) run_const(c *Char, i *int, oc *Char) {
 		c.panic()
 	}
 }
+
 func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 	(*i)++
 	switch be[*i-1] {
@@ -2957,6 +3041,7 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		c.panic()
 	}
 }
+
 func (be BytecodeExp) run_ex2(c *Char, i *int, oc *Char) {
 	(*i)++
 	opc := be[*i-1]
@@ -3377,15 +3462,19 @@ func (be BytecodeExp) run_ex2(c *Char, i *int, oc *Char) {
 		c.panic()
 	}
 }
+
 func (be BytecodeExp) evalF(c *Char) float32 {
 	return be.run(c).ToF()
 }
+
 func (be BytecodeExp) evalI(c *Char) int32 {
 	return be.run(c).ToI()
 }
+
 func (be BytecodeExp) evalI64(c *Char) int64 {
 	return be.run(c).ToI64()
 }
+
 func (be BytecodeExp) evalB(c *Char) bool {
 	return be.run(c).ToB()
 }
@@ -3393,9 +3482,12 @@ func (be BytecodeExp) evalB(c *Char) bool {
 type StateController interface {
 	Run(c *Char, ps []int32) (changeState bool)
 }
+
 type NullStateController struct{}
 
-func (NullStateController) Run(_ *Char, _ []int32) bool { return false }
+func (NullStateController) Run(_ *Char, _ []int32) bool {
+	return false
+}
 
 var nullStateController NullStateController
 
@@ -3477,6 +3569,7 @@ type StateBlock struct {
 func newStateBlock() *StateBlock {
 	return &StateBlock{persistent: 1, persistentIndex: -1, ignorehitpause: -2}
 }
+
 func (b StateBlock) Run(c *Char, ps []int32) (changeState bool) {
 	// Check if the character is currently in a hit pause
 	if c.hitPause() {
@@ -3642,9 +3735,11 @@ type StateControllerBase []byte
 func newStateControllerBase() *StateControllerBase {
 	return (*StateControllerBase)(&[]byte{})
 }
+
 func (StateControllerBase) beToExp(be ...BytecodeExp) []BytecodeExp {
 	return be
 }
+
 func (StateControllerBase) fToExp(f ...float32) (exp []BytecodeExp) {
 	for _, v := range f {
 		var be BytecodeExp
@@ -3653,6 +3748,7 @@ func (StateControllerBase) fToExp(f ...float32) (exp []BytecodeExp) {
 	}
 	return
 }
+
 func (StateControllerBase) iToExp(i ...int32) (exp []BytecodeExp) {
 	for _, v := range i {
 		var be BytecodeExp
@@ -3661,6 +3757,7 @@ func (StateControllerBase) iToExp(i ...int32) (exp []BytecodeExp) {
 	}
 	return
 }
+
 func (StateControllerBase) i64ToExp(i ...int64) (exp []BytecodeExp) {
 	for _, v := range i {
 		var be BytecodeExp
@@ -3669,12 +3766,14 @@ func (StateControllerBase) i64ToExp(i ...int64) (exp []BytecodeExp) {
 	}
 	return
 }
+
 func (StateControllerBase) bToExp(i bool) (exp []BytecodeExp) {
 	var be BytecodeExp
 	be.appendValue(BytecodeBool(i))
 	exp = append(exp, be)
 	return
 }
+
 func (scb *StateControllerBase) add(id byte, exp []BytecodeExp) {
 	*scb = append(*scb, id, byte(len(exp)))
 	for _, e := range exp {
@@ -3683,6 +3782,7 @@ func (scb *StateControllerBase) add(id byte, exp []BytecodeExp) {
 		*scb = append(*scb, *(*[]byte)(unsafe.Pointer(&e))...)
 	}
 }
+
 func (scb StateControllerBase) run(c *Char,
 	f func(byte, []BytecodeExp) bool) {
 	for i := 0; i < len(scb); {
@@ -4899,6 +4999,7 @@ func (sc palFX) runSub(c *Char, pfd *PalFXDef,
 	}
 	return true
 }
+
 func (sc palFX) Run(c *Char, _ []int32) bool {
 	crun := c
 	doOnce := false
@@ -5992,6 +6093,7 @@ func (sc afterImage) runSub(c *Char, ai *AfterImage,
 		ai.ignorehitpause = exp[0].evalB(c)
 	}
 }
+
 func (sc afterImage) Run(c *Char, _ []int32) bool {
 	crun := c
 	doOnce := false
@@ -6500,6 +6602,7 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 	}
 	return true
 }
+
 func (sc hitDef) Run(c *Char, _ []int32) bool {
 	crun := c
 	crun.hitdef.clear(crun.localscl)
@@ -8864,7 +8967,7 @@ func (sc displayToClipboard) Run(c *Char, _ []int32) bool {
 		switch id {
 		case displayToClipboard_params:
 			for _, e := range exp {
-				if bv := e.run(c); bv.t == VT_Float {
+				if bv := e.run(c); bv.vtype == VT_Float {
 					params = append(params, bv.ToF())
 				} else {
 					params = append(params, bv.ToI())
@@ -8895,7 +8998,7 @@ func (sc appendToClipboard) Run(c *Char, _ []int32) bool {
 		switch id {
 		case displayToClipboard_params:
 			for _, e := range exp {
-				if bv := e.run(c); bv.t == VT_Float {
+				if bv := e.run(c); bv.vtype == VT_Float {
 					params = append(params, bv.ToF())
 				} else {
 					params = append(params, bv.ToI())
@@ -10306,7 +10409,7 @@ func (sc printToConsole) Run(c *Char, _ []int32) bool {
 		switch id {
 		case printToConsole_params:
 			for _, e := range exp {
-				if bv := e.run(c); bv.t == VT_Float {
+				if bv := e.run(c); bv.vtype == VT_Float {
 					params = append(params, bv.ToF())
 				} else {
 					params = append(params, bv.ToI())
@@ -11189,7 +11292,7 @@ func (sc text) Run(c *Char, _ []int32) bool {
 			ts.layerno = int16(exp[0].evalI(c))
 		case text_params:
 			for _, e := range exp {
-				if bv := e.run(c); bv.t == VT_Float {
+				if bv := e.run(c); bv.vtype == VT_Float {
 					params = append(params, bv.ToF())
 				} else {
 					params = append(params, bv.ToI())
@@ -11992,6 +12095,7 @@ func newStateBytecode(pn int) *StateBytecode {
 	}
 	return sb
 }
+
 func (sb *StateBytecode) init(c *Char) {
 	if sb.stateType != ST_U {
 		c.ss.changeStateType(sb.stateType)
@@ -12009,6 +12113,7 @@ func (sb *StateBytecode) init(c *Char) {
 	sys.workingState = sb
 	sb.stateDef.Run(c)
 }
+
 func (sb *StateBytecode) run(c *Char) (changeState bool) {
 	sys.bcVar = sys.bcVarStack.Alloc(int(sb.numVars))
 	sys.workingState = sb
