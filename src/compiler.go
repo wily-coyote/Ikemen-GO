@@ -409,6 +409,7 @@ var triggerMap = map[string]int{
 	"playercount":        1,
 	"playerindexexist":   1,
 	"playerno":           1,
+	"playernoexist":      1,
 	"prevanim":           1,
 	"prevmovetype":       1,
 	"prevstatetype":      1,
@@ -4115,8 +4116,20 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		}); err != nil {
 			return bvNone(), err
 		}
+	case "playercount":
+		out.append(OC_ex_, OC_ex_playercount)
+	case "playerindexexist":
+		if _, err := c.oneArg(out, in, rd, true); err != nil {
+			return bvNone(), err
+		}
+		out.append(OC_ex_, OC_ex_playerindexexist)
 	case "playerno":
 		out.append(OC_ex_, OC_ex_playerno)
+	case "playernoexist":
+		if _, err := c.oneArg(out, in, rd, true); err != nil {
+			return bvNone(), err
+		}
+		out.append(OC_ex_, OC_ex_playernoexist)
 	case "ratiolevel":
 		out.append(OC_ex_, OC_ex_ratiolevel)
 	case "receiveddamage":
@@ -4168,13 +4181,6 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		out.append(OC_ex_, OC_ex_timeremaining)
 	case "timetotal":
 		out.append(OC_ex_, OC_ex_timetotal)
-	case "playercount":
-		out.append(OC_ex_, OC_ex_playercount)
-	case "playerindexexist":
-		if _, err := c.oneArg(out, in, rd, true); err != nil {
-			return bvNone(), err
-		}
-		out.append(OC_ex_, OC_ex_playerindexexist)
 	case "angle":
 		out.append(OC_ex_, OC_ex_angle)
 	case "scale":

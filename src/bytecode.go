@@ -636,6 +636,7 @@ const (
 	OC_ex_physics
 	OC_ex_playerno
 	OC_ex_playerindexexist
+	OC_ex_playernoexist
 	OC_ex_randomrange
 	OC_ex_ratiolevel
 	OC_ex_receiveddamage
@@ -861,8 +862,14 @@ type BytecodeValue struct {
 	v float64
 }
 
-func (bv BytecodeValue) IsNone() bool { return bv.t == VT_None }
-func (bv BytecodeValue) IsSF() bool   { return bv.t == VT_SFalse }
+func (bv BytecodeValue) IsNone() bool {
+	return bv.t == VT_None
+}
+
+func (bv BytecodeValue) IsSF() bool {
+	return bv.t == VT_SFalse
+}
+
 func (bv BytecodeValue) ToF() float32 {
 	if bv.IsSF() {
 		return 0
@@ -2839,6 +2846,8 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushI(int32(c.playerNo) + 1)
 	case OC_ex_playerindexexist:
 		*sys.bcStack.Top() = sys.playerIndexExist(*sys.bcStack.Top())
+	case OC_ex_playernoexist:
+		*sys.bcStack.Top() = sys.playerNoExist(*sys.bcStack.Top())
 	case OC_ex_randomrange:
 		v2 := sys.bcStack.Pop()
 		be.random(sys.bcStack.Top(), v2)
@@ -8394,6 +8403,8 @@ func (sc envShake) Run(c *Char, _ []int32) bool {
 			sys.envShake.time = exp[0].evalI(c)
 		case envShake_ampl:
 			sys.envShake.ampl = float32(int32(float32(exp[0].evalI(c)) * c.localscl))
+			// Because of how localscl works, the amplitude will be slightly smaller during widescreen
+			// This also happens in Mugen however
 		case envShake_freq:
 			sys.envShake.freq = MaxF(0, exp[0].evalF(c)*float32(math.Pi)/180)
 		case envShake_phase:

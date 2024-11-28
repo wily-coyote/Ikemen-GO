@@ -5098,6 +5098,10 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.finalDefense * 100))
 		return 1
 	})
+	luaRegister(l, "displayname", func(*lua.LState) int {
+		l.Push(lua.LString(sys.debugWC.gi().displayname))
+		return 1
+	})
 	luaRegister(l, "dizzy", func(*lua.LState) int {
 		l.Push(lua.LBool(sys.debugWC.scf(SCF_dizzy)))
 		return 1
@@ -5424,6 +5428,14 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(retv))
 		return 1
 	})
+	luaRegister(l, "localcoordX", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[0]))
+		return 1
+	})
+	luaRegister(l, "localcoordY", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[1]))
+		return 1
+	})
 	luaRegister(l, "map", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.mapArray[strings.ToLower(strArg(l, 1))]))
 		return 1
@@ -5471,8 +5483,8 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LString(s))
 		return 1
 	})
-	luaRegister(l, "playerno", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.playerNo + 1))
+	luaRegister(l, "playercount", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.playercount()))
 		return 1
 	})
 	luaRegister(l, "playerindex", func(*lua.LState) int {
@@ -5488,12 +5500,17 @@ func triggerFunctions(l *lua.LState) {
 			BytecodeInt(int32(numArg(l, 1)))).ToB()))
 		return 1
 	})
-	luaRegister(l, "playercount", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.playercount()))
+	luaRegister(l, "playerno", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.debugWC.playerNo + 1))
 		return 1
 	})
-	// randomrange (dedicated functionality already exists in Lua)
+	luaRegister(l, "playernoexist", func(*lua.LState) int {
+		l.Push(lua.LBool(sys.playerNoExist(
+			BytecodeInt(int32(numArg(l, 1)))).ToB()))
+		return 1
+	})
 	// rad (dedicated functionality already exists in Lua)
+	// randomrange (dedicated functionality already exists in Lua)
 	luaRegister(l, "ratiolevel", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.ocd().ratioLevel))
 		return 1
@@ -5614,20 +5631,12 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.anim.time))
 		return 1
 	})
-	luaRegister(l, "animplayerno", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animPN) + 1)
-		return 1
-	})
 	luaRegister(l, "animtimesum", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.anim.sumtime))
 		return 1
 	})
 	luaRegister(l, "continue", func(*lua.LState) int {
 		l.Push(lua.LBool(sys.continueFlg))
-		return 1
-	})
-	luaRegister(l, "displayname", func(*lua.LState) int {
-		l.Push(lua.LString(sys.debugWC.gi().displayname))
 		return 1
 	})
 	luaRegister(l, "gameend", func(*lua.LState) int {
@@ -5656,14 +5665,6 @@ func triggerFunctions(l *lua.LState) {
 	})
 	luaRegister(l, "localcoord", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.localcoord))
-		return 1
-	})
-	luaRegister(l, "localcoordX", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[0]))
-		return 1
-	})
-	luaRegister(l, "localcoordY", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[1]))
 		return 1
 	})
 	luaRegister(l, "matchtime", func(*lua.LState) int {
