@@ -260,6 +260,7 @@ func CheckAxisForDpad(joy int, axes *[]float32, base int) string {
 	} else if -(*axes)[0] > sys.controllerStickSensitivity { // left
 		s = strconv.Itoa(1 + base)
 	}
+	// fix OOB error that can happen on erroneous joysticks
 	if len(*axes) < 2 {
 		return s
 	}
@@ -302,11 +303,11 @@ func CheckAxisForTrigger(joy int, axes *[]float32) string {
 				// do nothing
 			} else if (i == 3 || i == 4) && name == "PS4 Controller" {
 				// do nothing
-			} else if (i == 3 || i == 4) && (name == "Sony DualSense" || name == "PS5 Controller") {
+			} else if (i == 3 || i == 4) && (strings.Contains(name, "Sony DualSense") || name == "PS5 Controller") {
 				// do nothing
 			} else {
 				s = strconv.Itoa(-i*2 - 1)
-				fmt.Printf("[input_glfw.go][checkAxisForTrigger] 1.AXIS joy=%v i=%v s:%v axes[i]=%v\n", joy, i, s, (*axes)[i])
+				fmt.Printf("[input_glfw.go][checkAxisForTrigger] 1.AXIS joy=%v i=%v s:%v axes[i]=%v, name = %s\n", joy, i, s, (*axes)[i], name)
 				break
 			}
 		} else if (*axes)[i] > sys.controllerStickSensitivity {
