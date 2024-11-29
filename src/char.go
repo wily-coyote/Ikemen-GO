@@ -674,42 +674,42 @@ func (hd *HitDef) clear(localscl float32) {
 		yaccel: 0.35 / originLs,
 		zaccel: 0,
 
-		p1sprpriority:    1,
-		p1stateno:        -1,
-		p2stateno:        -1,
-		forcestand:       IErr,
-		forcecrouch:      IErr,
-		guard_dist_x:     [...]int32{-1, -1},
-		guard_dist_y:     [...]int32{-1, -1},
-		guard_dist_z:     [...]int32{-1, -1},
-		chainid:          -1,
-		nochainid:        [8]int32{-1, -1, -1, -1, -1, -1, -1, -1},
-		numhits:          1,
-		hitgetpower:      IErr,
-		guardgetpower:    IErr,
-		hitgivepower:     IErr,
-		guardgivepower:   IErr,
-		envshake_freq:    60,
-		envshake_ampl:    -4,
-		envshake_phase:   float32(math.NaN()),
-		envshake_mul:     1.0,
-		mindist:          [...]float32{float32(math.NaN()), float32(math.NaN()), float32(math.NaN())},
-		maxdist:          [...]float32{float32(math.NaN()), float32(math.NaN()), float32(math.NaN())},
-		snap:             [...]float32{float32(math.NaN()), float32(math.NaN()), float32(math.NaN())},
-		hitonce:          -1,
-		kill:             true,
-		guard_kill:       true,
-		playerNo:         -1,
-		dizzypoints:      IErr,
-		guardpoints:      IErr,
-		hitredlife:       IErr,
-		guardredlife:     IErr,
-		score:            [...]float32{float32(math.NaN()), float32(math.NaN())},
-		p2clsncheck:      -1,
-		p2clsnrequire:    -1,
-		down_recover:     true,
-		down_recovertime: -1,
-		air_juggle:       IErr,
+		p1sprpriority:       1,
+		p1stateno:           -1,
+		p2stateno:           -1,
+		forcestand:          IErr,
+		forcecrouch:         IErr,
+		guard_dist_x:        [...]int32{-1, -1},
+		guard_dist_y:        [...]int32{-1, -1},
+		guard_dist_z:        [...]int32{-1, -1},
+		chainid:             -1,
+		nochainid:           [8]int32{-1, -1, -1, -1, -1, -1, -1, -1},
+		numhits:             1,
+		hitgetpower:         IErr,
+		guardgetpower:       IErr,
+		hitgivepower:        IErr,
+		guardgivepower:      IErr,
+		envshake_freq:       60,
+		envshake_ampl:       -4,
+		envshake_phase:      float32(math.NaN()),
+		envshake_mul:        1.0,
+		mindist:             [...]float32{float32(math.NaN()), float32(math.NaN()), float32(math.NaN())},
+		maxdist:             [...]float32{float32(math.NaN()), float32(math.NaN()), float32(math.NaN())},
+		snap:                [...]float32{float32(math.NaN()), float32(math.NaN()), float32(math.NaN())},
+		hitonce:             -1,
+		kill:                true,
+		guard_kill:          true,
+		playerNo:            -1,
+		dizzypoints:         IErr,
+		guardpoints:         IErr,
+		hitredlife:          IErr,
+		guardredlife:        IErr,
+		score:               [...]float32{float32(math.NaN()), float32(math.NaN())},
+		p2clsncheck:         -1,
+		p2clsnrequire:       -1,
+		down_recover:        true,
+		down_recovertime:    -1,
+		air_juggle:          IErr,
 		fall_animtype:       RA_Unknown,
 		fall_xvelocity:      float32(math.NaN()),
 		fall_yvelocity:      -4.5 / originLs,
@@ -754,31 +754,31 @@ type GetHitVar struct {
 	hitBy [][2]int32
 	//hit1           [2]int32
 	//hit2           [2]int32
-	attr              int32
-	_type             HitType
-	animtype          Reaction
-	airanimtype       Reaction
-	groundanimtype    Reaction
-	airtype           HitType
-	groundtype        HitType
-	damage            int32
-	hitcount          int32
-	guardcount        int32
-	fallcount         int32
-	hitshaketime      int32
-	hittime           int32
-	slidetime         int32
-	ctrltime          int32
-	xvel              float32
-	yvel              float32
-	zvel              float32
-	xaccel            float32
-	yaccel            float32
-	zaccel            float32
-	hitid             int32
-	xoff              float32
-	yoff              float32
-	zoff              float32
+	attr                int32
+	_type               HitType
+	animtype            Reaction
+	airanimtype         Reaction
+	groundanimtype      Reaction
+	airtype             HitType
+	groundtype          HitType
+	damage              int32
+	hitcount            int32
+	guardcount          int32
+	fallcount           int32
+	hitshaketime        int32
+	hittime             int32
+	slidetime           int32
+	ctrltime            int32
+	xvel                float32
+	yvel                float32
+	zvel                float32
+	xaccel              float32
+	yaccel              float32
+	zaccel              float32
+	hitid               int32
+	xoff                float32
+	yoff                float32
+	zoff                float32
 	fall_animtype       Reaction // Old fall struct
 	fall_xvelocity      float32
 	fall_yvelocity      float32
@@ -792,38 +792,38 @@ type GetHitVar struct {
 	fall_envshake_ampl  int32
 	fall_envshake_phase float32
 	fall_envshake_mul   float32
-	playerId          int32
-	playerNo          int
-	fallflag          bool
-	guarded           bool
-	p2getp1state      bool
-	forcestand        bool
-	forcecrouch       bool
-	dizzypoints       int32
-	guardpoints       int32
-	redlife           int32
-	score             float32
-	hitdamage         int32
-	guarddamage       int32
-	power             int32
-	hitpower          int32
-	guardpower        int32
-	hitredlife        int32
-	guardredlife      int32
-	fatal             bool
-	kill              bool
-	priority          int32
-	facing            int32
-	ground_velocity   [3]float32
-	air_velocity      [3]float32
-	down_velocity     [3]float32
-	guard_velocity    [3]float32
-	airguard_velocity [3]float32
-	frame             bool
-	cheeseKO          bool
-	down_recover      bool
-	down_recovertime  int32
-	guardflag         int32
+	playerId            int32
+	playerNo            int
+	fallflag            bool
+	guarded             bool
+	p2getp1state        bool
+	forcestand          bool
+	forcecrouch         bool
+	dizzypoints         int32
+	guardpoints         int32
+	redlife             int32
+	score               float32
+	hitdamage           int32
+	guarddamage         int32
+	power               int32
+	hitpower            int32
+	guardpower          int32
+	hitredlife          int32
+	guardredlife        int32
+	fatal               bool
+	kill                bool
+	priority            int32
+	facing              int32
+	ground_velocity     [3]float32
+	air_velocity        [3]float32
+	down_velocity       [3]float32
+	guard_velocity      [3]float32
+	airguard_velocity   [3]float32
+	frame               bool
+	cheeseKO            bool
+	down_recover        bool
+	down_recovertime    int32
+	guardflag           int32
 }
 
 func (ghv *GetHitVar) clear(c *Char) {
@@ -831,13 +831,13 @@ func (ghv *GetHitVar) clear(c *Char) {
 	originLs := c.localscl * (320 / float32(sys.gameWidth))
 
 	*ghv = GetHitVar{
-		hittime:  -1,
-		yaccel:   0.35 / originLs,
-		xoff:     ghv.xoff,
-		yoff:     ghv.yoff,
-		zoff:     ghv.zoff,
-		hitid:    -1,
-		playerNo: -1,
+		hittime:        -1,
+		yaccel:         0.35 / originLs,
+		xoff:           ghv.xoff,
+		yoff:           ghv.yoff,
+		zoff:           ghv.zoff,
+		hitid:          -1,
+		playerNo:       -1,
 		fall_animtype:  RA_Unknown,
 		fall_xvelocity: float32(math.NaN()),
 		fall_yvelocity: -4.5 / originLs,
@@ -8752,7 +8752,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 					ghv.fall_damage = hd.fall_damage
 					ghv.fall_kill = hd.fall_kill
 					ghv.fall_envshake_time = hd.fall_envshake_time
-					ghv.fall_envshake_freq = hd.fall_envshake_freq 
+					ghv.fall_envshake_freq = hd.fall_envshake_freq
 					ghv.fall_envshake_ampl = int32(float32(hd.fall_envshake_ampl) * scaleratio)
 					ghv.fall_envshake_phase = hd.fall_envshake_phase
 					ghv.fall_envshake_mul = hd.fall_envshake_mul
@@ -9601,7 +9601,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 									getter.ghv.fall_damage = c.hitdef.fall_damage
 									getter.ghv.fall_kill = c.hitdef.fall_kill
 									getter.ghv.fall_envshake_time = c.hitdef.fall_envshake_time
-									getter.ghv.fall_envshake_freq = c.hitdef.fall_envshake_freq 
+									getter.ghv.fall_envshake_freq = c.hitdef.fall_envshake_freq
 									getter.ghv.fall_envshake_ampl = int32(float32(c.hitdef.fall_envshake_ampl) * scaleratio)
 									getter.ghv.fall_envshake_phase = c.hitdef.fall_envshake_phase
 									getter.ghv.fall_envshake_mul = c.hitdef.fall_envshake_mul

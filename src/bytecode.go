@@ -860,7 +860,7 @@ func (sp *StringPool) Add(s string) int {
 }
 
 type BytecodeValue struct {
-	vtype  ValueType
+	vtype ValueType
 	value float64
 }
 
