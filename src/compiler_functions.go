@@ -1729,12 +1729,12 @@ func (c *Compiler) hitDefSub(is IniSection, sc *StateControllerBase) error {
 		hitDef_guard_hittime, VT_Int, 1, false); err != nil {
 		return err
 	}
-	if err := c.paramValue(is, sc, "guard.dist",
-		hitDef_guard_dist, VT_Int, 2, false); err != nil {
+	if err := c.paramValue(is, sc, "guard.dist", // Old syntax
+		hitDef_guard_dist_x, VT_Int, 2, false); err != nil {
 		return err
 	}
-	if err := c.paramValue(is, sc, "guard.dist.width",
-		hitDef_guard_dist, VT_Int, 2, false); err != nil {
+	if err := c.paramValue(is, sc, "guard.dist.width", // New syntax
+		hitDef_guard_dist_x, VT_Int, 2, false); err != nil {
 		return err
 	}
 	if err := c.paramValue(is, sc, "guard.dist.height",

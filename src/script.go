@@ -3738,6 +3738,12 @@ func triggerFunctions(l *lua.LState) {
 			l.Push(lua.LNumber(c.hitdef.p2stateno))
 		case "priority":
 			l.Push(lua.LNumber(c.hitdef.priority))
+		case "id":
+			l.Push(lua.LNumber(c.hitdef.id))
+		case "sparkx":
+			l.Push(lua.LNumber(c.hitdef.sparkxy[0]))
+		case "sparky":
+			l.Push(lua.LNumber(c.hitdef.sparkxy[1]))
 		default:
 			l.RaiseError("\nInvalid argument: %v\n", strArg(l, 1))
 		}
@@ -3760,7 +3766,7 @@ func triggerFunctions(l *lua.LState) {
 		case "ground.animtype":
 			ln = lua.LNumber(c.ghv.groundanimtype)
 		case "fall.animtype":
-			ln = lua.LNumber(c.ghv.fall.animtype)
+			ln = lua.LNumber(c.ghv.fall_animtype)
 		case "type":
 			ln = lua.LNumber(c.ghv._type)
 		case "airtype":
@@ -3812,39 +3818,39 @@ func triggerFunctions(l *lua.LState) {
 		case "fall":
 			ln = lua.LNumber(Btoi(c.ghv.fallflag))
 		case "fall.damage":
-			ln = lua.LNumber(c.ghv.fall.damage)
+			ln = lua.LNumber(c.ghv.fall_damage)
 		case "fall.xvel":
-			if math.IsNaN(float64(c.ghv.fall.xvelocity)) {
+			if math.IsNaN(float64(c.ghv.fall_xvelocity)) {
 				ln = lua.LNumber(-32760) // Winmugen behavior
 			} else {
-				ln = lua.LNumber(c.ghv.fall.xvelocity)
+				ln = lua.LNumber(c.ghv.fall_xvelocity)
 			}
 		case "fall.yvel":
-			ln = lua.LNumber(c.ghv.fall.yvelocity)
+			ln = lua.LNumber(c.ghv.fall_yvelocity)
 		case "fall.zvel":
-			if math.IsNaN(float64(c.ghv.fall.zvelocity)) {
+			if math.IsNaN(float64(c.ghv.fall_zvelocity)) {
 				ln = lua.LNumber(-32760) // Winmugen behavior
 			} else {
-				ln = lua.LNumber(c.ghv.fall.zvelocity)
+				ln = lua.LNumber(c.ghv.fall_zvelocity)
 			}
 		case "fall.recover":
-			ln = lua.LNumber(Btoi(c.ghv.fall.recover))
+			ln = lua.LNumber(Btoi(c.ghv.fall_recover))
 		case "fall.time":
 			ln = lua.LNumber(c.fallTime)
 		case "fall.recovertime":
-			ln = lua.LNumber(c.ghv.fall.recovertime)
+			ln = lua.LNumber(c.ghv.fall_recovertime)
 		case "fall.kill":
-			ln = lua.LNumber(Btoi(c.ghv.fall.kill))
+			ln = lua.LNumber(Btoi(c.ghv.fall_kill))
 		case "fall.envshake.time":
-			ln = lua.LNumber(c.ghv.fall.envshake_time)
+			ln = lua.LNumber(c.ghv.fall_envshake_time)
 		case "fall.envshake.freq":
-			ln = lua.LNumber(c.ghv.fall.envshake_freq)
+			ln = lua.LNumber(c.ghv.fall_envshake_freq)
 		case "fall.envshake.ampl":
-			ln = lua.LNumber(c.ghv.fall.envshake_ampl)
+			ln = lua.LNumber(c.ghv.fall_envshake_ampl)
 		case "fall.envshake.phase":
-			ln = lua.LNumber(c.ghv.fall.envshake_phase)
+			ln = lua.LNumber(c.ghv.fall_envshake_phase)
 		case "fall.envshake.mul":
-			ln = lua.LNumber(c.ghv.fall.envshake_mul)
+			ln = lua.LNumber(c.ghv.fall_envshake_mul)
 		case "attr":
 			// return here, because ln is a
 			// LNumber (we have a LString)
@@ -3855,7 +3861,7 @@ func triggerFunctions(l *lua.LState) {
 		case "guardpoints":
 			ln = lua.LNumber(c.ghv.guardpoints)
 		case "id":
-			ln = lua.LNumber(c.ghv.id)
+			ln = lua.LNumber(c.ghv.playerId)
 		case "playerno":
 			ln = lua.LNumber(c.ghv.playerNo)
 		case "redlife":
@@ -4153,7 +4159,7 @@ func triggerFunctions(l *lua.LState) {
 		case "frame":
 			ln = lua.LNumber(Btoi(c.mhv.frame))
 		case "id":
-			ln = lua.LNumber(c.mhv.id)
+			ln = lua.LNumber(c.mhv.playerId)
 		case "overridden":
 			ln = lua.LNumber(Btoi(c.mhv.overridden))
 		case "playerno":
@@ -5092,6 +5098,10 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.finalDefense * 100))
 		return 1
 	})
+	luaRegister(l, "displayname", func(*lua.LState) int {
+		l.Push(lua.LString(sys.debugWC.gi().displayname))
+		return 1
+	})
 	luaRegister(l, "dizzy", func(*lua.LState) int {
 		l.Push(lua.LBool(sys.debugWC.scf(SCF_dizzy)))
 		return 1
@@ -5418,6 +5428,14 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(retv))
 		return 1
 	})
+	luaRegister(l, "localcoordX", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[0]))
+		return 1
+	})
+	luaRegister(l, "localcoordY", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[1]))
+		return 1
+	})
 	luaRegister(l, "map", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.mapArray[strings.ToLower(strArg(l, 1))]))
 		return 1
@@ -5465,8 +5483,8 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LString(s))
 		return 1
 	})
-	luaRegister(l, "playerno", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.playerNo + 1))
+	luaRegister(l, "playercount", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.playercount()))
 		return 1
 	})
 	luaRegister(l, "playerindex", func(*lua.LState) int {
@@ -5482,12 +5500,17 @@ func triggerFunctions(l *lua.LState) {
 			BytecodeInt(int32(numArg(l, 1)))).ToB()))
 		return 1
 	})
-	luaRegister(l, "playercount", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.playercount()))
+	luaRegister(l, "playerno", func(*lua.LState) int {
+		l.Push(lua.LNumber(sys.debugWC.playerNo + 1))
 		return 1
 	})
-	// randomrange (dedicated functionality already exists in Lua)
+	luaRegister(l, "playernoexist", func(*lua.LState) int {
+		l.Push(lua.LBool(sys.playerNoExist(
+			BytecodeInt(int32(numArg(l, 1)))).ToB()))
+		return 1
+	})
 	// rad (dedicated functionality already exists in Lua)
+	// randomrange (dedicated functionality already exists in Lua)
 	luaRegister(l, "ratiolevel", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.ocd().ratioLevel))
 		return 1
@@ -5608,20 +5631,12 @@ func triggerFunctions(l *lua.LState) {
 		l.Push(lua.LNumber(sys.debugWC.anim.time))
 		return 1
 	})
-	luaRegister(l, "animplayerno", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.debugWC.animPN) + 1)
-		return 1
-	})
 	luaRegister(l, "animtimesum", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.anim.sumtime))
 		return 1
 	})
 	luaRegister(l, "continue", func(*lua.LState) int {
 		l.Push(lua.LBool(sys.continueFlg))
-		return 1
-	})
-	luaRegister(l, "displayname", func(*lua.LState) int {
-		l.Push(lua.LString(sys.debugWC.gi().displayname))
 		return 1
 	})
 	luaRegister(l, "gameend", func(*lua.LState) int {
@@ -5650,14 +5665,6 @@ func triggerFunctions(l *lua.LState) {
 	})
 	luaRegister(l, "localcoord", func(*lua.LState) int {
 		l.Push(lua.LNumber(sys.debugWC.localcoord))
-		return 1
-	})
-	luaRegister(l, "localcoordX", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[0]))
-		return 1
-	})
-	luaRegister(l, "localcoordY", func(*lua.LState) int {
-		l.Push(lua.LNumber(sys.cgi[sys.debugWC.playerNo].localcoord[1]))
 		return 1
 	})
 	luaRegister(l, "matchtime", func(*lua.LState) int {

@@ -731,12 +731,26 @@ func (s *System) playerIDExist(id BytecodeValue) BytecodeValue {
 	}
 	return BytecodeBool(s.playerID(id.ToI()) != nil)
 }
-func (s *System) playerIndexExist(id BytecodeValue) BytecodeValue {
-	if id.IsSF() {
+
+func (s *System) playerIndexExist(idx BytecodeValue) BytecodeValue {
+	if idx.IsSF() {
 		return BytecodeSF()
 	}
-	return BytecodeBool(s.playerIndex(id.ToI()) != nil)
+	return BytecodeBool(s.playerIndex(idx.ToI()) != nil)
 }
+
+func (s *System) playerNoExist(no BytecodeValue) BytecodeValue {
+	if no.IsSF() {
+		return BytecodeSF()
+	}
+	exist := false
+	number := int(no.ToI() - 1)
+	if number >= 0 && number < len(sys.chars) {
+		exist = len(sys.chars[number]) > 0
+	}
+	return BytecodeBool(exist)
+}
+
 func (s *System) playercount() int32 {
 	return int32(len(s.charList.runOrder))
 }
