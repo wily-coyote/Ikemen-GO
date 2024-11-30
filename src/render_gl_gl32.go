@@ -742,6 +742,10 @@ func (r *Renderer) EndFrame() {
 	//gl.BindVertexArray(0)
 }
 
+func (r *Renderer) Await() {
+	gl.Finish()
+}
+
 func (r *Renderer) SetPipeline(eq BlendEquation, src, dst BlendFunc) {
 	gl.BindVertexArray(r.vao)
 	gl.UseProgram(r.spriteShader.program)

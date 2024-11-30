@@ -671,6 +671,10 @@ func (r *Renderer) EndFrame() {
 	gl.DisableVertexAttribArray(uint32(loc))
 }
 
+func (r *Renderer) Await() {
+	gl.Finish()
+}
+
 func (r *Renderer) SetPipeline(eq BlendEquation, src, dst BlendFunc) {
 	gl.UseProgram(r.spriteShader.program)
 
