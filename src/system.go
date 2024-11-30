@@ -2324,6 +2324,8 @@ func (s *System) fight() (reload bool) {
 		s.nextRound()
 		s.roundResetFlg, s.introSkipped = false, false
 		s.reloadFlg, s.reloadStageFlg, s.reloadLifebarFlg = false, false, false
+		s.runMainThreadTask()
+		gfx.Await()
 	}
 	reset()
 
