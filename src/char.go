@@ -811,7 +811,6 @@ type GetHitVar struct {
 	guardpower          int32
 	hitredlife          int32
 	guardredlife        int32
-	fatal               bool
 	kill                bool
 	priority            int32
 	facing              int32
@@ -7850,6 +7849,7 @@ func (c *Char) tick() {
 		} else if c.ghv.guarded &&
 			(c.ghv.damage < c.life || sys.gsf(GSF_globalnoko) || c.asf(ASF_noko) || c.asf(ASF_noguardko)) {
 			switch c.ss.stateType {
+			// All of these state changes remove ctrl from the char
 			// Guarding is not affected by P2getP1state
 			case ST_S:
 				c.selfState(150, -1, -1, 0, "")
@@ -7929,6 +7929,7 @@ func (c *Char) tick() {
 				}
 			}
 			c.setSCF(SCF_ko)
+			c.unsetSCF(SCF_ctrl) // This can be seen in Mugen when you F1 a character
 			sys.charList.p2enemyDelete(c)
 		}
 	}
@@ -8999,10 +9000,6 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 			// Hit behavior on KO
 			if ghvset && getter.ghv.damage >= getter.life {
 				if getter.ghv.kill || !getter.alive() {
-					// Set fatal flag. This removes the ability to use ctrl = 1 in a Statedef
-					if !sys.gsf(GSF_globalnoko) && !getter.asf(ASF_noko) && (!getter.ghv.guarded || !getter.asf(ASF_noguardko)) {
-						getter.ghv.fatal = true
-					}
 					// Set fall behavior
 					if !getter.asf(ASF_nokofall) {
 						getter.ghv.fallflag = true

@@ -3857,12 +3857,7 @@ func (sc stateDef) Run(c *Char) {
 		case stateDef_anim:
 			c.changeAnimEx(exp[1].evalI(c), c.playerNo, string(*(*[]byte)(unsafe.Pointer(&exp[0]))), false)
 		case stateDef_ctrl:
-			// in mugen fatal blow ignores statedef ctrl
-			if !c.ghv.fatal {
-				c.setCtrl(exp[0].evalB(c))
-			} else {
-				c.ghv.fatal = false
-			}
+			c.setCtrl(exp[0].evalB(c))
 		case stateDef_poweradd:
 			c.powerAdd(exp[0].evalI(c))
 		}
