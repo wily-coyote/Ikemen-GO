@@ -194,6 +194,8 @@ func (c *Compiler) assertSpecial(is IniSection, sc *StateControllerBase, _ int8)
 				sc.add(assertSpecial_flag, sc.i64ToExp(int64(ASF_nomakedust)))
 			case "noguardko":
 				sc.add(assertSpecial_flag, sc.i64ToExp(int64(ASF_noguardko)))
+			case "nokofall":
+				sc.add(assertSpecial_flag, sc.i64ToExp(int64(ASF_nokofall)))
 			case "nokovelocity":
 				sc.add(assertSpecial_flag, sc.i64ToExp(int64(ASF_nokovelocity)))
 			case "noailevel":

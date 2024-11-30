@@ -3967,6 +3967,8 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 			out.appendI64Op(OC_ex_isassertedchar, int64(ASF_nomakedust))
 		case "noguardko":
 			out.appendI64Op(OC_ex_isassertedchar, int64(ASF_noguardko))
+		case "nokofall":
+			out.appendI64Op(OC_ex_isassertedchar, int64(ASF_nokofall))
 		case "nokovelocity":
 			out.appendI64Op(OC_ex_isassertedchar, int64(ASF_nokovelocity))
 		case "noailevel":

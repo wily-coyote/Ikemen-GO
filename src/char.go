@@ -96,6 +96,7 @@ const (
 	ASF_runlast
 	ASF_projtypecollision // TODO: Make this a parameter for normal projectiles as well?
 	ASF_nofallhitflag
+	ASF_nokofall // In Mugen this seems hardcoded into Training mode
 )
 
 type GlobalSpecialFlag uint32
@@ -5395,6 +5396,7 @@ func (c *Char) gethitAnimtype() Reaction {
 		}
 	}
 }
+
 func (c *Char) isBound() bool {
 	return c.ghv.idMatch(c.bindToId)
 }
@@ -7905,9 +7907,8 @@ func (c *Char) tick() {
 			c.ghv.down_recovertime -= RandI(1, (c.ghv.down_recovertime+1)/2)
 		}
 		if !c.stchtmp {
-			if c.helperIndex == 0 && (c.alive() || c.ss.no == 0) && c.life <= 0 &&
-				c.ss.moveType != MT_H && !sys.gsf(GSF_globalnoko) && !c.asf(ASF_noko) &&
-				(!c.ghv.guarded || !c.asf(ASF_noguardko)) {
+			if c.helperIndex == 0 && (c.alive() || c.ss.no == 0) && c.life <= 0 && c.ss.moveType != MT_H &&
+				!sys.gsf(GSF_globalnoko) && !c.asf(ASF_noko) && (!c.ghv.guarded || !c.asf(ASF_noguardko)) {
 				c.ghv.fallflag = true
 				c.selfState(5030, -1, -1, 0, "") // Mugen sets control to 0 here
 				c.ss.time = 1
@@ -8708,10 +8709,6 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				} else {
 					ghv._type = ghv.groundtype
 				}
-				if !math.IsNaN(float64(hd.score[0])) {
-					ghv.score = hd.score[0]
-				}
-				ghv.fatal = false
 				// If attack is guarded
 				if hitType == 2 {
 					ghv.guarded = true
@@ -8743,7 +8740,6 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 					getter.fallTime = 0
 
 					// Fall group
-					ghv.fall_animtype = hd.fall_animtype
 					ghv.fall_xvelocity = hd.fall_xvelocity * scaleratio
 					ghv.fall_yvelocity = hd.fall_yvelocity * scaleratio
 					ghv.fall_zvelocity = hd.fall_zvelocity * scaleratio
@@ -8826,8 +8822,14 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 						}
 					}
 				}
-				// These happen both on hit and on block
-				ghv.animtype = getter.gethitAnimtype() // This must be placed after ghv.yvel
+				// Anim reaction types
+				ghv.groundanimtype = hd.animtype
+				ghv.airanimtype = hd.air_animtype
+				ghv.fall_animtype = hd.fall_animtype
+				// Determine the actual animation type to use. Must be placed after ghv.yvel and the animtype ghv's
+				ghv.animtype = getter.gethitAnimtype()
+				// Min, Maxdist and Snap parameters
+				// When Snap is defined, Min and Max distances are set to Snap
 				byPos := c.pos
 				if proj {
 					for i, p := range pos {
@@ -8835,6 +8837,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 					}
 				}
 				snap := [...]float32{float32(math.NaN()), float32(math.NaN()), float32(math.NaN())}
+				// MinDist X
 				if !math.IsNaN(float64(hd.mindist[0])) {
 					if byf < 0 {
 						if getter.pos[0] > byPos[0]-hd.mindist[0] {
@@ -8846,6 +8849,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 						}
 					}
 				}
+				// MaxDist X
 				if !math.IsNaN(float64(hd.maxdist[0])) {
 					if byf < 0 {
 						if getter.pos[0]*(getter.localscl/c.localscl) < byPos[0]-hd.maxdist[0] {
@@ -8857,6 +8861,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 						}
 					}
 				}
+				// Min and MaxDist Y
 				if hitType == 1 || getter.ss.stateType == ST_A {
 					if !math.IsNaN(float64(hd.mindist[1])) {
 						if getter.pos[1]*(getter.localscl/c.localscl) < byPos[1]+hd.mindist[1] {
@@ -8869,6 +8874,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 						}
 					}
 				}
+				// Min and MaxDist Z
 				if !math.IsNaN(float64(hd.mindist[2])) {
 					if getter.pos[2]*(getter.localscl/c.localscl) < byPos[2]+hd.mindist[2] {
 						snap[2] = byPos[2] + hd.mindist[2]
@@ -8879,6 +8885,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 						snap[2] = byPos[2] + hd.maxdist[2]
 					}
 				}
+				// Save snap offsets
 				if !math.IsNaN(float64(snap[0])) {
 					ghv.xoff = snap[0]*scaleratio - getter.pos[0]
 				}
@@ -8888,6 +8895,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				if !math.IsNaN(float64(snap[2])) {
 					ghv.zoff = snap[2]*scaleratio - getter.pos[2]
 				}
+				// Snap time
 				if hd.snaptime != 0 && getter.hoIdx < 0 {
 					getter.setBindToId(c)
 					getter.setBindTime(hd.snaptime + Btoi(hd.snaptime > 0 && !c.pause()))
@@ -8927,8 +8935,6 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				ghv.airguard_velocity[0] = hd.airguard_velocity[0] * scaleratio * -byf
 				ghv.airguard_velocity[1] = hd.airguard_velocity[1] * scaleratio
 				ghv.airguard_velocity[2] = hd.airguard_velocity[2] * scaleratio
-				ghv.airanimtype = hd.air_animtype
-				ghv.groundanimtype = hd.animtype
 				ghv.priority = hd.priority
 			}
 			if sys.super > 0 {
@@ -8993,9 +8999,16 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 			// Hit behavior on KO
 			if ghvset && getter.ghv.damage >= getter.life {
 				if getter.ghv.kill || !getter.alive() {
-					getter.ghv.fatal = true
-					getter.ghv.fallflag = true
-					getter.ghv.animtype = getter.gethitAnimtype() // Update to fall anim type
+					// Set fatal flag. This removes the ability to use ctrl = 1 in a Statedef
+					if !sys.gsf(GSF_globalnoko) && !getter.asf(ASF_noko) && (!getter.ghv.guarded || !getter.asf(ASF_noguardko)) {
+						getter.ghv.fatal = true
+					}
+					// Set fall behavior
+					if !getter.asf(ASF_nokofall) {
+						getter.ghv.fallflag = true
+						getter.ghv.animtype = getter.gethitAnimtype() // Update to fall anim type
+					}
+					// Add extra velocity
 					if getter.kovelocity && !getter.asf(ASF_nokovelocity) {
 						if getter.ss.stateType == ST_A {
 							if getter.ghv.xvel < 0 {
@@ -9043,24 +9056,27 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 				}
 			}
 		}
-		// Score, counter hit, combo
+		// Counter hit flag
+		if hitType == 1 {
+			c.counterHit = getter.ss.moveType == MT_A
+		}
+		// Score and combo counters
+		// ReversalDef can also add to them
 		if Abs(hitType) == 1 {
-			if hitType > 0 {
-				if !math.IsNaN(float64(hd.score[0])) {
-					c.scoreAdd(hd.score[0])
-				}
-				if getter.player {
-					if !math.IsNaN(float64(hd.score[1])) {
-						getter.scoreAdd(hd.score[1])
-					}
-				}
-				c.counterHit = getter.ss.moveType == MT_A
-			}
 			if (ghvset || getter.csf(CSF_gethit)) && getter.hoIdx < 0 &&
 				!(c.hitdef.air_type == HT_None && getter.ss.stateType == ST_A || getter.ss.stateType != ST_A && c.hitdef.ground_type == HT_None) {
 				getter.receivedHits += hd.numhits
 				if c.teamside != -1 {
 					sys.lifebar.co[c.teamside].combo += hd.numhits
+				}
+			}
+			if !math.IsNaN(float64(hd.score[0])) {
+				c.scoreAdd(hd.score[0])
+				getter.ghv.score = hd.score[0] // TODO: The gethitvar refers to the enemy's score, which is counterintuitive
+			}
+			if getter.player {
+				if !math.IsNaN(float64(hd.score[1])) {
+					getter.scoreAdd(hd.score[1])
 				}
 			}
 		}
