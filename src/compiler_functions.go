@@ -5555,6 +5555,51 @@ func (c *Compiler) transformClsn(is IniSection, sc *StateControllerBase, _ int8)
 	return *ret, err
 }
 
+func (c *Compiler) moveHitSet(is IniSection, sc *StateControllerBase, _ int8) (StateController, error) {
+	ret, err := (*moveHitSet)(sc), c.stateSec(is, func() error {
+		if err := c.paramValue(is, sc, "redirectid",
+			moveHitSet_redirectid, VT_Int, 1, false); err != nil {
+			return err
+		}
+		var param bool
+		if err := c.stateParam(is, "movehit", false, func(data string) error {
+            param = true
+			return c.scAdd(sc, moveHitSet_movehit, data, VT_Int, 1)
+		}); err != nil {
+			return err
+		}
+		if err := c.stateParam(is, "moveguarded", false, func(data string) error {
+            if param {
+                return Error("Conflicting MoveHitSet parameters")
+            }
+            param = true
+			return c.scAdd(sc, moveHitSet_moveguarded, data, VT_Int, 1)
+		}); err != nil {
+			return err
+		}
+		if err := c.stateParam(is, "movereversed", false, func(data string) error {
+            if param {
+                return Error("Conflicting MoveHitSet parameters")
+            }
+            param = true
+			return c.scAdd(sc, moveHitSet_movereversed, data, VT_Int, 1)
+		}); err != nil {
+			return err
+		}
+		if err := c.stateParam(is, "movecountered", false, func(data string) error {
+            param = true // Does not conflict with others
+			return c.scAdd(sc, moveHitSet_movecountered, data, VT_Bool, 1)
+		}); err != nil {
+			return err
+		}
+		if !param {
+			return Error("No valid MoveHitSet parameters found")
+		}
+		return nil
+	})
+	return *ret, err
+}
+
 // It's just a Null... Has no effect whatsoever.
 func (c *Compiler) null(is IniSection, sc *StateControllerBase, _ int8) (StateController, error) {
 	return nullStateController, nil

@@ -12067,6 +12067,43 @@ func (sc transformClsn) Run(c *Char, _ []int32) bool {
 	return false
 }
 
+type moveHitSet StateControllerBase
+
+const (
+	moveHitSet_movehit byte = iota
+	moveHitSet_moveguarded
+	moveHitSet_movereversed
+	moveHitSet_movecountered
+	moveHitSet_redirectid
+)
+
+func (sc moveHitSet) Run(c *Char, _ []int32) bool {
+	crun := c
+	StateControllerBase(sc).run(c, func(id byte, exp []BytecodeExp) bool {
+		switch id {
+		case moveHitSet_movehit:
+			crun.mctype = MC_Hit
+			crun.mctime = Max(0, exp[0].evalI(c))
+		case moveHitSet_moveguarded:
+			crun.mctype = MC_Guarded
+			crun.mctime = Max(0, exp[0].evalI(c))
+		case moveHitSet_movereversed:
+			crun.mctype = MC_Reversed
+			crun.mctime = Max(0, exp[0].evalI(c))
+		case moveHitSet_movecountered:
+			crun.counterHit = exp[0].evalB(c)
+		case moveHitSet_redirectid:
+			if rid := sys.playerID(exp[0].evalI(c)); rid != nil {
+				crun = rid
+			} else {
+				return false
+			}
+		}
+		return true
+	})
+	return false
+}
+
 // StateDef data struct
 type StateBytecode struct {
 	stateType StateType

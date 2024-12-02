@@ -81,6 +81,7 @@ func newCompiler() *Compiler {
 		"makedust":           c.makeDust,
 		"modifyexplod":       c.modifyExplod,
 		"movehitreset":       c.moveHitReset,
+		"movehitset":         c.moveHitSet,
 		"nothitby":           c.notHitBy,
 		"null":               c.null,
 		"offset":             c.offset,
