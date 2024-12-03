@@ -1556,16 +1556,16 @@ func (c *Compiler) hitDefSub(is IniSection, sc *StateControllerBase) error {
 		if err != nil {
 			return err
 		}
-		at := AT_Hit
+		at := TT_Hit
 		data = strings.TrimSpace(data)
 		if c.token == "," && len(data) > 0 {
 			switch data[0] {
 			case 'H', 'h':
-				at = AT_Hit
+				at = TT_Hit
 			case 'M', 'm':
-				at = AT_Miss
+				at = TT_Miss
 			case 'D', 'd':
-				at = AT_Dodge
+				at = TT_Dodge
 			default:
 				return Error("Invalid value: " + data)
 			}

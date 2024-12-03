@@ -497,13 +497,12 @@ const (
 	HT_Unknown HitType = -1
 )
 
-// Aiuchi = trading hits
-type AiuchiType int32
+type TradeType int32
 
 const (
-	AT_Hit AiuchiType = iota
-	AT_Miss
-	AT_Dodge
+	TT_Hit TradeType = iota
+	TT_Miss
+	TT_Dodge
 )
 
 type HitDef struct {
@@ -517,7 +516,7 @@ type HitDef struct {
 	animtype                   Reaction
 	air_animtype               Reaction
 	priority                   int32
-	bothhittype                AiuchiType
+	prioritytype               TradeType
 	hitdamage                  int32
 	guarddamage                int32
 	pausetime                  int32
@@ -641,7 +640,7 @@ func (hd *HitDef) clear(localscl float32) {
 		animtype:           RA_Light,
 		air_animtype:       RA_Unknown,
 		priority:           4,
-		bothhittype:        AT_Hit,
+		prioritytype:       TT_Hit,
 		sparkno:            -1,
 		sparkno_ffx:        "f",
 		sparkangle:         0,
@@ -7118,8 +7117,9 @@ func (c *Char) hittableByChar(ghd *HitDef, getter *Char, gst StateType, proj boo
 		return true
 	}
 
-	// Check if enemy can trade hits with original char
-	// This should probably be a function that both players access instead of being handled like this
+	// Check if the enemy (c) can also hit the player
+	// Used to check for instance if a lower priority exchanges with a higher priority but the higher priority Clsn1 misses
+	// This could probably be a function that both players access instead of being handled like this
 	countercheck := func(hd *HitDef) bool {
 		if proj {
 			return false
@@ -7147,13 +7147,17 @@ func (c *Char) hittableByChar(ghd *HitDef, getter *Char, gst StateType, proj boo
 		case ghd.reversal_attr > 0:
 			return true
 		case ghd.priority < c.hitdef.priority:
+			// Run countercheck
 		case ghd.priority == c.hitdef.priority:
 			switch {
-			case c.hitdef.bothhittype == AT_Dodge:
-			case ghd.bothhittype != AT_Hit:
-			case c.hitdef.bothhittype == AT_Hit:
-				if (c.hitdef.p1stateno >= 0 || c.hitdef.attr&int32(AT_AT) != 0 &&
-					ghd.hitonce != 0) && countercheck(&c.hitdef) {
+			case c.hitdef.prioritytype == TT_Dodge:
+				// Run countercheck
+			case ghd.prioritytype == TT_Dodge:
+				// Run countercheck
+			case ghd.prioritytype == TT_Miss:
+				// Run countercheck
+			case c.hitdef.prioritytype == TT_Hit:
+				if (c.hitdef.p1stateno >= 0 || c.hitdef.attr&int32(AT_AT) != 0 && ghd.hitonce != 0) && countercheck(&c.hitdef) {
 					c.atktmp = -1
 					return getter.atktmp < 0 || Rand(0, 1) == 1
 				}

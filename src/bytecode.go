@@ -6342,7 +6342,7 @@ func (sc hitDef) runSub(c *Char, hd *HitDef, id byte, exp []BytecodeExp) bool {
 		hd.guardsound_channel = exp[0].evalI(c)
 	case hitDef_priority:
 		hd.priority = exp[0].evalI(c)
-		hd.bothhittype = AiuchiType(exp[1].evalI(c))
+		hd.prioritytype = TradeType(exp[1].evalI(c))
 	case hitDef_p1stateno:
 		hd.p1stateno = exp[0].evalI(c)
 	case hitDef_p2stateno:
@@ -7311,7 +7311,7 @@ func (sc modifyProjectile) Run(c *Char, _ []int32) bool {
 			case hitDef_priority:
 				eachProj(func(p *Projectile) {
 					p.hitdef.priority = exp[0].evalI(c)
-					p.hitdef.bothhittype = AiuchiType(exp[1].evalI(c))
+					p.hitdef.prioritytype = TradeType(exp[1].evalI(c))
 				})
 			case hitDef_p1stateno:
 				eachProj(func(p *Projectile) {
