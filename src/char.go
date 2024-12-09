@@ -6438,35 +6438,79 @@ func (c *Char) appendLifebarAction(text string, snd, spr [2]int32, anim, time in
 	if _, ok := sys.lifebar.missing["[action]"]; ok {
 		return
 	}
-	if snd[0] != -1 {
+
+	// Play sound
+	if snd[0] != -1 && snd[1] != -1 {
 		sys.lifebar.snd.play(snd, 100, 0, 0, 0, 0)
 	}
+
+	// If sound only, stop here
+	if anim == -1 && (spr[0] == -1 || spr[1] == -1) && text == "" {
+		return
+	}
+
+	teammsg := sys.lifebar.ac[c.teamside]
+
+	// If adding a new message while exceeding the maximum number allowed, make the oldest message go away faster
+	var count int32
+	for _, v := range teammsg.messages {
+		if !v.del {
+			count++
+		}
+	}
+	if count >= teammsg.max {
+		var oldest int
+		var oldesttimer int32
+		// Reset timer for last messages if "top"
+		for i := 0; i < len(teammsg.messages); i++ {
+			msg := teammsg.messages[i]
+			if !msg.del && msg.resttime > 0 && msg.agetimer > oldesttimer {
+				oldest = i
+				oldesttimer = msg.agetimer
+			}
+		}
+		if oldest < len(teammsg.messages) && teammsg.messages[oldest] != nil {
+			teammsg.messages[oldest].resttime = 0
+		}
+	}
+
+	// Use index 0 if "top", otherwise find the first free message slot
 	index := 0
 	if !top {
-		for k, v := range sys.lifebar.ac[c.teamside].messages {
+		for k, v := range teammsg.messages {
 			if v.del {
-				sys.lifebar.ac[c.teamside].messages = removeLbMsg(sys.lifebar.ac[c.teamside].messages, k)
+				teammsg.messages = removeLbMsg(teammsg.messages, k)
 				break
 			}
 			index++
 		}
 	}
+
+	// Get default display time from the lifebar
 	if time == -1 {
-		time = sys.lifebar.ac[c.teamside].displaytime
+		time = teammsg.displaytime
 	}
+
+	// Prepare contents of new message
 	msg := newLbMsg(text, int32(float32(time)*timemul), c.teamside)
-	if anim != -1 || spr[0] != -1 {
-		delete(sys.lifebar.ac[c.teamside].is, fmt.Sprintf("team%v.front.anim", c.teamside+1))
-		delete(sys.lifebar.ac[c.teamside].is, fmt.Sprintf("team%v.front.spr", c.teamside+1))
-		if anim != -1 {
-			sys.lifebar.ac[c.teamside].is[fmt.Sprintf("team%v.front.anim", c.teamside+1)] = fmt.Sprintf("%v", anim)
-		} else {
-			sys.lifebar.ac[c.teamside].is[fmt.Sprintf("team%v.front.spr", c.teamside+1)] = fmt.Sprintf("%v,%v", spr[0], spr[1])
-		}
-		msg.bg = *ReadAnimLayout(fmt.Sprintf("team%v.bg.", c.teamside+1), sys.lifebar.ac[c.teamside].is, sys.lifebar.sff, sys.lifebar.at, 2)
-		msg.front = *ReadAnimLayout(fmt.Sprintf("team%v.front.", c.teamside+1), sys.lifebar.ac[c.teamside].is, sys.lifebar.sff, sys.lifebar.at, 2)
+	delete(teammsg.is, fmt.Sprintf("team%v.front.anim", c.teamside+1))
+	delete(teammsg.is, fmt.Sprintf("team%v.front.spr", c.teamside+1))
+
+	// Read animation
+	if anim != -1 {
+		teammsg.is[fmt.Sprintf("team%v.front.anim", c.teamside+1)] = fmt.Sprintf("%v", anim)
 	}
-	sys.lifebar.ac[c.teamside].messages = insertLbMsg(sys.lifebar.ac[c.teamside].messages, msg, index)
+	// Read sprite
+	if spr[0] != -1 && spr[1] != -1 {
+		teammsg.is[fmt.Sprintf("team%v.front.spr", c.teamside+1)] = fmt.Sprintf("%v,%v", spr[0], spr[1])
+	}
+	// Read background
+	msg.bg = *ReadAnimLayout(fmt.Sprintf("team%v.bg.", c.teamside+1), teammsg.is, sys.lifebar.sff, sys.lifebar.at, 2)
+	// Read front
+	msg.front = *ReadAnimLayout(fmt.Sprintf("team%v.front.", c.teamside+1), teammsg.is, sys.lifebar.sff, sys.lifebar.at, 2)
+
+	// Insert new message
+	teammsg.messages = insertLbMsg(teammsg.messages, msg, index)
 }
 
 func (c *Char) appendDialogue(s string, reset bool) {
