@@ -3753,10 +3753,6 @@ func triggerFunctions(l *lua.LState) {
 		c := sys.debugWC
 		var ln lua.LNumber
 		switch strArg(l, 1) {
-		case "xveladd":
-			ln = lua.LNumber(0)
-		case "yveladd":
-			ln = lua.LNumber(0)
 		case "fall.envshake.dir":
 			ln = lua.LNumber(0)
 		case "animtype":
@@ -3798,7 +3794,7 @@ func triggerFunctions(l *lua.LState) {
 		case "zoff":
 			ln = lua.LNumber(c.ghv.zoff)
 		case "xvel":
-			ln = lua.LNumber(c.ghv.xvel * c.facing)
+			ln = lua.LNumber(c.ghv.xvel)
 		case "yvel":
 			ln = lua.LNumber(c.ghv.yvel)
 		case "zvel":
@@ -3809,6 +3805,10 @@ func triggerFunctions(l *lua.LState) {
 			ln = lua.LNumber(c.ghv.yaccel)
 		case "zaccel":
 			ln = lua.LNumber(c.ghv.zaccel)
+		case "xveladd":
+			ln = lua.LNumber(c.ghv.xveladd)
+		case "yveladd":
+			ln = lua.LNumber(c.ghv.yveladd)
 		case "hitid", "chainid":
 			ln = lua.LNumber(c.ghv.chainId())
 		case "guarded":

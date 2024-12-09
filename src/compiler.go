@@ -2168,10 +2168,6 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 		isFlag := -1
 		switch c.token {
 		// no-op triggers
-		case "xveladd":
-			bv.SetF(0)
-		case "yveladd":
-			bv.SetF(0)
 		case "fall.envshake.dir":
 			bv.SetI(0)
 		default:
@@ -2228,6 +2224,10 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 				opc = OC_ex_gethitvar_yaccel
 			case "zaccel":
 				opc = OC_ex_gethitvar_zaccel
+			case "xveladd":
+				opc = OC_ex_gethitvar_xveladd
+			case "yveladd":
+				opc = OC_ex_gethitvar_yveladd
 			case "hitid", "chainid":
 				opc = OC_ex_gethitvar_chainid
 			case "guarded":

@@ -402,7 +402,7 @@ func (cv *CharVelocity) init() {
 	cv.air.gethit.airrecover.fwd = 0.0
 	cv.air.gethit.airrecover.up = -2.0
 	cv.air.gethit.airrecover.down = 1.5
-	cv.air.gethit.ko.add = [...]float32{-2, -2}
+	cv.air.gethit.ko.add = [...]float32{-2.5, -2}
 	cv.air.gethit.ko.ymin = -3
 	cv.ground.gethit.ko.xmul = 0.66
 	cv.ground.gethit.ko.add = [...]float32{-2.5, -2}
@@ -774,6 +774,8 @@ type GetHitVar struct {
 	xaccel              float32
 	yaccel              float32
 	zaccel              float32
+	xveladd             float32
+	yveladd             float32
 	hitid               int32
 	xoff                float32
 	yoff                float32
@@ -9054,9 +9056,11 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 					}
 					// Add extra velocity
 					if getter.kovelocity && !getter.asf(ASF_nokovelocity) {
+						startx := getter.ghv.xvel
+						starty := getter.ghv.yvel
 						if getter.ss.stateType == ST_A {
-							if getter.ghv.xvel < 0 {
-								getter.ghv.xvel += getter.gi().velocity.air.gethit.ko.add[0]
+							if getter.ghv.xvel != 0 {
+								getter.ghv.xvel += getter.gi().velocity.air.gethit.ko.add[0] * SignF(getter.ghv.xvel) * -1
 							}
 							if getter.ghv.yvel <= 0 {
 								getter.ghv.yvel += getter.gi().velocity.air.gethit.ko.add[1]
@@ -9068,8 +9072,8 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 							if getter.ghv.yvel == 0 {
 								getter.ghv.xvel *= getter.gi().velocity.ground.gethit.ko.xmul
 							}
-							if getter.ghv.xvel < 0 {
-								getter.ghv.xvel += getter.gi().velocity.ground.gethit.ko.add[0]
+							if getter.ghv.xvel != 0 {
+								getter.ghv.xvel += getter.gi().velocity.ground.gethit.ko.add[0] * SignF(getter.ghv.xvel) * -1
 							}
 							if getter.ghv.yvel <= 0 {
 								getter.ghv.yvel += getter.gi().velocity.ground.gethit.ko.add[1]
@@ -9078,6 +9082,10 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 								}
 							}
 						}
+						// Save difference to xveladd and yveladd
+						// Not particularly useful, but it's a trigger that was documented in Mugen and did not work
+						getter.ghv.xveladd = getter.ghv.xvel - startx
+						getter.ghv.yveladd = getter.ghv.yvel - starty
 					}
 				} else {
 					getter.ghv.damage = getter.life - 1

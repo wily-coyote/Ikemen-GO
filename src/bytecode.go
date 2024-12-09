@@ -495,6 +495,8 @@ const (
 	OC_ex_gethitvar_xaccel
 	OC_ex_gethitvar_yaccel
 	OC_ex_gethitvar_zaccel
+	OC_ex_gethitvar_xveladd
+	OC_ex_gethitvar_yveladd
 	OC_ex_gethitvar_chainid
 	OC_ex_gethitvar_guarded
 	OC_ex_gethitvar_isbound
@@ -2451,6 +2453,10 @@ func (be BytecodeExp) run_ex(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushF(c.ghv.yaccel * (c.localscl / oc.localscl))
 	case OC_ex_gethitvar_zaccel:
 		sys.bcStack.PushF(c.ghv.zaccel * (c.localscl / oc.localscl))
+	case OC_ex_gethitvar_xveladd:
+		sys.bcStack.PushF(c.ghv.xveladd * (c.localscl / oc.localscl)) // Mugen has these two apparently dummied out
+	case OC_ex_gethitvar_yveladd:
+		sys.bcStack.PushF(c.ghv.yveladd * (c.localscl / oc.localscl))
 	case OC_ex_gethitvar_chainid:
 		sys.bcStack.PushI(c.ghv.chainId())
 	case OC_ex_gethitvar_guarded:
@@ -11833,8 +11839,8 @@ const (
 	getHitVarSet_attr
 	getHitVarSet_chainid
 	getHitVarSet_ctrltime
-	getHitVarSet_down_recovertime
 	getHitVarSet_down_recover
+	getHitVarSet_down_recovertime
 	getHitVarSet_fall
 	getHitVarSet_fall_damage
 	getHitVarSet_fall_envshake_ampl
@@ -11859,11 +11865,11 @@ const (
 	getHitVarSet_recovertime
 	getHitVarSet_slidetime
 	getHitVarSet_xvel
+	getHitVarSet_yvel
+	getHitVarSet_zvel
 	getHitVarSet_xaccel
 	getHitVarSet_yaccel
 	getHitVarSet_zaccel
-	getHitVarSet_yvel
-	getHitVarSet_zvel
 	getHitVarSet_redirectid
 )
 
