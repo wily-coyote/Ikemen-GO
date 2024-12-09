@@ -9125,6 +9125,7 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 			}
 		}
 		// Hitspark creation function
+		// This used to be called only when a hitspark is actually created, but with the addition of the MoveHitVar trigger it became useful to save the offset at all times
 		hitspark := func(p1, p2 *Char, animNo int32, ffx string, sparkangle float32) {
 			// This is mostly for offset in projectiles
 			off := [3]float32{pos[0], pos[1], pos[2]}
@@ -9158,52 +9159,55 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 			}
 
 			// Save hitspark position to MoveHitVar
+			// Currently it is saved even if the hit is a projectile
 			c.mhv.sparkxy[0] = off[0]
 			c.mhv.sparkxy[1] = off[1]
 
-			if e, i := c.newExplod(); e != nil {
-				e.anim = c.getAnim(animNo, ffx, true)
-				e.layerno = 1 // e.ontop = true
-				e.sprpriority = math.MinInt32
-				e.ownpal = true
-				e.relativePos = [...]float32{off[0], off[1], off[2]}
-				e.supermovetime = -1
-				e.pausemovetime = -1
-				e.localscl = 1
-				if ffx == "" || ffx == "s" {
-					e.scale = [...]float32{c.localscl, c.localscl}
-				} else if e.anim != nil {
-					e.anim.start_scale[0] *= c.localscl
-					e.anim.start_scale[1] *= c.localscl
+			if animNo >= 0 {
+				if e, i := c.newExplod(); e != nil {
+					e.anim = c.getAnim(animNo, ffx, true)
+					e.layerno = 1 // e.ontop = true
+					e.sprpriority = math.MinInt32
+					e.ownpal = true
+					e.relativePos = [...]float32{off[0], off[1], off[2]}
+					e.supermovetime = -1
+					e.pausemovetime = -1
+					e.localscl = 1
+					if ffx == "" || ffx == "s" {
+						e.scale = [...]float32{c.localscl, c.localscl}
+					} else if e.anim != nil {
+						e.anim.start_scale[0] *= c.localscl
+						e.anim.start_scale[1] *= c.localscl
+					}
+					e.setPos(p1)
+					e.anglerot[0] = sparkangle
+					c.insertExplod(i)
 				}
-				e.setPos(p1)
-				e.anglerot[0] = sparkangle
-				c.insertExplod(i)
 			}
 		}
 		// Play hit sounds and sparks
 		if Abs(hitType) == 1 {
-			if hd.sparkno >= 0 {
+			//if hd.sparkno >= 0 {
 				if hd.reversal_attr > 0 {
 					hitspark(getter, c, hd.sparkno, hd.sparkno_ffx, hd.sparkangle)
 				} else {
 					hitspark(c, getter, hd.sparkno, hd.sparkno_ffx, hd.sparkangle)
 				}
-			}
-			if hd.hitsound[0] >= 0 {
+			//}
+			if hd.hitsound[0] >= 0 && hd.hitsound[1] >= 0 {
 				vo := int32(100)
 				c.playSound(hd.hitsound_ffx, false, 0, hd.hitsound[0], hd.hitsound[1],
 					hd.hitsound_channel, vo, 0, 1, getter.localscl, &getter.pos[0], true, 0, 0, 0, 0, false, false)
 			}
 		} else {
-			if hd.guard_sparkno >= 0 {
+			//if hd.guard_sparkno >= 0 {
 				if hd.reversal_attr > 0 {
 					hitspark(getter, c, hd.guard_sparkno, hd.guard_sparkno_ffx, hd.guard_sparkangle)
 				} else {
 					hitspark(c, getter, hd.guard_sparkno, hd.guard_sparkno_ffx, hd.guard_sparkangle)
 				}
-			}
-			if hd.guardsound[0] >= 0 {
+			//}
+			if hd.guardsound[0] >= 0 && hd.guardsound[1] >= 0 {
 				vo := int32(100)
 				c.playSound(hd.guardsound_ffx, false, 0, hd.guardsound[0], hd.guardsound[1],
 					hd.guardsound_channel, vo, 0, 1, getter.localscl, &getter.pos[0], true, 0, 0, 0, 0, false, false)
