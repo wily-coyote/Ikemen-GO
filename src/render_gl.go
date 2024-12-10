@@ -502,7 +502,7 @@ func (r *Renderer) Init() {
 		}
 
 		// Use loaded shader contents from System
-		customPostShader, err := newShaderProgram(string(vertContent) + "\x00", string(fragContent) + "\x00", "", "Postprocess Shader", true)
+		customPostShader, err := newShaderProgram(string(vertContent)+"\x00", string(fragContent)+"\x00", "", "Postprocess Shader", true)
 		if err != nil {
 			sys.errLog.Printf("Failed to compile post-processing shader: %v", err)
 			// Fallback to identity shader
