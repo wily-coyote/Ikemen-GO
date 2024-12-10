@@ -491,16 +491,16 @@ func (r *Renderer) Init() {
 	r.postProcessingShader.RegisterUniforms("Texture", "TextureSize", "CurrentTime")
 
 	// If a post-processing shader is specified in the configuration, load it
-	if sys.postProcessingShader != "" {
+	if sys.externalShader != "" {
 		// Load vertex shader
-		vertPath := sys.postProcessingShader + ".vert"
+		vertPath := sys.externalShader + ".vert"
 		vertContent, err := os.ReadFile(vertPath)
 		if err != nil {
 			chk(fmt.Errorf("failed to read vertex shader %s: %w", vertPath, err))
 		}
 
 		// Load fragment shader
-		fragPath := sys.postProcessingShader + ".frag"
+		fragPath := sys.externalShader + ".frag"
 		fragContent, err := os.ReadFile(fragPath)
 		if err != nil {
 			chk(fmt.Errorf("failed to read fragment shader %s: %w", fragPath, err))

@@ -324,7 +324,7 @@ type System struct {
 	lifebarLocalcoord    [2]int32
 
 	// Shader Vars
-	postProcessingShader    string
+	externalShader          string
 	multisampleAntialiasing int32
 
 	// Icon
