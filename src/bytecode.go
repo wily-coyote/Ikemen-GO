@@ -829,6 +829,10 @@ const (
 	OC_ex2_hitdefvar_id
 	OC_ex2_hitdefvar_sparkx
 	OC_ex2_hitdefvar_sparky
+	OC_ex2_hitdefvar_pausetime
+	OC_ex2_hitdefvar_guard_pausetime
+	OC_ex2_hitdefvar_shaketime
+	OC_ex2_hitdefvar_guard_shaketime
 	OC_ex2_hitbyattr
 )
 const (
@@ -3460,6 +3464,14 @@ func (be BytecodeExp) run_ex2(c *Char, i *int, oc *Char) {
 		sys.bcStack.PushF(c.hitdef.sparkxy[0] * (c.localscl / oc.localscl))
 	case OC_ex2_hitdefvar_sparky:
 		sys.bcStack.PushF(c.hitdef.sparkxy[1] * (c.localscl / oc.localscl))
+	case OC_ex2_hitdefvar_pausetime:
+		sys.bcStack.PushI(c.hitdef.pausetime)
+	case OC_ex2_hitdefvar_guard_pausetime:
+		sys.bcStack.PushI(c.hitdef.guard_pausetime)
+	case OC_ex2_hitdefvar_shaketime:
+		sys.bcStack.PushI(c.hitdef.shaketime)
+	case OC_ex2_hitdefvar_guard_shaketime:
+		sys.bcStack.PushI(c.hitdef.guard_shaketime)
 	case OC_ex2_hitbyattr:
 		sys.bcStack.PushB(c.hitByAttrTrigger(*(*int32)(unsafe.Pointer(&be[*i]))))
 		*i += 4

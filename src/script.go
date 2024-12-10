@@ -3744,6 +3744,14 @@ func triggerFunctions(l *lua.LState) {
 			l.Push(lua.LNumber(c.hitdef.sparkxy[0]))
 		case "sparky":
 			l.Push(lua.LNumber(c.hitdef.sparkxy[1]))
+		case "pausetime":
+			l.Push(lua.LNumber(c.hitdef.pausetime))
+		case "guard.pausetime":
+			l.Push(lua.LNumber(c.hitdef.guard_pausetime))
+		case "shaketime":
+			l.Push(lua.LNumber(c.hitdef.shaketime))
+		case "guard.shaketime":
+			l.Push(lua.LNumber(c.hitdef.guard_shaketime))
 		default:
 			l.RaiseError("\nInvalid argument: %v\n", strArg(l, 1))
 		}

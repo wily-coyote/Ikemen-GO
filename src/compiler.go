@@ -2459,6 +2459,14 @@ func (c *Compiler) expValue(out *BytecodeExp, in *string,
 			opc = OC_ex2_hitdefvar_sparkx
 		case "sparky":
 			opc = OC_ex2_hitdefvar_sparky
+		case "pausetime":
+			opc = OC_ex2_hitdefvar_pausetime
+		case "guard.pausetime":
+			opc = OC_ex2_hitdefvar_guard_pausetime
+		case "shaketime":
+			opc = OC_ex2_hitdefvar_shaketime
+		case "guard.shaketime":
+			opc = OC_ex2_hitdefvar_guard_shaketime
 		default:
 			return bvNone(), Error("Invalid data: " + c.token)
 		}
