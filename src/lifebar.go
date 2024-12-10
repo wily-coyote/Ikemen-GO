@@ -1668,10 +1668,10 @@ type LifeBarAction struct {
 func newLifeBarAction() *LifeBarAction {
 	return &LifeBarAction{
 		displaytime: 90,
-		showspeed: 8,
-		hidespeed: 4,
-		max: 8,
-		is: make(map[string]string),
+		showspeed:   8,
+		hidespeed:   4,
+		max:         8,
+		is:          make(map[string]string),
 	}
 }
 

@@ -9196,11 +9196,11 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 		// Play hit sounds and sparks
 		if Abs(hitType) == 1 {
 			//if hd.sparkno >= 0 {
-				if hd.reversal_attr > 0 {
-					hitspark(getter, c, hd.sparkno, hd.sparkno_ffx, hd.sparkangle)
-				} else {
-					hitspark(c, getter, hd.sparkno, hd.sparkno_ffx, hd.sparkangle)
-				}
+			if hd.reversal_attr > 0 {
+				hitspark(getter, c, hd.sparkno, hd.sparkno_ffx, hd.sparkangle)
+			} else {
+				hitspark(c, getter, hd.sparkno, hd.sparkno_ffx, hd.sparkangle)
+			}
 			//}
 			if hd.hitsound[0] >= 0 && hd.hitsound[1] >= 0 {
 				vo := int32(100)
@@ -9209,11 +9209,11 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 			}
 		} else {
 			//if hd.guard_sparkno >= 0 {
-				if hd.reversal_attr > 0 {
-					hitspark(getter, c, hd.guard_sparkno, hd.guard_sparkno_ffx, hd.guard_sparkangle)
-				} else {
-					hitspark(c, getter, hd.guard_sparkno, hd.guard_sparkno_ffx, hd.guard_sparkangle)
-				}
+			if hd.reversal_attr > 0 {
+				hitspark(getter, c, hd.guard_sparkno, hd.guard_sparkno_ffx, hd.guard_sparkangle)
+			} else {
+				hitspark(c, getter, hd.guard_sparkno, hd.guard_sparkno_ffx, hd.guard_sparkangle)
+			}
 			//}
 			if hd.guardsound[0] >= 0 && hd.guardsound[1] >= 0 {
 				vo := int32(100)
