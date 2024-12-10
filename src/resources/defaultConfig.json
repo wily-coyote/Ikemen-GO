@@ -90,7 +90,7 @@
   "PauseMasterVolume": 0,
   "Players": 4,
   "PngSpriteFilter": true,
-  "PostProcessingShader": 0,
+  "PostProcessingShader": "",
   "QuickContinue": false,
   "RatioAttack": [
     0.82,
