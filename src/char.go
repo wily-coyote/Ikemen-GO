@@ -8554,8 +8554,6 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 	// hitTypeGet() function definition start
 	hitTypeGet := func(c *Char, hd *HitDef, pos [3]float32, projf float32, attackMul [4]float32) (hitType int32) {
 
-		scaleratio := c.localscl / getter.localscl
-
 		// If attacking while statetype L
 		if !proj && c.ss.stateType == ST_L && hd.reversal_attr <= 0 {
 			c.hitdef.ltypehit = true
@@ -8736,6 +8734,8 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 			if ghvset {
 				ghv := &getter.ghv
 				cmb := (getter.ss.moveType == MT_H || getter.csf(CSF_gethit)) && !ghv.guarded
+				// Precompute localcoord conversion factor
+				scaleratio := c.localscl / getter.localscl
 
 				// Clear GetHitVars while stacking those that need it
 				// Skipping this step makes the test case in #1891 work, but for different reasons than in Mugen
@@ -9530,7 +9530,6 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 		getter.unsetCSF(CSF_gethit)
 		getter.enemyNearClear()
 		for _, c := range cl.runOrder {
-			scaleratio := c.localscl / getter.localscl
 
 			// Stop current iteration if this char is disabled
 			if c.scf(SCF_standby) || c.scf(SCF_disabled) {
@@ -9631,6 +9630,8 @@ func (cl *CharList) hitDetection(getter *Char, proj bool) {
 								}
 								// Successful ReversalDef
 								if c.hitdef.reversal_attr > 0 {
+									// Precompute localcoord conversion factor
+									scaleratio := c.localscl / getter.localscl
 									// ReversalDef seems to set an arbitrary collection of get hit variables in Mugen
 									c.powerAdd(c.hitdef.hitgetpower)
 									getter.hitdef.hitflag = 0
