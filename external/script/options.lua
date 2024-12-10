@@ -54,8 +54,8 @@ function options.f_displayRatio(value)
 end
 
 local function f_externalShaderName()
-    if config.PostProcessingShader ~= "" then
-        return config.PostProcessingShader:gsub('^.+/', '')
+    if config.ExternalShader ~= "" then
+        return config.ExternalShader:gsub('^.+/', '')
     end
     return motif.option_info.menu_valuename_disabled
 end
@@ -189,7 +189,7 @@ options.t_itemname = {
 			config.PanningRange = 30
 			config.Players = 4
 			--config.PngSpriteFilter = true
-			config.PostProcessingShader = ''
+			config.ExternalShader = ''
 			config.QuickContinue = false
 			config.RatioAttack = {0.82, 1.0, 1.17, 1.30}
 			config.RatioLife = {0.80, 1.0, 1.17, 1.40}
@@ -942,7 +942,7 @@ options.t_itemname = {
 				return true
 			end
 			for k, v in ipairs(t.submenu[t.items[item].itemname].items) do
-				if config.PostProcessingShader == v.itemname then
+				if config.ExternalShader == v.itemname then
 					v.selected = true
 				else
 					v.selected = false
@@ -959,7 +959,7 @@ options.t_itemname = {
 	['noshader'] = function(t, item, cursorPosY, moveTxt)
 		if main.f_input(main.t_players, {'pal', 's'}) then
 			sndPlay(motif.files.snd_data, motif.option_info.cancel_snd[1], motif.option_info.cancel_snd[2])
-			config.PostProcessingShader = ""
+			config.ExternalShader = ""
 			options.modified = true
 			options.needReload = true
 			return false
@@ -1604,7 +1604,7 @@ function options.f_start()
 				options.t_itemname[shaderPath] = function(t, item, cursorPosY, moveTxt)
 					if main.f_input(main.t_players, {'pal', 's'}) then
 						sndPlay(motif.files.snd_data, motif.option_info.cursor_done_snd[1], motif.option_info.cursor_done_snd[2])
-						config.PostProcessingShader = shaderPath
+						config.ExternalShader = shaderPath
 						options.modified = true
 						options.needReload = true
 						return false
