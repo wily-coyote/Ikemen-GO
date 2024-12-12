@@ -85,6 +85,7 @@ func (bga *bgAction) action() {
 }
 
 type BgType int32
+
 const (
 	BG_Normal BgType = iota
 	BG_Anim
