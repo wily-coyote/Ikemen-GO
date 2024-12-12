@@ -221,9 +221,9 @@ type configSettings struct {
 	DebugMode                  bool
 	Difficulty                 int
 	EscOpensMenu               bool
+	ExternalShaders            []string
 	EnableModel                bool
 	EnableModelShadow          bool
-	ExternalShader             string
 	FirstRun                   bool
 	ForceStageZoomin           float32
 	ForceStageZoomout          float32
@@ -261,6 +261,7 @@ type configSettings struct {
 	PauseMasterVolume          int
 	Players                    int
 	PngSpriteFilter            bool
+	PostProcessingShader       int32
 	QuickContinue              bool
 	RatioAttack                [4]float32
 	RatioLife                  [4]float32
@@ -384,6 +385,7 @@ func setupConfig() configSettings {
 	sys.enableModel = tmp.EnableModel
 	sys.enableModelShadow = tmp.EnableModelShadow
 	sys.explodMax = tmp.MaxExplod
+	sys.externalShaderList = tmp.ExternalShaders
 	// Resoluion stuff
 	sys.fullscreen = tmp.Fullscreen
 	sys.fullscreenRefreshRate = tmp.FullscreenRefreshRate
@@ -412,7 +414,7 @@ func setupConfig() configSettings {
 	sys.pauseMasterVolume = tmp.PauseMasterVolume
 	sys.panningRange = tmp.PanningRange
 	sys.playerProjectileMax = tmp.MaxPlayerProjectile
-	sys.externalShader = strings.Replace(tmp.ExternalShader, "\\", "/", -1)
+	sys.postProcessingShader = tmp.PostProcessingShader
 	sys.pngFilter = tmp.PngSpriteFilter
 	sys.powerShare = [...]bool{tmp.TeamPowerShare, tmp.TeamPowerShare}
 	tmp.ScreenshotFolder = strings.TrimSpace(tmp.ScreenshotFolder)

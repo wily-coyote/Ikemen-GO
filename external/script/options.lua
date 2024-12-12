@@ -54,10 +54,10 @@ function options.f_displayRatio(value)
 end
 
 local function f_externalShaderName()
-    if config.ExternalShader ~= "" then
-        return config.ExternalShader:gsub('^.+/', '')
-    end
-    return motif.option_info.menu_valuename_disabled
+	if #config.ExternalShaders > 0 and config.PostProcessingShader ~= 0 then
+		return config.ExternalShaders[1]:gsub('^.+/', '')
+	end
+	return motif.option_info.menu_valuename_disabled
 end
 
 local function changeLanguageSetting(val)
@@ -155,6 +155,7 @@ options.t_itemname = {
 			config.DebugMode = true
 			config.Difficulty = 5
 			--config.EscOpensMenu = true
+			config.ExternalShaders = {}
 			--config.FirstRun = false
 			--config.FontShaderVer = 120
 			--config.ForceStageZoomin = 0
@@ -189,7 +190,7 @@ options.t_itemname = {
 			config.PanningRange = 30
 			config.Players = 4
 			--config.PngSpriteFilter = true
-			config.ExternalShader = ''
+			config.PostProcessingShader = 0
 			config.QuickContinue = false
 			config.RatioAttack = {0.82, 1.0, 1.17, 1.30}
 			config.RatioLife = {0.80, 1.0, 1.17, 1.40}
@@ -942,7 +943,7 @@ options.t_itemname = {
 				return true
 			end
 			for k, v in ipairs(t.submenu[t.items[item].itemname].items) do
-				if config.ExternalShader == v.itemname then
+				if config.ExternalShaders[1] == v.itemname then
 					v.selected = true
 				else
 					v.selected = false
@@ -959,7 +960,8 @@ options.t_itemname = {
 	['noshader'] = function(t, item, cursorPosY, moveTxt)
 		if main.f_input(main.t_players, {'pal', 's'}) then
 			sndPlay(motif.files.snd_data, motif.option_info.cancel_snd[1], motif.option_info.cancel_snd[2])
-			config.ExternalShader = ""
+			config.ExternalShaders = {}
+			config.PostProcessingShader = 0
 			options.modified = true
 			options.needReload = true
 			return false
@@ -1600,13 +1602,11 @@ function options.f_start()
 				table.insert(options.t_shaders, {path = path, filename = filename})
 			end
 			if ext:match('vert') or ext:match('frag') --[[or ext:match('shader')]] then
-				local shaderPath = path .. filename
-				options.t_itemname[shaderPath] = function(t, item, cursorPosY, moveTxt)
+				options.t_itemname[path .. filename] = function(t, item, cursorPosY, moveTxt)
 					if main.f_input(main.t_players, {'pal', 's'}) then
 						sndPlay(motif.files.snd_data, motif.option_info.cursor_done_snd[1], motif.option_info.cursor_done_snd[2])
-						config.ExternalShader = shaderPath
-						options.modified = true
-						options.needReload = true
+						config.ExternalShaders = {path .. filename}
+						config.PostProcessingShader = 1
 						return false
 					end
 					return true
