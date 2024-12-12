@@ -2346,8 +2346,12 @@ func (s *System) fight() (reload bool) {
 	for !s.endMatch {
 		// default bgm playback, used only in Quick VS or if externalized Lua implementaion is disabled
 		if s.round == 1 && (s.gameMode == "" || len(sys.commonLua) == 0) && sys.stage.stageTime > 0 && !didTryLoadBGM {
-			s.bgm.Open(s.stage.bgmusic, 1, int(s.stage.bgmvolume), int(s.stage.bgmloopstart), int(s.stage.bgmloopend), int(s.stage.bgmstartposition), s.stage.bgmfreqmul, -1)
-			didTryLoadBGM = true
+			// Need to search first
+			LoadFile(&s.stage.bgmusic, []string{s.stage.def, "", "sound/"}, func(path string) error {
+				s.bgm.Open(path, 1, int(s.stage.bgmvolume), int(s.stage.bgmloopstart), int(s.stage.bgmloopend), int(s.stage.bgmstartposition), s.stage.bgmfreqmul, -1)
+				didTryLoadBGM = true
+				return nil
+			})
 		}
 		s.step = false
 		for _, v := range s.shortcutScripts {
