@@ -19,6 +19,7 @@ import (
 
 	"github.com/gopxl/beep/v2"
 	"github.com/gopxl/beep/v2/speaker"
+	"github.com/ikemen-engine/glfont"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -92,6 +93,7 @@ var sys = System{
 	audioSampleRate:      44100,
 	enableModel:          true,
 	enableModelShadow:    true,
+	renderer:             "OpenGL 2.1",
 }
 
 type TeamMode int32
@@ -337,11 +339,12 @@ type System struct {
 	windowMainIconLocation []string
 
 	// Rendering
+	renderer          string
 	borderless        bool
 	vRetrace          int
 	pngFilter         bool // Controls the GL_TEXTURE_MAG_FILTER on 32bit sprites
-	enableModel       bool // Controls the GL_TEXTURE_MAG_FILTER on 32bit sprites
-	enableModelShadow bool // Controls the GL_TEXTURE_MAG_FILTER on 32bit sprites
+	enableModel       bool
+	enableModelShadow bool
 
 	gameMode          string
 	frameCounter      int32
@@ -475,6 +478,13 @@ func (s *System) init(w, h int32) *lua.LState {
 	// PS: The "\x00" is what is know as Null Terminator.
 
 	// Now we proceed to init the render.
+	if s.renderer == "OpenGL 2.1" {
+		gfx = &Renderer_GL21{}
+		gfxFont = &glfont.FontRenderer_GL21{}
+	} else {
+		gfx = &Renderer_GL32{}
+		gfxFont = &glfont.FontRenderer_GL32{}
+	}
 	gfx.Init()
 	gfx.BeginFrame(false)
 	// And the audio.

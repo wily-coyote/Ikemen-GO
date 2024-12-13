@@ -1,3 +1,5 @@
+github.com/Eiton/glfont v0.0.0-20241204103952-50dc7762af2b h1:RR9huEiJHKkCejLpMfX9tiTtZJ6IN1gjwlklMfveW44=
+github.com/Eiton/glfont v0.0.0-20241204103952-50dc7762af2b/go.mod h1:jVuoVdx3TcsRWwr4YXahY0NiENpBIHSnr21efpK5h38=
 github.com/TheTitanrain/w32 v0.0.0-20180517000239-4f5cfb03fabf/go.mod h1:peYoMncQljjNS6tZwI9WVyQB3qZS6u79/N3mBOcnd3I=
 github.com/TheTitanrain/w32 v0.0.0-20200114052255-2654d97dbd3d h1:2xp1BQbqcDDaikHnASWpVZRjibOxu7y9LhAv04whugI=
 github.com/TheTitanrain/w32 v0.0.0-20200114052255-2654d97dbd3d/go.mod h1:peYoMncQljjNS6tZwI9WVyQB3qZS6u79/N3mBOcnd3I=
@@ -37,6 +39,8 @@ github.com/ikemen-engine/glfont v0.0.0-20240816074833-3b3b0c69a290 h1:Mqn9W1IXXC
 github.com/ikemen-engine/glfont v0.0.0-20240816074833-3b3b0c69a290/go.mod h1:7QcK+eKEO2FnoZx0L8YmI1hB+YxL3XzmFVuCbxI/BW4=
 github.com/ikemen-engine/glfont v0.0.0-20241117115636-30d5449cf985 h1:rJ6S+EPLnE5NXGOPF7T/mqWdMTpOfaQgBv8rsK7PjaI=
 github.com/ikemen-engine/glfont v0.0.0-20241117115636-30d5449cf985/go.mod h1:7QcK+eKEO2FnoZx0L8YmI1hB+YxL3XzmFVuCbxI/BW4=
+github.com/ikemen-engine/glfont v0.0.0-20241213091943-20149a0b660a h1:cab//5xYIx4ByUMrDKXXuR4P/2AZG6/saCcHYZAZe0Y=
+github.com/ikemen-engine/glfont v0.0.0-20241213091943-20149a0b660a/go.mod h1:7QcK+eKEO2FnoZx0L8YmI1hB+YxL3XzmFVuCbxI/BW4=
 github.com/jfreymuth/oggvorbis v1.0.5 h1:u+Ck+R0eLSRhgq8WTmffYnrVtSztJcYrl588DM4e3kQ=
 github.com/jfreymuth/oggvorbis v1.0.5/go.mod h1:1U4pqWmghcoVsCJJ4fRBKv9peUJMBHixthRlBeD6uII=
 github.com/jfreymuth/vorbis v1.0.2 h1:m1xH6+ZI4thH927pgKD8JOH4eaGRm18rEE9/0WKjvNE=

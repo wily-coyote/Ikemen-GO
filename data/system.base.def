@@ -1631,6 +1631,11 @@
 	menu.itemname.menugame.back = "Back"
 
 	menu.itemname.menuvideo = "Video Settings"
+	menu.itemname.menuvideo.renderer = "Renderer"
+	menu.itemname.menuvideo.renderer.gl32 = "OpenGL 3.2"
+	menu.itemname.menuvideo.renderer.gl21 = "OpenGL 2.1"
+	menu.itemname.menuvideo.renderer.empty = ""
+	menu.itemname.menuvideo.renderer.back = "Back"
 	menu.itemname.menuvideo.resolution = "Resolution" ;reserved submenu
 	; Resolution is assigned based on values used in itemname suffix (e.g. 320x240)
 	menu.itemname.menuvideo.resolution.320x240 = "320x240    (4:3 QVGA)"

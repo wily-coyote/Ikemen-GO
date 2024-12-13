@@ -3134,7 +3134,7 @@ func (c *Char) load(def string) error {
 		paletteMap: append([]int{}, gi.sff.palList.paletteMap...),
 		PalTable:   make(map[[2]int16]int),
 		numcols:    make(map[[2]int16]int),
-		PalTex:     append([]*Texture{}, gi.sff.palList.PalTex...),
+		PalTex:     append([]Texture{}, gi.sff.palList.PalTex...),
 	}
 	for key, value := range gi.sff.palList.PalTable {
 		gi.palettedata.palList.PalTable[key] = value

@@ -635,7 +635,7 @@ func (a *Animation) alpha() int32 {
 	}
 	return trans
 }
-func (a *Animation) pal(pfx *PalFX, neg bool) (p []uint32, plt *Texture) {
+func (a *Animation) pal(pfx *PalFX, neg bool) (p []uint32, plt Texture) {
 	if a.palettedata != nil {
 		if pfx != nil && len(pfx.remap) > 0 {
 			a.palettedata.SwapPalMap(&pfx.remap)

@@ -2018,6 +2018,11 @@ function motif.setBaseOptionInfo()
 	motif.option_info.menu_itemname_menugame_back = "Back"
 
 	motif.option_info.menu_itemname_menuvideo = "Video Settings"
+	motif.option_info.menu_itemname_menuvideo_renderer = "Renderer" --reserved submenu
+	motif.option_info.menu_itemname_menuvideo_renderer_gl32 = "OpenGL 3.2"
+	motif.option_info.menu_itemname_menuvideo_renderer_gl21 = "OpenGL 2.1"
+	motif.option_info.menu_itemname_menuvideo_renderer_empty = ""
+	motif.option_info.menu_itemname_menuvideo_renderer_back = "Back"
 	motif.option_info.menu_itemname_menuvideo_resolution = "Resolution" --reserved submenu
 	-- Resolution is assigned based on values used in itemname suffix (e.g. 320x240)
 	motif.option_info.menu_itemname_menuvideo_resolution_320x240 = "320x240    (4:3 QVGA)"
@@ -2148,6 +2153,11 @@ function motif.setBaseOptionInfo()
 		"menugame_menuratio_back",
 		"menugame_back",
 		"menuvideo",
+		"menuvideo_renderer",
+		"menuvideo_renderer_gl32",
+		"menuvideo_renderer_gl21",
+		"menuvideo_renderer_empty",
+		"menuvideo_renderer_back",
 		"menuvideo_resolution",
 		"menuvideo_resolution_320x240",
 		"menuvideo_resolution_640x480",

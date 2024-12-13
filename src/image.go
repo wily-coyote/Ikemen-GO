@@ -360,7 +360,7 @@ type PaletteList struct {
 	paletteMap []int
 	PalTable   map[[2]int16]int
 	numcols    map[[2]int16]int
-	PalTex     []*Texture
+	PalTex     []Texture
 }
 
 func (pl *PaletteList) init() {
@@ -418,8 +418,8 @@ func (pl *PaletteList) SwapPalMap(palMap *[]int) bool {
 	return true
 }
 
-func PaletteToTexture(pal []uint32) *Texture {
-	tx := newTexture(256, 1, 32, false)
+func PaletteToTexture(pal []uint32) Texture {
+	tx := gfx.newTexture(256, 1, 32, false)
 	tx.SetData(unsafe.Slice((*byte)(unsafe.Pointer(&pal[0])), len(pal)*4))
 	return tx
 }
@@ -507,7 +507,7 @@ func (sh *SffHeader) Read(r io.Reader, lofs *uint32, tofs *uint32) error {
 
 type Sprite struct {
 	Pal           []uint32
-	Tex           *Texture
+	Tex           Texture
 	Group, Number int16
 	Size          [2]uint16
 	Offset        [2]int16
@@ -515,7 +515,7 @@ type Sprite struct {
 	rle           int
 	coldepth      byte
 	paltemp       []uint32
-	PalTex        *Texture
+	PalTex        Texture
 }
 
 func newSprite() *Sprite {
@@ -665,7 +665,7 @@ func (s *Sprite) GetPal(pl *PaletteList) []uint32 {
 	}
 	return pl.Get(int(s.palidx)) //pl.palettes[pl.paletteMap[int(s.palidx)]]
 }
-func (s *Sprite) GetPalTex(pl *PaletteList) *Texture {
+func (s *Sprite) GetPalTex(pl *PaletteList) Texture {
 	if s.coldepth > 8 {
 		return nil
 	}
@@ -680,14 +680,14 @@ func (s *Sprite) SetPxl(px []byte) {
 		return
 	}
 	sys.mainThreadTask <- func() {
-		s.Tex = newTexture(int32(s.Size[0]), int32(s.Size[1]), 8, false)
+		s.Tex = gfx.newTexture(int32(s.Size[0]), int32(s.Size[1]), 8, false)
 		s.Tex.SetData(px)
 	}
 }
 
 func (s *Sprite) SetRaw(data []byte, sprWidth int32, sprHeight int32, sprDepth int32) {
 	sys.mainThreadTask <- func() {
-		s.Tex = newTexture(sprWidth, sprHeight, sprDepth, sys.pngFilter)
+		s.Tex = gfx.newTexture(sprWidth, sprHeight, sprDepth, sys.pngFilter)
 		s.Tex.SetData(data)
 	}
 }
@@ -1128,7 +1128,7 @@ func (s *Sprite) readV2(f *os.File, offset int64, datasize uint32) error {
 
 // Cache the provided palette data in a sprite. But first check if the
 // previously stored one is still valid.
-func (s *Sprite) CachePalette(pal []uint32) *Texture {
+func (s *Sprite) CachePalette(pal []uint32) Texture {
 	hasPalette := true
 	if s.PalTex == nil || len(pal) != len(s.paltemp) {
 		hasPalette = false
