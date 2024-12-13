@@ -267,6 +267,7 @@ type configSettings struct {
 	RatioLife                  [4]float32
 	RatioRecoveryBase          float32
 	RatioRecoveryBonus         float32
+	Renderer                   string
 	RoundsNumSimul             int32
 	RoundsNumSingle            int32
 	RoundsNumTag               int32
@@ -387,6 +388,7 @@ func setupConfig() configSettings {
 	sys.explodMax = tmp.MaxExplod
 	sys.externalShaderList = tmp.ExternalShaders
 	// Resoluion stuff
+	sys.renderer = tmp.Renderer
 	sys.fullscreen = tmp.Fullscreen
 	sys.fullscreenRefreshRate = tmp.FullscreenRefreshRate
 	sys.fullscreenWidth = tmp.FullscreenWidth

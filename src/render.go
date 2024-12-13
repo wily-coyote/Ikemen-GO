@@ -1,13 +1,116 @@
 package main
 
 import (
+	_ "embed"
 	"math"
 
 	mgl "github.com/go-gl/mathgl/mgl32"
+	"github.com/ikemen-engine/glfont"
 )
 
+type Texture interface {
+	SetData(data []byte)
+	SetDataG(data []byte, mag, min, ws, wt int32)
+	SetPixelData(data []float32)
+	SetRGBPixelData(data []float32)
+	IsValid() bool
+	GetWidth() int32
+}
+
+type Renderer interface {
+	GetName() string
+	Init()
+	Close()
+	BeginFrame(clearColor bool)
+	EndFrame()
+	Await()
+
+	IsModelEnabled() bool
+	IsShadowEnabled() bool
+
+	BlendReset()
+	SetPipeline(eq BlendEquation, src, dst BlendFunc)
+	ReleasePipeline()
+	prepareShadowMapPipeline()
+	setShadowMapPipeline(doubleSided, invertFrontFace, useUV, useNormal, useTangent, useVertColor, useJoint0, useJoint1 bool, numVertices, vertAttrOffset uint32)
+	ReleaseShadowPipeline()
+	prepareModelPipeline(env *Environment)
+	SetModelPipeline(eq BlendEquation, src, dst BlendFunc, depthTest, depthMask, doubleSided, invertFrontFace, useUV, useNormal, useTangent, useVertColor, useJoint0, useJoint1 bool, numVertices, vertAttrOffset uint32)
+	ReleaseModelPipeline()
+
+	newTexture(width, height, depth int32, filter bool) (t Texture)
+	newDataTexture(width, height int32) (t Texture)
+	newHDRTexture(width, height int32) (t Texture)
+	newCubeMapTexture(widthHeight int32, mipmap bool) (t Texture)
+
+	ReadPixels(data []uint8, width, height int)
+	Scissor(x, y, width, height int32)
+	DisableScissor()
+
+	SetUniformI(name string, val int)
+	SetUniformF(name string, values ...float32)
+	SetUniformFv(name string, values []float32)
+	SetUniformMatrix(name string, value []float32)
+	SetTexture(name string, tex Texture)
+	SetModelUniformI(name string, val int)
+	SetModelUniformF(name string, values ...float32)
+	SetModelUniformFv(name string, values []float32)
+	SetModelUniformMatrix(name string, value []float32)
+	SetModelTexture(name string, t Texture)
+	SetShadowMapUniformI(name string, val int)
+	SetShadowMapUniformF(name string, values ...float32)
+	SetShadowMapUniformFv(name string, values []float32)
+	SetShadowMapUniformMatrix(name string, value []float32)
+	SetShadowMapTexture(name string, t Texture)
+	SetShadowFrameTexture(i uint32)
+	SetShadowFrameCubeTexture(i uint32)
+	SetVertexData(values ...float32)
+	SetStageVertexData(values []byte)
+	SetStageIndexData(values ...uint32)
+
+	RenderQuad()
+	RenderElements(mode PrimitiveMode, count, offset int)
+	RenderCubeMap(envTexture Texture, cubeTexture Texture)
+	RenderFilteredCubeMap(distribution int32, cubeTexture Texture, filteredTexture Texture, mipmapLevel, sampleCount int32, roughness float32)
+	RenderLUT(distribution int32, cubeTexture Texture, lutTexture Texture, sampleCount int32)
+}
+
+//go:embed shaders/sprite.vert.glsl
+var vertShader string
+
+//go:embed shaders/sprite.frag.glsl
+var fragShader string
+
+//go:embed shaders/model.vert.glsl
+var modelVertShader string
+
+//go:embed shaders/model.frag.glsl
+var modelFragShader string
+
+//go:embed shaders/shadow.vert.glsl
+var shadowVertShader string
+
+//go:embed shaders/shadow.frag.glsl
+var shadowFragShader string
+
+//go:embed shaders/shadow.geo.glsl
+var shadowGeoShader string
+
+//go:embed shaders/ident.vert.glsl
+var identVertShader string
+
+//go:embed shaders/ident.frag.glsl
+var identFragShader string
+
+//go:embed shaders/panoramaToCubeMap.frag.glsl
+var panoramaToCubeMapFragShader string
+
+//go:embed shaders/cubemapFiltering.frag.glsl
+var cubemapFilteringFragShader string
+
 // The global, platform-specific rendering backend
-var gfx = &Renderer{}
+var gfx Renderer
+var gfxFont glfont.FontRenderer
 
 // Blend constants
 type BlendFunc int
@@ -48,8 +151,8 @@ var notiling = Tiling{}
 // RenderParams holds the common data for all sprite rendering functions
 type RenderParams struct {
 	// Sprite texture and palette texture
-	tex    *Texture
-	paltex *Texture
+	tex    Texture
+	paltex Texture
 	// Size, position, tiling, scaling and rotation
 	size     [2]uint16
 	x, y     float32

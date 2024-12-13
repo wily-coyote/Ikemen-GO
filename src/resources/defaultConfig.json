@@ -106,6 +106,7 @@
   ],
   "RatioRecoveryBase": 0,
   "RatioRecoveryBonus": 20,
+  "Renderer": "OpenGL 3.2",
   "RoundsNumSimul": 2,
   "RoundsNumSingle": 2,
   "RoundsNumTag": 2,

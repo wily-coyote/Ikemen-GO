@@ -1883,7 +1883,7 @@ type GLTFAnimationSampler struct {
 	interpolation GLTFAnimationInterpolation
 }
 type GLTFTexture struct {
-	tex *Texture
+	tex Texture
 }
 
 type AlphaMode byte
@@ -2061,26 +2061,26 @@ func loadEnvironment(filepath string) (*Environment, error) {
 			data[i], data[i+1], data[i+2], data[j], data[j+1], data[j+2] = data[j], data[j+1], data[j+2], data[i], data[i+1], data[i+2]
 		}
 		sys.mainThreadTask <- func() {
-			if !gfx.enableModel {
+			if !gfx.IsModelEnabled() {
 				return
 			}
-			env.hdrTexture.tex = newHDRTexture(int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y))
+			env.hdrTexture.tex = gfx.newHDRTexture(int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y))
 
 			env.hdrTexture.tex.SetRGBPixelData(data)
-			env.cubeMapTexture.tex = newCubeMapTexture(256, true)
-			env.lambertianTexture.tex = newCubeMapTexture(256, false)
-			env.GGXTexture.tex = newCubeMapTexture(256, true)
-			env.GGXLUT.tex = newDataTexture(1024, 1024)
+			env.cubeMapTexture.tex = gfx.newCubeMapTexture(256, true)
+			env.lambertianTexture.tex = gfx.newCubeMapTexture(256, false)
+			env.GGXTexture.tex = gfx.newCubeMapTexture(256, true)
+			env.GGXLUT.tex = gfx.newDataTexture(1024, 1024)
 
-			gfx.RenderCubeMap(env.hdrTexture.tex, env.cubeMapTexture.tex, env.cubeMapTexture.tex.width)
-			gfx.RenderFilteredCubeMap(0, env.cubeMapTexture.tex, env.lambertianTexture.tex, env.lambertianTexture.tex.width, 0, env.lambertianSampleCount, 0)
+			gfx.RenderCubeMap(env.hdrTexture.tex, env.cubeMapTexture.tex)
+			gfx.RenderFilteredCubeMap(0, env.cubeMapTexture.tex, env.lambertianTexture.tex, 0, env.lambertianSampleCount, 0)
 			lowestMipLevel := int32(4)
 			env.mipmapLevels = int32(Floor(float32(math.Log2(256)))) + 1 - lowestMipLevel
 			for i := int32(0); i < env.mipmapLevels; i++ {
 				roughness := float32(i) / float32((env.mipmapLevels - 1))
-				gfx.RenderFilteredCubeMap(1, env.cubeMapTexture.tex, env.GGXTexture.tex, env.GGXTexture.tex.width, int32(i), env.GGXSampleCount, roughness)
+				gfx.RenderFilteredCubeMap(1, env.cubeMapTexture.tex, env.GGXTexture.tex, int32(i), env.GGXSampleCount, roughness)
 			}
-			gfx.RenderLUT(1, env.cubeMapTexture.tex, env.GGXLUT.tex, env.GGXLUT.tex.width, env.GGXLUTSampleCount)
+			gfx.RenderLUT(1, env.cubeMapTexture.tex, env.GGXLUT.tex, env.GGXLUTSampleCount)
 		}
 	}
 	return env, nil
@@ -2173,7 +2173,7 @@ func loadglTFStage(filepath string) (*Model, error) {
 				rgba := image.NewRGBA(img.Bounds())
 				draw.Draw(rgba, img.Bounds(), img, img.Bounds().Min, draw.Src)
 				sys.mainThreadTask <- func() {
-					texture.tex = newTexture(int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 32, false)
+					texture.tex = gfx.newTexture(int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 32, false)
 					texture.tex.SetDataG(rgba.Pix, mag, min, wrapS, wrapT)
 				}
 				textureMap[[2]int32{int32(*t.Source), int32(*t.Sampler)}] = texture
@@ -2192,7 +2192,7 @@ func loadglTFStage(filepath string) (*Model, error) {
 				rgba := image.NewRGBA(img.Bounds())
 				draw.Draw(rgba, img.Bounds(), img, img.Bounds().Min, draw.Src)
 				sys.mainThreadTask <- func() {
-					texture.tex = newTexture(int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 32, false)
+					texture.tex = gfx.newTexture(int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 32, false)
 					texture.tex.SetDataG(rgba.Pix, int32(mag), int32(min), int32(wrapS), int32(wrapT))
 				}
 				textureMap[[2]int32{int32(*t.Source), -1}] = texture
@@ -2319,7 +2319,7 @@ func loadglTFStage(filepath string) (*Model, error) {
 						if v["shadowMapLeft"] != nil {
 							newLight.shadowMapLeft = (float32)(v["shadowMapLeft"].(float64))
 						}
-						if v["shadowMapTop"] != nil {
+						if v["shadowMapRight"] != nil {
 							newLight.shadowMapRight = (float32)(v["shadowMapRight"].(float64))
 						}
 						if v["shadowMapBias"] != nil {
@@ -2664,7 +2664,7 @@ func loadglTFStage(filepath string) (*Model, error) {
 				primitive.morphTargetTexture = &GLTFTexture{}
 				sys.mainThreadTask <- func() {
 					dimension := int(math.Ceil(math.Pow(float64(8*primitive.numVertices), 0.5)))
-					primitive.morphTargetTexture.tex = newDataTexture(int32(dimension), int32(dimension))
+					primitive.morphTargetTexture.tex = gfx.newDataTexture(int32(dimension), int32(dimension))
 					//primitive.morphTargetTexture.tex.SetPixelData(targetBuffer)
 				}
 			}
@@ -2759,7 +2759,7 @@ func loadglTFStage(filepath string) (*Model, error) {
 				if v["shadowMapLeft"] != nil {
 					node.shadowMapLeft = (float32)(v["shadowMapLeft"].(float64))
 				}
-				if v["shadowMapTop"] != nil {
+				if v["shadowMapRight"] != nil {
 					node.shadowMapRight = (float32)(v["shadowMapRight"].(float64))
 				}
 				if v["shadowMapBias"] != nil {
@@ -2866,7 +2866,7 @@ func loadglTFStage(filepath string) (*Model, error) {
 
 		skin.texture = &GLTFTexture{}
 		sys.mainThreadTask <- func() {
-			skin.texture.tex = newDataTexture(6, int32(len(skin.joints)))
+			skin.texture.tex = gfx.newDataTexture(6, int32(len(skin.joints)))
 		}
 
 		mdl.skins = append(mdl.skins, skin)
@@ -3011,8 +3011,9 @@ func calculateAnimationData(mdl *Model, n *Node) {
 			if len(targetBuffer) > int(8*4*p.numVertices) {
 				targetBuffer = targetBuffer[:8*4*p.numVertices]
 			}
-			if len(targetBuffer) < int(4*p.morphTargetTexture.tex.width*p.morphTargetTexture.tex.width) {
-				targetBuffer = append(targetBuffer, make([]float32, int(4*p.morphTargetTexture.tex.width*p.morphTargetTexture.tex.width)-len(targetBuffer))...)
+			width := p.morphTargetTexture.tex.GetWidth()
+			if len(targetBuffer) < int(4*width*width) {
+				targetBuffer = append(targetBuffer, make([]float32, int(4*width*width)-len(targetBuffer))...)
 			}
 			p.morphTargetTexture.tex.SetPixelData(targetBuffer)
 		} else {
@@ -3022,200 +3023,212 @@ func calculateAnimationData(mdl *Model, n *Node) {
 		}
 	}
 }
-func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlended bool, drawShadow bool, unlit bool) {
+func drawNode(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlended bool, unlit bool) {
 	//mat := n.getLocalTransform()
 	//model = model.Mul4(mat)
 	for _, index := range n.childrenIndex {
-		drawNode(mdl, scene, mdl.nodes[index], camOffset, drawBlended, drawShadow, unlit)
+		drawNode(mdl, scene, mdl.nodes[index], camOffset, drawBlended, unlit)
 	}
 	if n.meshIndex == nil {
 		return
 	}
-	if !drawShadow {
-		neg, grayscale, padd, pmul, invblend, hue := mdl.pfx.getFcPalFx(false, -int(n.trans))
+	neg, grayscale, padd, pmul, invblend, hue := mdl.pfx.getFcPalFx(false, -int(n.trans))
 
-		blendEq := BlendAdd
-		src := BlendOne
-		dst := BlendOneMinusSrcAlpha
-		switch n.trans {
-		case TransAdd:
-			if invblend == 3 {
-				src = BlendOne
-				dst = BlendOne
-				blendEq = BlendReverseSubtract
-				neg = false
-			} else {
-				src = BlendOne
-				dst = BlendOne
-			}
-		case TransReverseSubtract:
-			if invblend == 3 {
-				src = BlendOne
-				dst = BlendOne
-				neg = false
-			} else {
-				src = BlendOne
-				dst = BlendOne
-				blendEq = BlendReverseSubtract
-			}
-		case TransMul:
-			if invblend == 3 {
-				//Not accurate
-				src = BlendOneMinusDstColor
-				dst = BlendOne
-				neg = false
-				blendEq = BlendReverseSubtract
-			} else {
-				src = BlendDstColor
-				dst = BlendOneMinusSrcAlpha
-			}
-		default:
+	blendEq := BlendAdd
+	src := BlendOne
+	dst := BlendOneMinusSrcAlpha
+	switch n.trans {
+	case TransAdd:
+		if invblend == 3 {
 			src = BlendOne
+			dst = BlendOne
+			blendEq = BlendReverseSubtract
+			neg = false
+		} else {
+			src = BlendOne
+			dst = BlendOne
+		}
+	case TransReverseSubtract:
+		if invblend == 3 {
+			src = BlendOne
+			dst = BlendOne
+			neg = false
+		} else {
+			src = BlendOne
+			dst = BlendOne
+			blendEq = BlendReverseSubtract
+		}
+	case TransMul:
+		if invblend == 3 {
+			//Not accurate
+			src = BlendOneMinusDstColor
+			dst = BlendOne
+			neg = false
+			blendEq = BlendReverseSubtract
+		} else {
+			src = BlendDstColor
 			dst = BlendOneMinusSrcAlpha
 		}
-		m := mdl.meshes[*n.meshIndex]
-		reverseCull := n.worldTransform.Det() < 0
-		for _, p := range m.primitives {
-			if p.materialIndex == nil {
-				continue
-			}
-			mat := mdl.materials[*p.materialIndex]
-			if ((mat.alphaMode != AlphaModeBlend && n.trans == TransNone) && drawBlended) ||
-				((mat.alphaMode == AlphaModeBlend || n.trans != TransNone) && !drawBlended) {
-				return
-			}
-			color := mdl.materials[*p.materialIndex].baseColorFactor
-			gfx.SetModelPipeline(blendEq, src, dst, n.zTest, n.zWrite, mdl.materials[*p.materialIndex].doubleSided, reverseCull, p.useUV, p.useNormal, p.useTangent, p.useVertexColor, p.useJoint0, p.useJoint1, p.numVertices, p.vertexBufferOffset)
-
-			gfx.SetModelUniformMatrix("model", n.worldTransform[:])
-			gfx.SetModelUniformMatrix("normalMatrix", n.normalMatrix[:])
-			gfx.SetModelUniformI("numVertices", int(p.numVertices))
-			//gfx.SetModelUniformF("ambientOcclusion", 1)
-			gfx.SetModelUniformF("metallicRoughness", mat.metallic, mat.roughness)
-			gfx.SetModelUniformF("ambientOcclusionStrength", mat.ambientOcclusion)
-
-			gfx.SetModelUniformF("cameraPosition", -camOffset[0], -camOffset[1], -camOffset[2])
-
-			if n.skin != nil {
-				skin := mdl.skins[*n.skin]
-				gfx.SetModelTexture("jointMatrices", skin.texture.tex)
-			}
-
-			if p.morphTargetCount > 0 {
-				gfx.SetModelUniformF("morphTargetOffset", p.morphTargetOffset[0], p.morphTargetOffset[1], p.morphTargetOffset[2], p.morphTargetOffset[3])
-				gfx.SetModelUniformI("numTargets", int(Min(int32(p.morphTargetCount), 8)))
-				gfx.SetModelTexture("morphTargetValues", p.morphTargetTexture.tex)
-				gfx.SetModelUniformFv("morphTargetWeight", p.morphTargetWeight[:])
-				gfx.SetModelUniformI("morphTargetTextureDimension", int(p.morphTargetTexture.tex.width))
-			} else {
-				gfx.SetModelUniformFv("morphTargetWeight", make([]float32, 8))
-			}
-			mode := p.mode
-			if sys.wireframeDraw {
-				mode = 1 // Set mesh render mode to "lines"
-			}
-			gfx.SetModelUniformI("unlit", int(Btoi(unlit || mat.unlit)))
-			gfx.SetModelUniformFv("add", padd[:])
-			gfx.SetModelUniformFv("mult", []float32{pmul[0] * float32(sys.brightness) / 256, pmul[1] * float32(sys.brightness) / 256, pmul[2] * float32(sys.brightness) / 256})
-			gfx.SetModelUniformI("neg", int(Btoi(neg)))
-			gfx.SetModelUniformF("hue", hue)
-			gfx.SetModelUniformF("gray", grayscale)
-			gfx.SetModelUniformI("enableAlpha", int(Btoi(mat.alphaMode == AlphaModeBlend)))
-			gfx.SetModelUniformF("alphaThreshold", mat.alphaCutoff)
-			gfx.SetModelUniformFv("baseColorFactor", color[:])
-			if n.skin != nil {
-				gfx.SetModelUniformI("numJoints", len(mdl.skins[*n.skin].joints))
-			}
-			if index := mat.textureIndex; index != nil {
-				gfx.SetModelTexture("tex", mdl.textures[*index].tex)
-				gfx.SetModelUniformI("useTexture", 1)
-			} else {
-				gfx.SetModelUniformI("useTexture", 0)
-			}
-			if index := mat.normalMapIndex; index != nil {
-				gfx.SetModelTexture("normalMap", mdl.textures[*index].tex)
-				gfx.SetModelUniformI("useNormalMap", 1)
-			} else {
-				gfx.SetModelUniformI("useNormalMap", 0)
-			}
-			if index := mat.metallicRoughnessMapIndex; index != nil {
-				gfx.SetModelTexture("metallicRoughnessMap", mdl.textures[*index].tex)
-				gfx.SetModelUniformI("useMetallicRoughnessMap", 1)
-			} else {
-				gfx.SetModelUniformI("useMetallicRoughnessMap", 0)
-			}
-			if index := mat.ambientOcclusionMapIndex; index != nil {
-				gfx.SetModelTexture("ambientOcclusionMap", mdl.textures[*index].tex)
-			}
-			gfx.SetModelUniformFv("emission", mat.emission[:])
-			if index := mat.emissionMapIndex; index != nil {
-				gfx.SetModelTexture("emissionMap", mdl.textures[*index].tex)
-				gfx.SetModelUniformI("useEmissionMap", 1)
-			} else {
-				gfx.SetModelUniformI("useEmissionMap", 0)
-			}
-			gfx.RenderElements(mode, int(p.numIndices), int(p.elementBufferOffset))
-
-			gfx.ReleaseModelPipeline()
+	default:
+		src = BlendOne
+		dst = BlendOneMinusSrcAlpha
+	}
+	m := mdl.meshes[*n.meshIndex]
+	reverseCull := n.worldTransform.Det() < 0
+	for _, p := range m.primitives {
+		if p.materialIndex == nil {
+			continue
 		}
-	} else {
-		if n.trans == TransAdd || n.trans == TransReverseSubtract || n.trans == TransMul || !n.zTest || !n.zWrite || !n.castShadow {
+		mat := mdl.materials[*p.materialIndex]
+		if ((mat.alphaMode != AlphaModeBlend && n.trans == TransNone) && drawBlended) ||
+			((mat.alphaMode == AlphaModeBlend || n.trans != TransNone) && !drawBlended) {
 			return
 		}
-		m := mdl.meshes[*n.meshIndex]
-		reverseCull := n.worldTransform.Det() < 0
-		for _, p := range m.primitives {
-			if p.materialIndex == nil {
-				continue
-			}
-			mat := mdl.materials[*p.materialIndex]
-			if ((mat.alphaMode != AlphaModeBlend && n.trans == TransNone) && drawBlended) ||
-				((mat.alphaMode == AlphaModeBlend || n.trans != TransNone) && !drawBlended) {
-				return
-			}
-			color := mdl.materials[*p.materialIndex].baseColorFactor
-			if color[3] == 0 && mat.alphaMode == AlphaModeBlend {
-				return
-			}
-			gfx.setShadowMapPipeline(mdl.materials[*p.materialIndex].doubleSided, reverseCull, p.useUV, p.useNormal, p.useTangent, p.useVertexColor, p.useJoint0, p.useJoint1, p.numVertices, p.vertexBufferOffset)
+		color := mdl.materials[*p.materialIndex].baseColorFactor
+		gfx.SetModelPipeline(blendEq, src, dst, n.zTest, n.zWrite, mdl.materials[*p.materialIndex].doubleSided, reverseCull, p.useUV, p.useNormal, p.useTangent, p.useVertexColor, p.useJoint0, p.useJoint1, p.numVertices, p.vertexBufferOffset)
 
-			gfx.SetShadowMapUniformMatrix("model", n.worldTransform[:])
-			gfx.SetShadowMapUniformI("numVertices", int(p.numVertices))
-			if n.skin != nil {
-				skin := mdl.skins[*n.skin]
-				gfx.SetShadowMapTexture("jointMatrices", skin.texture.tex)
-			}
+		gfx.SetModelUniformMatrix("model", n.worldTransform[:])
+		gfx.SetModelUniformMatrix("normalMatrix", n.normalMatrix[:])
+		gfx.SetModelUniformI("numVertices", int(p.numVertices))
+		//gfx.SetModelUniformF("ambientOcclusion", 1)
+		gfx.SetModelUniformF("metallicRoughness", mat.metallic, mat.roughness)
+		gfx.SetModelUniformF("ambientOcclusionStrength", mat.ambientOcclusion)
 
-			if p.morphTargetCount > 0 {
-				gfx.SetShadowMapUniformF("morphTargetOffset", p.morphTargetOffset[0], p.morphTargetOffset[1], p.morphTargetOffset[2], p.morphTargetOffset[3])
-				gfx.SetShadowMapUniformI("numTargets", int(Min(int32(p.morphTargetCount), 8)))
-				gfx.SetShadowMapTexture("morphTargetValues", p.morphTargetTexture.tex)
-				gfx.SetShadowMapUniformFv("morphTargetWeight", p.morphTargetWeight[:])
-				gfx.SetShadowMapUniformI("morphTargetTextureDimension", int(p.morphTargetTexture.tex.width))
-			} else {
-				gfx.SetShadowMapUniformFv("morphTargetOffset", make([]float32, 4))
-				gfx.SetShadowMapUniformI("numTargets", 0)
-				gfx.SetShadowMapUniformFv("morphTargetWeight", make([]float32, 8))
-			}
-			mode := p.mode
-			gfx.SetShadowMapUniformI("enableAlpha", int(Btoi(mat.alphaMode == AlphaModeBlend)))
-			gfx.SetShadowMapUniformF("alphaThreshold", mat.alphaCutoff)
-			gfx.SetShadowMapUniformFv("baseColorFactor", color[:])
-			if n.skin != nil {
-				gfx.SetShadowMapUniformI("numJoints", len(mdl.skins[*n.skin].joints))
-			}
-			if index := mat.textureIndex; index != nil {
-				gfx.SetShadowMapTexture("tex", mdl.textures[*index].tex)
-				gfx.SetShadowMapUniformI("useTexture", 1)
-			} else {
-				gfx.SetShadowMapUniformI("useTexture", 0)
-			}
+		gfx.SetModelUniformF("cameraPosition", -camOffset[0], -camOffset[1], -camOffset[2])
+
+		if n.skin != nil {
+			skin := mdl.skins[*n.skin]
+			gfx.SetModelTexture("jointMatrices", skin.texture.tex)
+		}
+
+		if p.morphTargetCount > 0 {
+			gfx.SetModelUniformF("morphTargetOffset", p.morphTargetOffset[0], p.morphTargetOffset[1], p.morphTargetOffset[2], p.morphTargetOffset[3])
+			gfx.SetModelUniformI("numTargets", int(Min(int32(p.morphTargetCount), 8)))
+			gfx.SetModelTexture("morphTargetValues", p.morphTargetTexture.tex)
+			gfx.SetModelUniformFv("morphTargetWeight", p.morphTargetWeight[:])
+			gfx.SetModelUniformI("morphTargetTextureDimension", int(p.morphTargetTexture.tex.GetWidth()))
+		} else {
+			gfx.SetModelUniformFv("morphTargetWeight", make([]float32, 8))
+		}
+		mode := p.mode
+		if sys.wireframeDraw {
+			mode = 1 // Set mesh render mode to "lines"
+		}
+		gfx.SetModelUniformI("unlit", int(Btoi(unlit || mat.unlit)))
+		gfx.SetModelUniformFv("add", padd[:])
+		gfx.SetModelUniformFv("mult", []float32{pmul[0] * float32(sys.brightness) / 256, pmul[1] * float32(sys.brightness) / 256, pmul[2] * float32(sys.brightness) / 256})
+		gfx.SetModelUniformI("neg", int(Btoi(neg)))
+		gfx.SetModelUniformF("hue", hue)
+		gfx.SetModelUniformF("gray", grayscale)
+		gfx.SetModelUniformI("enableAlpha", int(Btoi(mat.alphaMode == AlphaModeBlend)))
+		gfx.SetModelUniformF("alphaThreshold", mat.alphaCutoff)
+		gfx.SetModelUniformFv("baseColorFactor", color[:])
+		if n.skin != nil {
+			gfx.SetModelUniformI("numJoints", len(mdl.skins[*n.skin].joints))
+		}
+		if index := mat.textureIndex; index != nil {
+			gfx.SetModelTexture("tex", mdl.textures[*index].tex)
+			gfx.SetModelUniformI("useTexture", 1)
+		} else {
+			gfx.SetModelUniformI("useTexture", 0)
+		}
+		if index := mat.normalMapIndex; index != nil {
+			gfx.SetModelTexture("normalMap", mdl.textures[*index].tex)
+			gfx.SetModelUniformI("useNormalMap", 1)
+		} else {
+			gfx.SetModelUniformI("useNormalMap", 0)
+		}
+		if index := mat.metallicRoughnessMapIndex; index != nil {
+			gfx.SetModelTexture("metallicRoughnessMap", mdl.textures[*index].tex)
+			gfx.SetModelUniformI("useMetallicRoughnessMap", 1)
+		} else {
+			gfx.SetModelUniformI("useMetallicRoughnessMap", 0)
+		}
+		if index := mat.ambientOcclusionMapIndex; index != nil {
+			gfx.SetModelTexture("ambientOcclusionMap", mdl.textures[*index].tex)
+		}
+		gfx.SetModelUniformFv("emission", mat.emission[:])
+		if index := mat.emissionMapIndex; index != nil {
+			gfx.SetModelTexture("emissionMap", mdl.textures[*index].tex)
+			gfx.SetModelUniformI("useEmissionMap", 1)
+		} else {
+			gfx.SetModelUniformI("useEmissionMap", 0)
+		}
+		gfx.RenderElements(mode, int(p.numIndices), int(p.elementBufferOffset))
+
+		gfx.ReleaseModelPipeline()
+	}
+}
+func drawNodeShadow(mdl *Model, scene *Scene, n *Node, camOffset [3]float32, drawBlended bool, lightIndex int, numLights int) {
+	//mat := n.getLocalTransform()
+	//model = model.Mul4(mat)
+	for _, index := range n.childrenIndex {
+		drawNodeShadow(mdl, scene, mdl.nodes[index], camOffset, drawBlended, lightIndex, numLights)
+	}
+	if n.meshIndex == nil {
+		return
+	}
+
+	if n.trans == TransAdd || n.trans == TransReverseSubtract || n.trans == TransMul || !n.zTest || !n.zWrite || !n.castShadow {
+		return
+	}
+	m := mdl.meshes[*n.meshIndex]
+	reverseCull := n.worldTransform.Det() < 0
+	for _, p := range m.primitives {
+		if p.materialIndex == nil {
+			continue
+		}
+		mat := mdl.materials[*p.materialIndex]
+		if ((mat.alphaMode != AlphaModeBlend && n.trans == TransNone) && drawBlended) ||
+			((mat.alphaMode == AlphaModeBlend || n.trans != TransNone) && !drawBlended) {
+			return
+		}
+		color := mdl.materials[*p.materialIndex].baseColorFactor
+		if color[3] == 0 && mat.alphaMode == AlphaModeBlend {
+			return
+		}
+		gfx.setShadowMapPipeline(mdl.materials[*p.materialIndex].doubleSided, reverseCull, p.useUV, p.useNormal, p.useTangent, p.useVertexColor, p.useJoint0, p.useJoint1, p.numVertices, p.vertexBufferOffset)
+
+		gfx.SetShadowMapUniformMatrix("model", n.worldTransform[:])
+		gfx.SetShadowMapUniformI("numVertices", int(p.numVertices))
+		if n.skin != nil {
+			skin := mdl.skins[*n.skin]
+			gfx.SetShadowMapTexture("jointMatrices", skin.texture.tex)
+		}
+
+		if p.morphTargetCount > 0 {
+			gfx.SetShadowMapUniformF("morphTargetOffset", p.morphTargetOffset[0], p.morphTargetOffset[1], p.morphTargetOffset[2], p.morphTargetOffset[3])
+			gfx.SetShadowMapUniformI("numTargets", int(Min(int32(p.morphTargetCount), 8)))
+			gfx.SetShadowMapTexture("morphTargetValues", p.morphTargetTexture.tex)
+			gfx.SetShadowMapUniformFv("morphTargetWeight", p.morphTargetWeight[:])
+			gfx.SetShadowMapUniformI("morphTargetTextureDimension", int(p.morphTargetTexture.tex.GetWidth()))
+		} else {
+			gfx.SetShadowMapUniformFv("morphTargetOffset", make([]float32, 4))
+			gfx.SetShadowMapUniformI("numTargets", 0)
+			gfx.SetShadowMapUniformFv("morphTargetWeight", make([]float32, 8))
+		}
+		mode := p.mode
+		gfx.SetShadowMapUniformI("enableAlpha", int(Btoi(mat.alphaMode == AlphaModeBlend)))
+		gfx.SetShadowMapUniformF("alphaThreshold", mat.alphaCutoff)
+		gfx.SetShadowMapUniformFv("baseColorFactor", color[:])
+		if n.skin != nil {
+			gfx.SetShadowMapUniformI("numJoints", len(mdl.skins[*n.skin].joints))
+		}
+		if index := mat.textureIndex; index != nil {
+			gfx.SetShadowMapTexture("tex", mdl.textures[*index].tex)
+			gfx.SetShadowMapUniformI("useTexture", 1)
+		} else {
+			gfx.SetShadowMapUniformI("useTexture", 0)
+		}
+		for i := 0; i < numLights; i++ {
+			gfx.SetShadowMapUniformI("layerOffset", i*6)
+			gfx.SetShadowMapUniformI("lightIndex", i+lightIndex)
 			gfx.RenderElements(mode, int(p.numIndices), int(p.elementBufferOffset))
 		}
 	}
 }
 func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber int) {
-	if s.model == nil || len(s.model.scenes) <= sceneNumber || !gfx.enableModel {
+	if s.model == nil || len(s.model.scenes) <= sceneNumber || !gfx.IsModelEnabled() {
 		return
 	}
 	drawFOV := s.stageCamera.fov * math.Pi / 180
@@ -3244,9 +3257,15 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 		s.model.nodes[index].calculateWorldTransform(mgl.Ident4(), s.model.nodes)
 		calculateAnimationData(s.model, s.model.nodes[index])
 	}
-	if len(scene.lightNodes) > 0 && sceneNumber == 0 && gfx.enableShadow {
+	if len(scene.lightNodes) > 0 && sceneNumber == 0 && gfx.IsShadowEnabled() {
 		gfx.prepareShadowMapPipeline()
-		for i := 0; i < int(Min(int32(len(scene.lightNodes)), 4)); i++ {
+		numLights := 0
+		for i := 0; i < 4; i++ {
+			if i >= len(scene.lightNodes) {
+				gfx.SetShadowMapUniformI("lightType["+strconv.Itoa(i)+"]", 0)
+				continue
+			}
+			numLights += 1
 			light := s.model.nodes[scene.lightNodes[i]]
 			shadowMapNear := float32(0.1)
 			if s.model.lights[*light.lightIndex].lightType == DirectionalLight {
@@ -3284,8 +3303,6 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 				lightProj = mgl.Perspective(mgl.DegToRad(90), 1, shadowMapNear, shadowMapFar)
 			}
 			if s.model.lights[*light.lightIndex].lightType == PointLight {
-				gfx.SetShadowFrameCubeTexture(uint32(i))
-				gfx.SetShadowMapUniformI("layerOffset", i*6)
 				var lightMatrices [8]mgl.Mat4
 				lightMatrices[0] = lightProj.Mul4(mgl.LookAtV([3]float32{light.worldTransform[12], light.worldTransform[13], light.worldTransform[14]}, [3]float32{light.worldTransform[12] + 1, light.worldTransform[13], light.worldTransform[14]}, [3]float32{0, -1, 0}))
 				lightMatrices[1] = lightProj.Mul4(mgl.LookAtV([3]float32{light.worldTransform[12], light.worldTransform[13], light.worldTransform[14]}, [3]float32{light.worldTransform[12] - 1, light.worldTransform[13], light.worldTransform[14]}, [3]float32{0, -1, 0}))
@@ -3294,37 +3311,59 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 				lightMatrices[4] = lightProj.Mul4(mgl.LookAtV([3]float32{light.worldTransform[12], light.worldTransform[13], light.worldTransform[14]}, [3]float32{light.worldTransform[12], light.worldTransform[13], light.worldTransform[14] + 1}, [3]float32{0, -1, 0}))
 				lightMatrices[5] = lightProj.Mul4(mgl.LookAtV([3]float32{light.worldTransform[12], light.worldTransform[13], light.worldTransform[14]}, [3]float32{light.worldTransform[12], light.worldTransform[13], light.worldTransform[14] - 1}, [3]float32{0, -1, 0}))
 				for j := 0; j < 6; j++ {
-					gfx.SetShadowMapUniformMatrix("lightMatrices["+strconv.Itoa(j)+"]", lightMatrices[j][:])
+					gfx.SetShadowMapUniformMatrix("lightMatrices["+strconv.Itoa(i*6+j)+"]", lightMatrices[j][:])
 				}
-				gfx.SetShadowMapUniformI("lightType", 1)
+				gfx.SetShadowMapUniformI("lightType["+strconv.Itoa(i)+"]", 2)
+
 				gfx.SetShadowMapUniformF("farPlane", shadowMapFar)
 				//gfx.SetShadowMapUniformF("lightPos", light.worldTransform[12], light.worldTransform[13], light.worldTransform[14])
 			} else {
-				gfx.SetShadowFrameTexture(uint32(i))
 				lightView := mgl.LookAtV([3]float32{light.localTransform[12], light.localTransform[13], light.localTransform[14]}, [3]float32{light.localTransform[12] + light.lightDirection[0], light.localTransform[13] + light.lightDirection[1], light.localTransform[14] + light.lightDirection[2]}, [3]float32{0, 1, 0})
 				lightMatrix := lightProj.Mul4(lightView)
-				gfx.SetShadowMapUniformMatrix("lightMatrices[0]", lightMatrix[:])
 				gfx.SetShadowMapUniformF("farPlane", shadowMapFar)
+				gfx.SetShadowMapUniformMatrix("lightMatrices["+strconv.Itoa(i*6)+"]", lightMatrix[:])
 				if s.model.lights[*light.lightIndex].lightType == DirectionalLight {
-					gfx.SetShadowMapUniformI("lightType", 0)
+					gfx.SetShadowMapUniformI("lightType["+strconv.Itoa(i)+"]", 1)
 				} else {
-					gfx.SetShadowMapUniformI("lightType", 2)
+					gfx.SetShadowMapUniformI("lightType["+strconv.Itoa(i)+"]", 3)
 				}
 			}
-			gfx.SetShadowMapUniformF("lightPos", light.worldTransform[12], light.worldTransform[13], light.worldTransform[14])
-
+			gfx.SetShadowMapUniformF("lightPos["+strconv.Itoa(i)+"]", light.worldTransform[12], light.worldTransform[13], light.worldTransform[14])
+			if gfx.GetName() == "OpenGL 2.1" {
+				if s.model.lights[*light.lightIndex].lightType == PointLight {
+					gfx.SetShadowFrameCubeTexture(uint32(i))
+				} else {
+					gfx.SetShadowFrameTexture(uint32(i))
+				}
+				for _, index := range scene.nodes {
+					drawNodeShadow(s.model, scene, s.model.nodes[index], offset, false, i, 1)
+				}
+				for _, index := range scene.nodes {
+					drawNodeShadow(s.model, scene, s.model.nodes[index], offset, true, i, 1)
+				}
+				if len(s.model.scenes) > 1 {
+					for _, index := range scene.nodes {
+						drawNodeShadow(s.model, s.model.scenes[1], s.model.nodes[index], offset, false, i, 1)
+					}
+					for _, index := range scene.nodes {
+						drawNodeShadow(s.model, s.model.scenes[1], s.model.nodes[index], offset, true, i, 1)
+					}
+				}
+			}
+		}
+		if gfx.GetName() == "OpenGL 3.2" {
 			for _, index := range scene.nodes {
-				drawNode(s.model, scene, s.model.nodes[index], offset, false, true, false)
+				drawNodeShadow(s.model, scene, s.model.nodes[index], offset, false, 0, numLights)
 			}
 			for _, index := range scene.nodes {
-				drawNode(s.model, scene, s.model.nodes[index], offset, true, true, false)
+				drawNodeShadow(s.model, scene, s.model.nodes[index], offset, true, 0, numLights)
 			}
 			if len(s.model.scenes) > 1 {
 				for _, index := range scene.nodes {
-					drawNode(s.model, s.model.scenes[1], s.model.nodes[index], offset, false, true, false)
+					drawNodeShadow(s.model, s.model.scenes[1], s.model.nodes[index], offset, false, 0, numLights)
 				}
 				for _, index := range scene.nodes {
-					drawNode(s.model, s.model.scenes[1], s.model.nodes[index], offset, true, true, false)
+					drawNodeShadow(s.model, s.model.scenes[1], s.model.nodes[index], offset, true, 0, numLights)
 				}
 			}
 		}
@@ -3432,10 +3471,10 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 		unlit = true
 	}
 	for _, index := range scene.nodes {
-		drawNode(s.model, scene, s.model.nodes[index], offset, false, false, unlit)
+		drawNode(s.model, scene, s.model.nodes[index], offset, false, unlit)
 	}
 	for _, index := range scene.nodes {
-		drawNode(s.model, scene, s.model.nodes[index], offset, true, false, unlit)
+		drawNode(s.model, scene, s.model.nodes[index], offset, true, unlit)
 	}
 }
 

@@ -196,6 +196,7 @@ options.t_itemname = {
 			config.RatioLife = {0.80, 1.0, 1.17, 1.40}
 			config.RatioRecoveryBase = 0
 			config.RatioRecoveryBonus = 20
+			config.Renderer = "OpenGL 3.2"
 			config.RoundsNumSimul = 2
 			config.RoundsNumSingle = 2
 			config.RoundsNumTag = 2
@@ -263,8 +264,6 @@ options.t_itemname = {
 			toggleVsync(config.VRetrace)
 			toggleWindowScaleMode(config.WindowScaleMode)
 			toggleKeepAspect(config.KeepAspect)
-			toggleEnableModel(config.enableModel)
-			toggleEnableModelShadow(config.enableShadow)
 			options.modified = true
 			options.needReload = true
 		end
@@ -785,6 +784,46 @@ options.t_itemname = {
 		end
 		return true
 	end,
+	--Renderer (submenu)
+	['renderer'] = function(t, item, cursorPosY, moveTxt)
+		if main.f_input(main.t_players, {'$F', '$B', 'pal', 's'}) then
+			sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
+			for k, v in ipairs(t.submenu[t.items[item].itemname].items) do
+				if config.Renderer == v.itemname then
+					v.selected = true
+				else
+					v.selected = false
+				end
+			end
+			t.submenu[t.items[item].itemname].loop()
+			t.items[item].vardisplay = config.Renderer
+			options.modified = true
+			options.needReload = true
+		end
+		return true
+	end,
+	--gl32
+	['gl32'] = function(t, item, cursorPosY, moveTxt)
+		if main.f_input(main.t_players, {'pal', 's'}) then
+			sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
+			config.Renderer = "OpenGL 3.2"
+			options.modified = true
+			options.needReload = true
+			return false
+		end
+		return true
+	end,
+	--gl21
+	['gl21'] = function(t, item, cursorPosY, moveTxt)
+		if main.f_input(main.t_players, {'pal', 's'}) then
+			sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
+			config.Renderer = "OpenGL 2.1"
+			options.modified = true
+			options.needReload = true
+			return false
+		end
+		return true
+	end,
 	--Resolution (submenu)
 	['resolution'] = function(t, item, cursorPosY, moveTxt)
 		if main.f_input(main.t_players, {'$F', '$B', 'pal', 's'}) then
@@ -977,7 +1016,6 @@ options.t_itemname = {
 			else
 				config.EnableModel = true
 			end
-			toggleEnableModel()
 			t.items[item].vardisplay = options.f_definedDisplay(config.EnableModel, {[true] = motif.option_info.menu_valuename_enabled}, motif.option_info.menu_valuename_disabled)
 			options.modified = true
 			options.needReload = true
@@ -993,7 +1031,6 @@ options.t_itemname = {
 			else
 				config.EnableModelShadow = true
 			end
-			toggleEnableModel()
 			t.items[item].vardisplay = options.f_definedDisplay(config.EnableModelShadow, {[true] = motif.option_info.menu_valuename_enabled}, motif.option_info.menu_valuename_disabled)
 			options.modified = true
 			options.needReload = true
@@ -1522,6 +1559,9 @@ options.t_vardisplay = {
 	end,
 	['redlifebar'] = function()
 		return options.f_boolDisplay(config.BarRedLife)
+	end,
+	['renderer'] = function()
+		return config.Renderer
 	end,
 	['resolution'] = function()
 		return config.GameWidth .. 'x' .. config.GameHeight

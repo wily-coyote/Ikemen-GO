@@ -34,7 +34,7 @@ type Fnt struct {
 	colors    int32
 	offset    [2]int32
 	ttf       TtfFont
-	paltex    *Texture
+	paltex    Texture
 }
 
 func newFnt() *Fnt {
