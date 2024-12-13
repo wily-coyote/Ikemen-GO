@@ -11047,10 +11047,10 @@ func (sc playBgm) Run(c *Char, _ []int32) bool {
 			// Default to stage BGM if string is stage
 			if bgm == "stage" {
 				// Search .def directory last in this instance
-				bgm = SearchFile(sys.stage.bgmusic, []string{"", "sound/", crun.gi().def})
+				bgm = SearchFile(sys.stage.bgmusic, []string{sys.stage.def, "", "sound/", crun.gi().def})
 				totalRecall = true
 			} else if bgm != "" {
-				bgm = SearchFile(bgm, []string{crun.gi().def, "", "sound/"})
+				bgm = SearchFile(bgm, []string{crun.gi().def, sys.stage.def, "", "sound/"})
 			}
 			b = true
 		case playBgm_volume:
