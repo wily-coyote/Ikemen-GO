@@ -291,6 +291,8 @@ type configSettings struct {
 	WindowCentered             bool
 	WindowIcon                 []string
 	WindowTitle                string
+	WindowWidth                int
+	WindowHeight               int
 	XinputTriggerSensitivity   float32
 	ZoomActive                 bool
 	ZoomDelay                  bool
@@ -435,6 +437,7 @@ func setupConfig() configSettings {
 	sys.windowCentered = tmp.WindowCentered
 	sys.windowMainIconLocation = tmp.WindowIcon
 	sys.windowTitle = tmp.WindowTitle
+	sys.windowSize[0], sys.windowSize[1] = tmp.WindowWidth, tmp.WindowHeight
 	sys.xinputTriggerSensitivity = tmp.XinputTriggerSensitivity
 	stoki := func(key string) int {
 		return int(StringToKey(key))

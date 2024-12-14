@@ -36,6 +36,7 @@ var FPS = 60
 var sys = System{
 	randseed:          int32(time.Now().UnixNano()),
 	scrrect:           [...]int32{0, 0, 320, 240},
+	windowSize:        [...]int{0, 0},
 	gameWidth:         320,
 	gameHeight:        240,
 	keepAspect:        true,
@@ -306,6 +307,7 @@ type System struct {
 	fullscreenRefreshRate int32
 	fullscreenWidth       int32
 	fullscreenHeight      int32
+	windowSize            [2]int
 
 	// Input variables
 	controllerStickSensitivity float32
