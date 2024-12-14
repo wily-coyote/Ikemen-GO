@@ -28,12 +28,17 @@ func (s *System) newWindow(w, h int) (*Window, error) {
 		return nil, fmt.Errorf("failed to obtain primary monitor")
 	}
 
-	var mode = monitor.GetVideoMode()
-	var x, y = (mode.Width - w) / 2, (mode.Height - h) / 2
-
 	// "-windowed" overrides the configuration setting but does not change it
 	_, forceWindowed := sys.cmdFlags["-windowed"]
 	fullscreen := s.fullscreen && !forceWindowed
+
+	// Calculate window size & offset it
+	var mode = monitor.GetVideoMode()
+	var w2, h2 = w, h
+	if !fullscreen && (sys.windowSize[0] > 0 || sys.windowSize[1] > 0) {
+		w2, h2 = sys.windowSize[0], sys.windowSize[1]
+	}
+	var x, y = (mode.Width - w2) / 2, (mode.Height - h2) / 2
 
 	glfw.WindowHint(glfw.Resizable, glfw.True)
 
@@ -68,7 +73,7 @@ func (s *System) newWindow(w, h int) (*Window, error) {
 		}
 		window.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 	} else {
-		window.SetSize(w, h)
+		window.SetSize(w2, h2)
 		window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 		if s.windowCentered {
 			window.SetPos(x, y)
