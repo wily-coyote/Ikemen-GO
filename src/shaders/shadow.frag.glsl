@@ -14,7 +14,7 @@ uniform vec4 baseColorFactor;
 uniform vec3 lightPos[4];
 uniform int lightType[4];
 uniform int lightIndex;
-uniform float farPlane;
+uniform float farPlane[4];
 COMPAT_VARYING vec4 FragPos;
 COMPAT_VARYING float vColorAlpha;
 COMPAT_VARYING vec2 texcoord0;
@@ -36,7 +36,7 @@ void main()
     if(lightType[lightIndex] != LightType_Directional){
         float lightDistance = length(FragPos.xyz - lightPos[lightIndex]);
     
-        lightDistance = lightDistance / farPlane;
+        lightDistance = lightDistance / farPlane[lightIndex];
         
         gl_FragDepth = lightDistance;
     }else{

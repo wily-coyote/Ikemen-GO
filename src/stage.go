@@ -3315,12 +3315,10 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 				}
 				gfx.SetShadowMapUniformI("lightType["+strconv.Itoa(i)+"]", 2)
 
-				gfx.SetShadowMapUniformF("farPlane", shadowMapFar)
 				//gfx.SetShadowMapUniformF("lightPos", light.worldTransform[12], light.worldTransform[13], light.worldTransform[14])
 			} else {
 				lightView := mgl.LookAtV([3]float32{light.localTransform[12], light.localTransform[13], light.localTransform[14]}, [3]float32{light.localTransform[12] + light.lightDirection[0], light.localTransform[13] + light.lightDirection[1], light.localTransform[14] + light.lightDirection[2]}, [3]float32{0, 1, 0})
 				lightMatrix := lightProj.Mul4(lightView)
-				gfx.SetShadowMapUniformF("farPlane", shadowMapFar)
 				gfx.SetShadowMapUniformMatrix("lightMatrices["+strconv.Itoa(i*6)+"]", lightMatrix[:])
 				if s.model.lights[*light.lightIndex].lightType == DirectionalLight {
 					gfx.SetShadowMapUniformI("lightType["+strconv.Itoa(i)+"]", 1)
@@ -3328,6 +3326,7 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 					gfx.SetShadowMapUniformI("lightType["+strconv.Itoa(i)+"]", 3)
 				}
 			}
+			gfx.SetShadowMapUniformF("farPlane["+strconv.Itoa(i)+"]", shadowMapFar)
 			gfx.SetShadowMapUniformF("lightPos["+strconv.Itoa(i)+"]", light.worldTransform[12], light.worldTransform[13], light.worldTransform[14])
 			if gfx.GetName() == "OpenGL 2.1" {
 				if s.model.lights[*light.lightIndex].lightType == PointLight {
@@ -3377,7 +3376,7 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 	gfx.SetModelUniformMatrix("projection", proj[:])
 	gfx.SetModelUniformMatrix("view", view[:])
 
-	gfx.SetModelUniformF("farPlane", 50)
+	//gfx.SetModelUniformF("farPlane", 50)
 
 	unlit := false
 	for idx := 0; idx < 4; idx++ {
@@ -3395,6 +3394,9 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 			shadowMapRight := float32(20)
 			shadowMapBias := float32(0.02)
 
+			if light.lightType == DirectionalLight {
+				shadowMapNear = -20
+			}
 			if light.shadowMapNear != 0 {
 				shadowMapNear = light.shadowMapNear
 			}
@@ -3448,9 +3450,6 @@ func (s *Stage) drawModel(pos [2]float32, yofs float32, scl float32, sceneNumber
 			gfx.SetModelUniformF("lights["+strconv.Itoa(idx)+"].shadowBias", shadowMapBias)
 			if light.lightType != PointLight {
 				gfx.SetModelUniformF("lights["+strconv.Itoa(idx)+"].direction", lightNode.lightDirection[0], lightNode.lightDirection[1], lightNode.lightDirection[2])
-			}
-			if light.lightType == DirectionalLight {
-				shadowMapNear = -20
 			}
 			if light.lightType == DirectionalLight {
 				lightProj := mgl.Ortho(shadowMapLeft, shadowMapRight, shadowMapBottom, shadowMapTop, shadowMapNear, shadowMapFar)

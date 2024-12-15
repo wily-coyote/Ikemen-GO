@@ -317,7 +317,6 @@ type Renderer_GL21 struct {
 	fbo_f_texture *Texture_GL21
 	// Shadow Map
 	fbo_shadow              uint32
-	fbo_shadow_texture      [4]uint32
 	fbo_shadow_cube_texture [4]uint32
 	fbo_env                 uint32
 	// Post-processing shaders
@@ -365,7 +364,6 @@ func (r *Renderer_GL21) InitModelShader() error {
 		"lights[3].direction", "lights[3].range", "lights[3].color", "lights[3].intensity", "lights[3].position", "lights[3].innerConeCos", "lights[3].outerConeCos", "lights[3].type", "lights[3].shadowBias", "lights[3].shadowMapFar",
 	)
 	r.modelShader.RegisterTextures("tex", "morphTargetValues", "jointMatrices", "normalMap", "metallicRoughnessMap", "ambientOcclusionMap", "emissionMap", "lambertianEnvSampler", "GGXEnvSampler", "GGXLUT",
-		"shadowMap[0]", "shadowMap[1]", "shadowMap[2]", "shadowMap[3]",
 		"shadowCubeMap[0]", "shadowCubeMap[1]", "shadowCubeMap[2]", "shadowCubeMap[3]")
 
 	if r.enableShadow {
@@ -522,18 +520,9 @@ func (r *Renderer_GL21) Init() {
 		if r.enableShadow {
 			gl.GenFramebuffersEXT(1, &r.fbo_shadow)
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.GenTextures(4, &r.fbo_shadow_texture[0])
 			gl.GenTextures(4, &r.fbo_shadow_cube_texture[0])
 
 			for i := 0; i < 4; i++ {
-				gl.BindTexture(gl.TEXTURE_2D, r.fbo_shadow_texture[i])
-
-				gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, 1024, 1024, 0, gl.DEPTH_COMPONENT, gl.FLOAT, nil)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-				gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-
 				gl.BindTexture(gl.TEXTURE_CUBE_MAP, r.fbo_shadow_cube_texture[i])
 				for j := 0; j < 6; j++ {
 					gl.TexImage2D(uint32(gl.TEXTURE_CUBE_MAP_POSITIVE_X+j), 0, gl.DEPTH_COMPONENT, 1024, 1024, 0, gl.DEPTH_COMPONENT, gl.FLOAT, nil)
@@ -544,7 +533,6 @@ func (r *Renderer_GL21) Init() {
 				gl.TexParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 			}
 			gl.BindFramebufferEXT(gl.FRAMEBUFFER, r.fbo_shadow)
-			//gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, r.fbo_shadow_texture[0], 0)
 			gl.DrawBuffer(gl.NONE)
 			gl.ReadBuffer(gl.NONE)
 			if status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER); status != gl.FRAMEBUFFER_COMPLETE {
@@ -831,11 +819,7 @@ func (r *Renderer_GL21) prepareModelPipeline(env *Environment) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.stageIndexBuffer)
 	if r.enableShadow {
 		for i := 0; i < 4; i++ {
-			loc, unit := r.modelShader.u["shadowMap["+strconv.Itoa(i)+"]"], r.modelShader.t["shadowMap["+strconv.Itoa(i)+"]"]
-			gl.ActiveTexture((uint32(gl.TEXTURE0 + unit)))
-			gl.BindTexture(gl.TEXTURE_2D, r.fbo_shadow_texture[i])
-			gl.Uniform1i(loc, int32(unit))
-			loc, unit = r.modelShader.u["shadowCubeMap["+strconv.Itoa(i)+"]"], r.modelShader.t["shadowCubeMap["+strconv.Itoa(i)+"]"]
+			loc, unit := r.modelShader.u["shadowCubeMap["+strconv.Itoa(i)+"]"], r.modelShader.t["shadowCubeMap["+strconv.Itoa(i)+"]"]
 			gl.ActiveTexture((uint32(gl.TEXTURE0 + unit)))
 			gl.BindTexture(gl.TEXTURE_CUBE_MAP, r.fbo_shadow_cube_texture[i])
 			gl.Uniform1i(loc, int32(unit))
@@ -1006,6 +990,14 @@ func (r *Renderer_GL21) ReleaseModelPipeline() {
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Disable(gl.CULL_FACE)
 }
+func (r *Renderer_GL21) ProcessShadowMapTexture(index int) {
+	gl.BindTexture(gl.TEXTURE_CUBE_MAP, r.fbo_shadow_cube_texture[index])
+	data := make([]float32, 1024*1024)
+	gl.GetTexImage(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.DEPTH_COMPONENT, gl.FLOAT, unsafe.Pointer(&data[0]))
+	for i := 0; i < 4; i++ {
+		gl.TexImage2D(uint32(gl.TEXTURE_CUBE_MAP_POSITIVE_X+i+2), 0, gl.DEPTH_COMPONENT, 1024, 1024, 0, gl.DEPTH_COMPONENT, gl.FLOAT, unsafe.Pointer(&data[0]))
+	}
+}
 
 func (r *Renderer_GL21) ReadPixels(data []uint8, width, height int) {
 	// we defer the EndFrame(), SwapBuffers(), and BeginFrame() calls that were previously below now to
@@ -1156,7 +1148,8 @@ func (r *Renderer_GL21) SetShadowMapTexture(name string, tex Texture) {
 }
 
 func (r *Renderer_GL21) SetShadowFrameTexture(i uint32) {
-	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, r.fbo_shadow_texture[i], 0)
+	//gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, r.fbo_shadow_cube_texture[i], 0)
+	gl.FramebufferTextureLayer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, r.fbo_shadow_cube_texture[i], 0, 0)
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
 }
 
