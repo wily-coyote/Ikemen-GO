@@ -1638,7 +1638,6 @@ function options.f_start()
 				options.t_itemname[path .. filename] = function(t, item, cursorPosY, moveTxt)
 					if main.f_input(main.t_players, {'pal', 's'}) then
 						sndPlay(motif.files.snd_data, motif.option_info.cursor_done_snd[1], motif.option_info.cursor_done_snd[2])
-						main.f_printTable(t)
 						for k, v in ipairs(t.items) do
 							if v.itemname == path .. filename then
 								v.selected = not v.selected
@@ -1648,11 +1647,20 @@ function options.f_start()
 									for k2, v2 in ipairs(config.ExternalShaders) do
 										if v2 == v.itemname then
 											table.remove(config.ExternalShaders, k2)
+											v.vardisplay = options.f_boolDisplay(v.selected, tostring(k2), '')
 											break
 										end
 									end
 								end
-								v.vardisplay = options.f_boolDisplay(v.selected, tostring(#config.ExternalShaders), '')
+							end
+						end
+
+						-- Need to correct ALL indices
+						for k, v in ipairs(t.items) do
+							for k2, v2 in ipairs(config.ExternalShaders) do
+								if v2 == v.itemname then
+									v.vardisplay = options.f_boolDisplay(v.selected, tostring(k2), '')
+								end
 							end
 						end
 						return true
