@@ -328,7 +328,6 @@ type System struct {
 	lifebarLocalcoord    [2]int32
 
 	// Shader Vars
-	postProcessingShader    int32
 	multisampleAntialiasing int32
 
 	// External Shader Vars
@@ -439,11 +438,6 @@ func (s *System) init(w, h int32) *lua.LState {
 				}
 			}
 		}
-	}
-
-	// Check if the shader selected is currently available.
-	if s.postProcessingShader < int32(len(s.externalShaderList)) {
-		s.postProcessingShader = 0
 	}
 
 	// Loading of external shader data.

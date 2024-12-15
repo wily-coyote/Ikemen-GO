@@ -53,13 +53,6 @@ function options.f_displayRatio(value)
 	return ret .. '%'
 end
 
-local function f_externalShaderName()
-	if #config.ExternalShaders > 0 and config.PostProcessingShader ~= 0 then
-		return config.ExternalShaders[1]:gsub('^.+/', '')
-	end
-	return motif.option_info.menu_valuename_disabled
-end
-
 local function changeLanguageSetting(val)
 	sndPlay(motif.files.snd_data, motif.option_info.cursor_move_snd[1], motif.option_info.cursor_move_snd[2])
 	languageCounter = 0
@@ -190,7 +183,7 @@ options.t_itemname = {
 			config.PanningRange = 30
 			config.Players = 4
 			--config.PngSpriteFilter = true
-			config.PostProcessingShader = 0
+			--config.PostProcessingShader = 0
 			config.QuickContinue = false
 			config.RatioAttack = {0.82, 1.0, 1.17, 1.30}
 			config.RatioLife = {0.80, 1.0, 1.17, 1.40}
@@ -981,15 +974,8 @@ options.t_itemname = {
 				main.f_warning(main.f_extractText(motif.warning_info.text_shaders_text), motif.optionbgdef)
 				return true
 			end
-			for k, v in ipairs(t.submenu[t.items[item].itemname].items) do
-				if config.ExternalShaders[1] == v.itemname then
-					v.selected = true
-				else
-					v.selected = false
-				end
-			end
 			t.submenu[t.items[item].itemname].loop()
-			t.items[item].vardisplay = f_externalShaderName()
+			t.items[item].vardisplay = options.f_boolDisplay(#config.ExternalShaders > 0, motif.option_info.menu_valuename_enabled, motif.option_info.menu_valuename_disabled)
 			options.modified = true
 			options.needReload = true
 		end
@@ -1000,7 +986,7 @@ options.t_itemname = {
 		if main.f_input(main.t_players, {'pal', 's'}) then
 			sndPlay(motif.files.snd_data, motif.option_info.cancel_snd[1], motif.option_info.cancel_snd[2])
 			config.ExternalShaders = {}
-			config.PostProcessingShader = 0
+			--config.PostProcessingShader = 0
 			options.modified = true
 			options.needReload = true
 			return false
@@ -1582,7 +1568,7 @@ options.t_vardisplay = {
 		return config.VolumeSfx .. '%'
 	end,
 	['shaders'] = function()
-		return f_externalShaderName()
+		return options.f_boolDisplay(#config.ExternalShaders > 0, motif.option_info.menu_valuename_enabled, motif.option_info.menu_valuename_disabled)
 	end,
 	['singlevsteamlife'] = function()
 		return config.Team1VS2Life .. '%'
@@ -1645,9 +1631,32 @@ function options.f_start()
 				options.t_itemname[path .. filename] = function(t, item, cursorPosY, moveTxt)
 					if main.f_input(main.t_players, {'pal', 's'}) then
 						sndPlay(motif.files.snd_data, motif.option_info.cursor_done_snd[1], motif.option_info.cursor_done_snd[2])
-						config.ExternalShaders = {path .. filename}
-						config.PostProcessingShader = 1
-						return false
+						for k, v in ipairs(t.items) do
+							if v.itemname == path .. filename then
+								v.selected = not v.selected
+								if v.selected then
+									table.insert(config.ExternalShaders, v.itemname)
+								else
+									for k2, v2 in ipairs(config.ExternalShaders) do
+										if v2 == v.itemname then
+											table.remove(config.ExternalShaders, k2)
+											v.vardisplay = options.f_boolDisplay(v.selected, tostring(k2), '')
+											break
+										end
+									end
+								end
+							end
+						end
+
+						-- Need to correct ALL indices
+						for k, v in ipairs(t.items) do
+							for k2, v2 in ipairs(config.ExternalShaders) do
+								if v2 == v.itemname then
+									v.vardisplay = options.f_boolDisplay(v.selected, tostring(k2), '')
+								end
+							end
+						end
+						return true
 					end
 					return true
 				end
@@ -1703,14 +1712,24 @@ function options.f_start()
 			if suffix:match('_shaders_back$') and c == 'back' then
 				for k = #options.t_shaders, 1, -1 do
 					local itemname = options.t_shaders[k].path .. options.t_shaders[k].filename
+					local idx = 0
+					-- Has the shader been enabled?
+					local isSelected = false
+					for i, v in ipairs(config.ExternalShaders) do
+						if itemname == v then
+							isSelected = true
+							idx = i
+							break
+						end
+					end
 					table.insert(t_pos.items, 1, {
 						data = text:create({window = t_menuWindow}),
 						itemname = itemname,
 						displayname = options.t_shaders[k].filename,
 						paramname = 'menu_itemname_' .. suffix:gsub('back$', itemname),
 						vardata = text:create({window = t_menuWindow}),
-						vardisplay = options.f_vardisplay(c),
-						selected = false,
+						vardisplay = options.f_boolDisplay(idx > 0, tostring(idx), ''),
+						selected = isSelected,
 					})
 					table.insert(options.t_vardisplayPointers, t_pos.items[#t_pos.items])
 					--creating anim data out of appended menu items
@@ -1935,7 +1954,7 @@ function options.f_keyCfg(cfgType, controller, bgdef, skipClear)
 			local guid = getJoystickGUID(joyNum)
 
 			-- Fix the GUID so that configs are preserved between boots for macOS
-			if config[cfgType][player].GUID ~= guid then
+			if config[cfgType][player].GUID ~= guid and guid ~= '' then
 				config[cfgType][player].GUID = guid
 				options.modified = true
 			end
