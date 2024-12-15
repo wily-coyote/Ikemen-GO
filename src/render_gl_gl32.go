@@ -455,7 +455,7 @@ func (r *Renderer_GL32) Init() {
 		r.postShaderSelect[1+i], _ = r.newShaderProgram(sys.externalShaders[0][i],
 			sys.externalShaders[1][i], "", fmt.Sprintf("Postprocess Shader #%v", i+1), true)
 		r.postShaderSelect[1+i].RegisterAttributes("VertCoord", "TexCoord")
-		loc := r.postShaderSelect[0].a["TexCoord"]
+		loc := r.postShaderSelect[1+i].a["TexCoord"]
 		gl.VertexAttribPointer(uint32(loc), 3, gl.FLOAT, false, 5*4, gl.PtrOffset(2*4))
 		gl.EnableVertexAttribArray(uint32(loc))
 		r.postShaderSelect[1+i].RegisterUniforms("Texture_GL32", "TextureSize", "CurrentTime")
