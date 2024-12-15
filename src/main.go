@@ -261,7 +261,6 @@ type configSettings struct {
 	PauseMasterVolume          int
 	Players                    int
 	PngSpriteFilter            bool
-	PostProcessingShader       int32
 	QuickContinue              bool
 	RatioAttack                [4]float32
 	RatioLife                  [4]float32
@@ -418,7 +417,6 @@ func setupConfig() configSettings {
 	sys.pauseMasterVolume = tmp.PauseMasterVolume
 	sys.panningRange = tmp.PanningRange
 	sys.playerProjectileMax = tmp.MaxPlayerProjectile
-	sys.postProcessingShader = tmp.PostProcessingShader
 	sys.pngFilter = tmp.PngSpriteFilter
 	sys.powerShare = [...]bool{tmp.TeamPowerShare, tmp.TeamPowerShare}
 	tmp.ScreenshotFolder = strings.TrimSpace(tmp.ScreenshotFolder)

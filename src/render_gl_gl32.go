@@ -589,7 +589,7 @@ func (r *Renderer_GL32) EndFrame() {
 	}
 
 	x, y, resizedWidth, resizedHeight := sys.window.GetScaledViewportSize()
-	postShader := r.postShaderSelect[sys.postProcessingShader]
+	postShader := r.postShaderSelect[len(sys.externalShaderList)]
 
 	var scaleMode int32 // GL enum
 	if sys.windowScaleMode {
