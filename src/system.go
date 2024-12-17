@@ -2173,7 +2173,7 @@ func (s *System) fight() (reload bool) {
 		if len(p) > 0 && p[0].teamside != -1 {
 			p[0].clearNextRound()
 			level[i] = s.wincnt.getLevel(i)
-			if s.powerShare[i&1] && p[0].teamside != -1 {
+			if s.powerShare[i&1] {
 				pmax := Max(s.cgi[i&1].data.power, s.cgi[i].data.power)
 				for j := i & 1; j < MaxSimul*2; j += 2 {
 					if len(s.chars[j]) > 0 {
