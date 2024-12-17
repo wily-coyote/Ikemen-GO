@@ -644,10 +644,13 @@ func (r *Renderer_GL21) EndFrame() {
 	gl.Clear(gl.COLOR_BUFFER_BIT) // clear that FBO
 	gl.ActiveTexture(gl.TEXTURE0) // later referred to by Texture_GL32
 
+	fbo := r.fbo
 	fbo_texture := r.fbo_texture
 	if sys.multisampleAntialiasing > 0 {
+		fbo = r.fbo_f
 		fbo_texture = r.fbo_f_texture.handle
 	}
+
 	// disable blending
 	gl.Disable(gl.BLEND)
 
@@ -662,7 +665,7 @@ func (r *Renderer_GL21) EndFrame() {
 			gl.BindTexture(gl.TEXTURE_2D, fbo_texture) // the previous texture is our input
 		} else {
 			// pong!
-			gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo) // the reverse
+			gl.BindFramebuffer(gl.FRAMEBUFFER, fbo) // the reverse
 			gl.BindTexture(gl.TEXTURE_2D, r.fbo_pp_texture)
 		}
 
