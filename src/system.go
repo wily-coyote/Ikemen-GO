@@ -2170,7 +2170,7 @@ func (s *System) fight() (reload bool) {
 	// Initialize super meter values, and max power for teams sharing meter
 	var level [len(s.chars)]int32
 	for i, p := range s.chars {
-		if len(p) > 0 {
+		if len(p) > 0 && p[0].teamside != -1 {
 			p[0].clearNextRound()
 			level[i] = s.wincnt.getLevel(i)
 			if s.powerShare[i&1] && p[0].teamside != -1 {
