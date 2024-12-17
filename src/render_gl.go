@@ -623,6 +623,7 @@ func (r *Renderer_GL21) BlendReset() {
 }
 func (r *Renderer_GL21) EndFrame() {
 	x, y, width, height := int32(0), int32(0), int32(sys.scrrect[2]), int32(sys.scrrect[3])
+	time := glfw.GetTime() // consistent time across all shaders
 
 	if sys.multisampleAntialiasing > 0 {
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, r.fbo_f)
@@ -640,19 +641,32 @@ func (r *Renderer_GL21) EndFrame() {
 	// set the viewport to the unscaled bounds for post-processing
 	gl.Viewport(x, y, width, height)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_pp) // our postprocessing FBO is the output
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT) // clear that FBO
+	gl.Clear(gl.COLOR_BUFFER_BIT) // clear that FBO
+	gl.ActiveTexture(gl.TEXTURE0) // later referred to by Texture_GL32
 
-	// tell GL to use the output before it (r.fbo/r.fbo_texture)
-	// as the texture for the quad we're about to render
-	gl.ActiveTexture(gl.TEXTURE0)
+	fbo_texture := r.fbo_texture
 	if sys.multisampleAntialiasing > 0 {
-		gl.BindTexture(gl.TEXTURE_2D, r.fbo_f_texture.handle)
-	} else {
-		gl.BindTexture(gl.TEXTURE_2D, r.fbo_texture)
+		fbo_texture = r.fbo_f_texture.handle
 	}
+	// disable blending
+	gl.Disable(gl.BLEND)
 
-	for idx, postShader := range r.postShaderSelect {
-		if(idx >= len(r.postShaderSelect)-1){
+	for i := 0; i < len(r.postShaderSelect); i++ {
+		postShader := r.postShaderSelect[i]
+		
+		// this is here because it is undefined
+		// behavior to write to the same FBO
+		if(i%2==0){
+			// ping!
+			gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_pp) // our post-processing FBO is the output
+			gl.BindTexture(gl.TEXTURE_2D, fbo_texture) // the previous texture is our input
+		} else {
+			// pong!
+			gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo) // the reverse
+			gl.BindTexture(gl.TEXTURE_2D, r.fbo_pp_texture)
+		}
+
+		if(i >= len(r.postShaderSelect)-1){
 			// this is the last shader,
 			// so we ask GL to scale it and output it
 			// to FB0, the default frame buffer that the user sees
@@ -665,12 +679,11 @@ func (r *Renderer_GL21) EndFrame() {
 
 		// tell GL we want to use our shader program
 		gl.UseProgram(postShader.program)
-		gl.Disable(gl.BLEND)
 
 		// set post-processing parameters
 		gl.Uniform1i(postShader.u["Texture_GL21"], 0)
 		gl.Uniform2f(postShader.u["TextureSize"], float32(width), float32(height))
-		gl.Uniform1f(postShader.u["CurrentTime"], float32(glfw.GetTime()))
+		gl.Uniform1f(postShader.u["CurrentTime"], float32(time))
 		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, scaleMode)
 		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, scaleMode)
 
@@ -689,7 +702,6 @@ func (r *Renderer_GL21) EndFrame() {
 
 		// we've now output to r.fbo_pp/r.fbo_pp_texture.
 		// that becomes the input for our next shader or whatever after
-		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, r.fbo_pp_texture)
 	}
 }
