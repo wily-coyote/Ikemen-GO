@@ -654,8 +654,8 @@ func (r *Renderer_GL32) EndFrame() {
 	// set the viewport to the unscaled bounds for post-processing
 	gl.Viewport(x, y, width, height)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_pp) // our postprocessing FBO is the output
-	gl.Clear(gl.COLOR_BUFFER_BIT) // clear that FBO
-	gl.ActiveTexture(gl.TEXTURE0) // later referred to by Texture_GL32
+	gl.Clear(gl.COLOR_BUFFER_BIT)                // clear that FBO
+	gl.ActiveTexture(gl.TEXTURE0)                // later referred to by Texture_GL32
 
 	fbo := r.fbo
 	fbo_texture := r.fbo_texture
@@ -663,26 +663,26 @@ func (r *Renderer_GL32) EndFrame() {
 		fbo = r.fbo_f
 		fbo_texture = r.fbo_f_texture.handle
 	}
-	
+
 	// disable blending
 	gl.Disable(gl.BLEND)
 
 	for i := 0; i < len(r.postShaderSelect); i++ {
 		postShader := r.postShaderSelect[i]
-		
+
 		// this is here because it is undefined
 		// behavior to write to the same FBO
-		if(i%2==0){
+		if i%2 == 0 {
 			// ping!
 			gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_pp) // our post-processing FBO is the output
-			gl.BindTexture(gl.TEXTURE_2D, fbo_texture) // the previous texture is our input
+			gl.BindTexture(gl.TEXTURE_2D, fbo_texture)   // the previous texture is our input
 		} else {
 			// pong!
 			gl.BindFramebuffer(gl.FRAMEBUFFER, fbo) // the reverse
 			gl.BindTexture(gl.TEXTURE_2D, r.fbo_pp_texture)
 		}
 
-		if(i >= len(r.postShaderSelect)-1){
+		if i >= len(r.postShaderSelect)-1 {
 			// this is the last shader,
 			// so we ask GL to scale it and output it
 			// to FB0, the default frame buffer that the user sees
