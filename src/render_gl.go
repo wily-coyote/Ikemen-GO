@@ -702,10 +702,6 @@ func (r *Renderer_GL21) EndFrame() {
 		// construct the quad and draw it
 		gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 		gl.DisableVertexAttribArray(uint32(loc))
-
-		// we've now output to r.fbo_pp/r.fbo_pp_texture.
-		// that becomes the input for our next shader or whatever after
-		gl.BindTexture(gl.TEXTURE_2D, r.fbo_pp_texture)
 	}
 }
 
