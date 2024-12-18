@@ -474,12 +474,14 @@ func (r *Renderer_GL21) Init() {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-
+	
+	// Shaders might use negative values, so
+	// we specify that we want signed pixels
 	if sys.multisampleAntialiasing > 0 {
 		gl.TexImage2DMultisample(
 			gl.TEXTURE_2D_MULTISAMPLE,
 			sys.multisampleAntialiasing,
-			gl.RGBA,
+			gl.RGBA8_SNORM,
 			sys.scrrect[2],
 			sys.scrrect[3],
 			true,
@@ -488,7 +490,7 @@ func (r *Renderer_GL21) Init() {
 		gl.TexImage2D(
 			gl.TEXTURE_2D,
 			0,
-			gl.RGBA,
+			gl.RGBA8_SNORM,
 			sys.scrrect[2],
 			sys.scrrect[3],
 			0,
@@ -508,7 +510,7 @@ func (r *Renderer_GL21) Init() {
 	gl.TexImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA,
+		gl.RGBA8_SNORM,
 		sys.scrrect[2],
 		sys.scrrect[3],
 		0,
