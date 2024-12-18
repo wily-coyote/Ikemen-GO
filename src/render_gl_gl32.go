@@ -332,6 +332,9 @@ type Renderer_GL32 struct {
 	stageVertexBuffer       uint32
 	stageIndexBuffer        uint32
 	vao                     uint32
+	// Postprocessing
+	fbo_pp         uint32
+	fbo_pp_texture uint32
 
 	enableModel  bool
 	enableShadow bool
@@ -445,27 +448,30 @@ func (r *Renderer_GL32) Init() {
 	// Calculate total amount of shaders loaded.
 	r.postShaderSelect = make([]*ShaderProgram_GL32, 1+len(sys.externalShaderList))
 
-	// Ident shader (no postprocessing)
-	r.postShaderSelect[0], _ = r.newShaderProgram(identVertShader, identFragShader, "", "Identity Postprocess", true)
-	r.postShaderSelect[0].RegisterAttributes("VertCoord", "TexCoord")
-	r.postShaderSelect[0].RegisterUniforms("Texture_GL32", "TextureSize", "CurrentTime")
-
 	// External Shaders
 	for i := 0; i < len(sys.externalShaderList); i++ {
-		r.postShaderSelect[1+i], _ = r.newShaderProgram(sys.externalShaders[0][i],
-			sys.externalShaders[1][i], "", fmt.Sprintf("Postprocess Shader #%v", i+1), true)
-		r.postShaderSelect[1+i].RegisterAttributes("VertCoord", "TexCoord")
-		loc := r.postShaderSelect[1+i].a["TexCoord"]
+		r.postShaderSelect[i], _ = r.newShaderProgram(sys.externalShaders[0][i],
+			sys.externalShaders[1][i], "", fmt.Sprintf("Postprocess Shader #%v", i), true)
+		r.postShaderSelect[i].RegisterAttributes("VertCoord", "TexCoord")
+		loc := r.postShaderSelect[i].a["TexCoord"]
 		gl.VertexAttribPointer(uint32(loc), 3, gl.FLOAT, false, 5*4, gl.PtrOffset(2*4))
 		gl.EnableVertexAttribArray(uint32(loc))
-		r.postShaderSelect[1+i].RegisterUniforms("Texture_GL32", "TextureSize", "CurrentTime")
+		r.postShaderSelect[i].RegisterUniforms("Texture_GL32", "TextureSize", "CurrentTime")
 	}
+
+	// Ident shader (no postprocessing). This is the last one
+	identShader, _ := r.newShaderProgram(identVertShader, identFragShader, "", "Identity Postprocess", true)
+	identShader.RegisterAttributes("VertCoord", "TexCoord")
+	identShader.RegisterUniforms("Texture_GL32", "TextureSize", "CurrentTime")
+	r.postShaderSelect[len(r.postShaderSelect)-1] = identShader
 
 	if sys.multisampleAntialiasing > 0 {
 		gl.Enable(gl.MULTISAMPLE)
 	}
 
 	gl.ActiveTexture(gl.TEXTURE0)
+
+	// create a texture for r.fbo
 	gl.GenTextures(1, &r.fbo_texture)
 
 	if sys.multisampleAntialiasing > 0 {
@@ -479,13 +485,51 @@ func (r *Renderer_GL32) Init() {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
+	// Shaders might use negative values, so
+	// we specify that we want signed pixels
 	if sys.multisampleAntialiasing > 0 {
-		gl.TexImage2DMultisample(gl.TEXTURE_2D_MULTISAMPLE, sys.multisampleAntialiasing, gl.RGBA, sys.scrrect[2], sys.scrrect[3], true)
-
+		gl.TexImage2DMultisample(
+			gl.TEXTURE_2D_MULTISAMPLE,
+			sys.multisampleAntialiasing,
+			gl.RGBA8_SNORM,
+			sys.scrrect[2],
+			sys.scrrect[3],
+			true,
+		)
 	} else {
-		gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sys.scrrect[2], sys.scrrect[3], 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
+		gl.TexImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.RGBA8_SNORM,
+			sys.scrrect[2],
+			sys.scrrect[3],
+			0,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			nil,
+		)
 	}
 
+	// r.fbo_pp_texture
+	gl.GenTextures(1, &r.fbo_pp_texture)
+	gl.BindTexture(gl.TEXTURE_2D, r.fbo_pp_texture)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexImage2D(
+		gl.TEXTURE_2D,
+		0,
+		gl.RGBA8_SNORM,
+		sys.scrrect[2],
+		sys.scrrect[3],
+		0,
+		gl.RGBA,
+		gl.UNSIGNED_BYTE,
+		nil,
+	)
+
+	// done with r.fbo_texture, unbind it
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 
 	//r.rbo_depth = gl.CreateRenderbuffer()
@@ -509,6 +553,7 @@ func (r *Renderer_GL32) Init() {
 		//gl.BindRenderbuffer(gl.RENDERBUFFER, gl.NoRenderbuffer)
 	}
 
+	// create an FBO for our r.fbo, which is then for r.fbo_texture
 	gl.GenFramebuffers(1, &r.fbo)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo)
 
@@ -527,6 +572,12 @@ func (r *Renderer_GL32) Init() {
 		gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, r.rbo_depth)
 	}
 
+	// create an FBO for our postprocessing needs
+	gl.GenFramebuffers(1, &r.fbo_pp)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_pp)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, r.fbo_pp_texture, 0)
+
+	// create an FBO for our model stuff
 	if r.enableModel {
 		if r.enableShadow {
 			gl.GenFramebuffers(1, &r.fbo_shadow)
@@ -580,16 +631,18 @@ func (r *Renderer_GL32) BlendReset() {
 	gl.BlendFunc(r.MapBlendFunction(BlendSrcAlpha), r.MapBlendFunction(BlendOneMinusSrcAlpha))
 }
 func (r *Renderer_GL32) EndFrame() {
+	// tell GL to use our vertex array object
+	// this'll be where our quad is stored
 	gl.BindVertexArray(r.vao)
+
+	x, y, width, height := int32(0), int32(0), int32(sys.scrrect[2]), int32(sys.scrrect[3])
+	time := glfw.GetTime() // consistent time across all shaders
 
 	if sys.multisampleAntialiasing > 0 {
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, r.fbo_f)
 		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, r.fbo)
-		gl.BlitFramebuffer(0, 0, sys.scrrect[2], sys.scrrect[3], 0, 0, sys.scrrect[2], sys.scrrect[3], gl.COLOR_BUFFER_BIT, gl.LINEAR)
+		gl.BlitFramebuffer(x, y, width, height, x, y, width, height, gl.COLOR_BUFFER_BIT, gl.LINEAR)
 	}
-
-	x, y, resizedWidth, resizedHeight := sys.window.GetScaledViewportSize()
-	postShader := r.postShaderSelect[len(sys.externalShaderList)]
 
 	var scaleMode int32 // GL enum
 	if sys.windowScaleMode {
@@ -598,35 +651,71 @@ func (r *Renderer_GL32) EndFrame() {
 		scaleMode = gl.NEAREST
 	}
 
-	gl.Viewport(x, y, int32(resizedWidth), int32(resizedHeight))
-	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	// set the viewport to the unscaled bounds for post-processing
+	gl.Viewport(x, y, width, height)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_pp) // our postprocessing FBO is the output
+	gl.Clear(gl.COLOR_BUFFER_BIT) // clear that FBO
+	gl.ActiveTexture(gl.TEXTURE0) // later referred to by Texture_GL32
 
-	gl.UseProgram(postShader.program)
+	fbo := r.fbo
+	fbo_texture := r.fbo_texture
+	if sys.multisampleAntialiasing > 0 {
+		fbo = r.fbo_f
+		fbo_texture = r.fbo_f_texture.handle
+	}
+	
+	// disable blending
 	gl.Disable(gl.BLEND)
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	if sys.multisampleAntialiasing > 0 {
-		gl.BindTexture(gl.TEXTURE_2D, r.fbo_f_texture.handle)
-	} else {
-		gl.BindTexture(gl.TEXTURE_2D, r.fbo_texture)
+	for i := 0; i < len(r.postShaderSelect); i++ {
+		postShader := r.postShaderSelect[i]
+		
+		// this is here because it is undefined
+		// behavior to write to the same FBO
+		if(i%2==0){
+			// ping!
+			gl.BindFramebuffer(gl.FRAMEBUFFER, r.fbo_pp) // our post-processing FBO is the output
+			gl.BindTexture(gl.TEXTURE_2D, fbo_texture) // the previous texture is our input
+		} else {
+			// pong!
+			gl.BindFramebuffer(gl.FRAMEBUFFER, fbo) // the reverse
+			gl.BindTexture(gl.TEXTURE_2D, r.fbo_pp_texture)
+		}
+
+		if(i >= len(r.postShaderSelect)-1){
+			// this is the last shader,
+			// so we ask GL to scale it and output it
+			// to FB0, the default frame buffer that the user sees
+			x, y, width, height := sys.window.GetScaledViewportSize()
+			gl.Viewport(x, y, width, height)
+			gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+			// clear FB0 just to make sure
+			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		}
+
+		// tell GL we want to use our shader program
+		gl.UseProgram(postShader.program)
+
+		// set post-processing parameters
+		gl.Uniform1i(postShader.u["Texture_GL32"], 0)
+		gl.Uniform2f(postShader.u["TextureSize"], float32(width), float32(height))
+		gl.Uniform1f(postShader.u["CurrentTime"], float32(time))
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, scaleMode)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, scaleMode)
+
+		// this actually draws the image to the FBO
+		// by constructing a quad (2 tris)
+		gl.BindBuffer(gl.ARRAY_BUFFER, r.postVertBuffer)
+
+		// construct the UVs of the quad
+		loc := postShader.a["VertCoord"]
+		gl.EnableVertexAttribArray(uint32(loc))
+		gl.VertexAttribPointer(uint32(loc), 2, gl.FLOAT, false, 0, nil)
+
+		// construct the quad and draw it
+		gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+		gl.DisableVertexAttribArray(uint32(loc))
 	}
-
-	// set post-processing parameters
-	gl.Uniform1i(postShader.u["Texture_GL32"], 0)
-	gl.Uniform2f(postShader.u["TextureSize"], float32(resizedWidth), float32(resizedHeight))
-	gl.Uniform1f(postShader.u["CurrentTime"], float32(glfw.GetTime()))
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, scaleMode)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, scaleMode)
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, r.postVertBuffer)
-
-	loc := postShader.a["VertCoord"]
-	gl.EnableVertexAttribArray(uint32(loc))
-	gl.VertexAttribPointer(uint32(loc), 2, gl.FLOAT, false, 0, nil)
-
-	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
-	gl.DisableVertexAttribArray(uint32(loc))
 }
 
 func (r *Renderer_GL32) Await() {
